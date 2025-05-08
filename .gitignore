@@ -5,6 +5,7 @@
 *.npz
 *.pyc
 *.bin
+manta/
 waveletNoiseTile.bin
 waveletNoiseTileDouble.bin
 build
