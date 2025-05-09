@@ -245,6 +245,81 @@ void BasicParticleSystem::printParts(IndexInt start, IndexInt stop, bool printIn
 	debMsg( sstr.str() , 1 );
 }
 
+#include <iostream>
+#include <fstream>
+
+void BasicParticleSystem::clearFile(std::string filename) {
+    // Open the file in truncation mode to erase its contents
+	std::ofstream file(filename, std::ios::trunc);
+
+	if (!file) {
+		std::cerr << "Error: Could not open the file for clearing: " << filename << std::endl;
+		return;
+	}
+	
+	// File is now empty
+	file.close();
+}
+
+void BasicParticleSystem::getCurrentData(std::string filename, int resolution, FlagGrid& flags, bool lastFrame){
+	std::ifstream infile(filename, std::ios::ate);
+    bool isEmpty = (infile.tellg() == 0);
+    infile.close();
+
+    // Now open the file in append mode
+    std::ofstream file(filename, std::ios::app);
+    if (!file) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
+
+    // If it was empty, write "hello" first
+    if (isEmpty) {
+        file << "{\"resolution\":" << std::to_string(resolution) << ",\"frames\":[";
+    }   
+	
+	file << "{\"particles\":[";
+
+	IndexInt s = 0;
+	IndexInt e = (IndexInt)mData.size();
+
+	for(IndexInt i=s; i<e; ++i) {
+		
+		file << "{\"pos\": [" << std::to_string(mData[i].pos[0]) << "," 
+							  << std::to_string(mData[i].pos[1]) << "], \"tag\":"
+							  << std::to_string(mData[i].flag) << "}";
+		if (!(i == e - 1)){
+			file << ",";
+		}
+	}
+
+	file << "], \"flags\": [";
+
+	for (IndexInt y=0; y<resolution; y++){
+		file << "[";
+		for (IndexInt x=0; x<resolution; x++){
+			file << std::to_string(flags.getAt(Vec3((float) x, (float) y, 0.)));
+			if (!(x == resolution - 1)){
+				file << ",";
+			}
+		}
+		file << "]";
+		if (!(y == resolution - 1)){
+			file << ",";
+		}
+	}
+
+	file << "]}";
+
+	if (!lastFrame){
+		file << ",";
+	} else{
+		file << "]}";
+	}
+
+    file.close(); // Close the file
+}
+
 std::string BasicParticleSystem::getDataPointer() {
 	std::ostringstream out;
 	out << &mData;

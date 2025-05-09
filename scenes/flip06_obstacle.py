@@ -4,8 +4,12 @@
 # 
 from manta import *
 
-dim    = 3
-res    = 64
+RESOLUTION = 64
+FILENAME = "../flip_obstacle.json"
+MAX_TIME = 300
+
+dim    = 2
+res    = RESOLUTION
 #res    = 124
 gs     = vec3(res,res,res)
 if (dim==2):
@@ -15,7 +19,7 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 narrowBand    = 3
 minParticles  = pow(2,dim)
 saveParts     = False
-frames        = 200
+frames        = MAX_TIME
 
 # Adaptive time stepping
 s.frameLength = 0.8                 # length of one frame (in "world time")
@@ -55,21 +59,21 @@ fluidSetVel = 0
 phi.setConst(999.)
 
 # standing dam
-fluidbox1 = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(1.0,0.3,1)) 
+fluidbox1 = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(0.25, 0.5, 1)) 
 phi.join( fluidbox1.computeLevelset() )
-fluidbox2 = Box( parent=s, p0=gs*vec3(0.1,0,0), p1=gs*vec3(0.2,0.75,1)) 
-phi.join( fluidbox2.computeLevelset() )
+#fluidbox2 = Box( parent=s, p0=gs*vec3(0.1,0,0), p1=gs*vec3(0.2,0.75,1)) 
+#phi.join( fluidbox2.computeLevelset() )
 
 if 1:
-	sphere = Sphere( parent=s , center=gs*vec3(0.66,0.3,0.5), radius=res*0.2)
-	phiObs.join( sphere.computeLevelset() )
+	#sphere = Sphere( parent=s , center=gs*vec3(0.66,0.3,0.5), radius=res*0.2)
+	#phiObs.join( sphere.computeLevelset() )
 	#obsbox = Box( parent=s, p0=gs*vec3(0.4,0.2,0), p1=gs*vec3(0.7,0.4,1))
-	#obsbox = Box( parent=s, p0=gs*vec3(0.3,0.2,0), p1=gs*vec3(0.7,0.6,1))
-	#phiObs.join( obsbox.computeLevelset() )
+	obsbox = Box( parent=s, p0=gs*vec3(0.5,0,0), p1=gs*vec3(0.6,0.1,1))
+	phiObs.join( obsbox.computeLevelset() )
 
 
 flags.updateFromLevelset(phi)
-phi.subtract( phiObs );
+phi.subtract( phiObs )
 sampleLevelsetWithParticles( phi=phi, flags=flags, parts=pp, discretization=2, randomness=0.05 )
 
 if fluidVel!=0:
@@ -89,14 +93,19 @@ if 1 and (GUI):
 
 # save reference any grid, to automatically determine grid size
 if saveParts:
-	pressure.save( 'ref_flipParts_0000.uni' );
+	pressure.save( 'ref_flipParts_0000.uni' )
+
+pp.clearFile(FILENAME)
 
 #main loop
-while s.frame < frames:
+for t in range(MAX_TIME):
 	maxVel = vel.getMax()
 	s.adaptTimestep( maxVel )
 	mantaMsg('\nFrame %i, time-step size %f' % (s.frame, s.timestep))
 	
+	if 1:
+		pp.getCurrentData(FILENAME, RESOLUTION, flags=flags, lastFrame=t == (MAX_TIME - 1))
+
 	# FLIP 
 	pp.advectInGrid(flags=flags, vel=vel, integrationMode=IntRK4, deleteInObstacle=False, stopInObstacle=False )
 	pushOutofObs( parts=pp, flags=flags, phiObs=phiObs )

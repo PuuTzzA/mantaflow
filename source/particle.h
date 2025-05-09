@@ -214,6 +214,8 @@ public:
 	std::vector<BasicParticleData>& getData() { return mData; }
 
 	PYTHON() void printParts(IndexInt start=-1, IndexInt stop=-1, bool printIndex=false);
+	PYTHON() void clearFile(std::string filename = "data.txt");
+	PYTHON() void getCurrentData(std::string filename, int resolution, FlagGrid& flags, bool lastFrame=false);
 
 	//! get data pointer of particle data
 	PYTHON() std::string getDataPointer();

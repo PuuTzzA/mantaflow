@@ -4,10 +4,14 @@
 # 
 from manta import *
 
+RESOLUTION = 64
+FILENAME = "../flip_simple.json"
+MAX_TIME = 300
+
 # solver params
 dim = 2
 particleNumber = 2
-res = 64
+res = RESOLUTION
 gs = vec3(res,res,res)
 if (dim==2):
 	gs.z=1
@@ -28,7 +32,7 @@ pVel     = pp.create(PdataVec3)
 # scene setup
 flags.initDomain(boundaryWidth=0) 
 # enable one of the following
-fluidbox = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(0.4,0.6,1)) # breaking dam
+fluidbox = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(0.25, 0.5, 1)) # breaking dam
 #fluidbox = Box( parent=s, p0=gs*vec3(0.4,0.72,0.4), p1=gs*vec3(0.6,0.92,0.6)) # centered falling block
 phiInit = fluidbox.computeLevelset()
 flags.updateFromLevelset(phiInit)
@@ -42,9 +46,30 @@ if (GUI):
 	gui = Gui()
 	gui.show()
 	#gui.pause()
-	
+
+def getFromType(type):
+	match type:
+		case 0:
+			return "TypeNone"
+		case 1:
+			return "TypeFluid"
+		case 2:
+			return "TypeObstacle"
+		case 4: 
+			return "TypeEmpty"
+		case 8:
+			return "TypeInflow"
+		case 16:
+			return "TypeOutflow"
+		case 32:
+			return "TypeOpen"
+		case 64:
+			return "TypeStick"
+	return "InternalType"
+
+pp.clearFile(FILENAME)
 #main loop
-for t in range(2500):
+for t in range(MAX_TIME):
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 	
 	# FLIP 
@@ -54,6 +79,9 @@ for t in range(2500):
 	markFluidCells( parts=pp, flags=flags )
 
 	addGravity(flags=flags, vel=vel, gravity=(0,-0.002,0))
+
+	if 1:
+		pp.getCurrentData(FILENAME, RESOLUTION, flags=flags, lastFrame=t == (MAX_TIME - 1))
 
 	# pressure solve
 	setWallBcs(flags=flags, vel=vel)    

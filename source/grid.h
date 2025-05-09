@@ -304,7 +304,7 @@ public:
 	};
 		
 	//! access for particles
-	inline int getAt(const Vec3& pos) const { return mData[index((int)pos.x, (int)pos.y, (int)pos.z)]; }
+	PYTHON() inline int getAt(const Vec3& pos) const { return mData[index((int)pos.x, (int)pos.y, (int)pos.z)]; }
 			
 	//! check for different flag types
 	inline bool isObstacle(IndexInt idx) const { return get(idx) & TypeObstacle; }
