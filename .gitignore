@@ -5,6 +5,7 @@
 *.npz
 *.pyc
 *.bin
+*.json
 manta/
 .vscode/
 waveletNoiseTile.bin

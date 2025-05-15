@@ -7,6 +7,9 @@ from manta import *
 RESOLUTION = 64
 FILENAME = "../flip_obstacle.json"
 MAX_TIME = 300
+TITLE = "FLIP simple"
+CFL = 2
+MAX_TIME = 300
 
 dim    = 2
 res    = RESOLUTION
@@ -23,7 +26,7 @@ frames        = MAX_TIME
 
 # Adaptive time stepping
 s.frameLength = 0.8                 # length of one frame (in "world time")
-s.cfl         = 3.0                 # maximal velocity per cell and timestep, 3 is fairly strict
+s.cfl         = 50000                # maximal velocity per cell and timestep, 3 is fairly strict
 s.timestep    = s.frameLength 
 s.timestepMin = s.frameLength / 4.  # time step range
 s.timestepMax = s.frameLength * 4.
@@ -103,8 +106,8 @@ for t in range(MAX_TIME):
 	s.adaptTimestep( maxVel )
 	mantaMsg('\nFrame %i, time-step size %f' % (s.frame, s.timestep))
 	
-	if 1:
-		pp.getCurrentData(FILENAME, RESOLUTION, flags=flags, lastFrame=t == (MAX_TIME - 1))
+	if 0:
+		pp.getCurrentData(FILENAME, TITLE, CFL, RESOLUTION, flags=flags, lastFrame=t == (MAX_TIME - 1))
 
 	# FLIP 
 	pp.advectInGrid(flags=flags, vel=vel, integrationMode=IntRK4, deleteInObstacle=False, stopInObstacle=False )
@@ -119,7 +122,7 @@ for t in range(MAX_TIME):
 
 	# combine level set of particles with grid level set
 	phi.addConst(1.); # shrink slightly
-	phi.join( phiParts );
+	phi.join( phiParts )
 	extrapolateLsSimple(phi=phi, distance=narrowBand+2, inside=True ) 
 	extrapolateLsSimple(phi=phi, distance=3 )
 	phi.setBoundNeumann(0) # make sure no particles are placed at outer boundary, warning - larger values can delete thin sheets at outer walls...

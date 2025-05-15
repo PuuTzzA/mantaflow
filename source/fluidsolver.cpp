@@ -175,6 +175,24 @@ void FluidSolver::printMemInfo() {
 //! pass max magnitude of current velocity as maxvel, not yet scaled by dt!
 void FluidSolver::adaptTimestep(Real maxVel)
 {
+	mDt = mCflCond / (maxVel); 
+	std::cout << "MaxVel: " << std::to_string(maxVel) << ", gridsize: " << std::to_string((Real) mGridSize[0]) << ", cfl: " << std::to_string(mCflCond) << std::endl;
+	
+	if (maxVel == 0){
+		mDt = 1;
+	}
+
+	if (mDt < mDtMin){
+		mDt = mDtMin;
+		std::cout << "clamped dt to min" << std::endl;
+	} else if (mDt > mDtMax){
+		mDt = mDtMax;
+		std::cout << "clamped dt to max" << std::endl;
+	}
+	
+	std::cout << "Changed Dt to: " << std::to_string(mDt) << std::endl;
+	return;
+
 	const Real mvt = maxVel * mDt;
 	if (!mLockDt) {
 		// calculate current timestep from maxvel, clamp range

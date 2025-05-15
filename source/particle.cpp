@@ -261,7 +261,7 @@ void BasicParticleSystem::clearFile(std::string filename) {
 	file.close();
 }
 
-void BasicParticleSystem::getCurrentData(std::string filename, int resolution, FlagGrid& flags, bool lastFrame){
+void BasicParticleSystem::getCurrentData(std::string filename, std::string title, int cfl, int resolution, FlagGrid& flags, MACGrid &vel, bool lastFrame){
 	std::ifstream infile(filename, std::ios::ate);
     bool isEmpty = (infile.tellg() == 0);
     infile.close();
@@ -275,7 +275,9 @@ void BasicParticleSystem::getCurrentData(std::string filename, int resolution, F
 
     // If it was empty, write "hello" first
     if (isEmpty) {
-        file << "{\"resolution\":" << std::to_string(resolution) << ",\"frames\":[";
+        file << "{\"resolution\":" << std::to_string(resolution)
+			 << ",\"title\": \"" << title
+			 << "\", \"cfl\":" << std::to_string(cfl) << ",\"frames\":[";
     }   
 	
 	file << "{\"particles\":[";
@@ -283,8 +285,7 @@ void BasicParticleSystem::getCurrentData(std::string filename, int resolution, F
 	IndexInt s = 0;
 	IndexInt e = (IndexInt)mData.size();
 
-	for(IndexInt i=s; i<e; ++i) {
-		
+	for(IndexInt i=s; i<e; ++i) {	
 		file << "{\"pos\": [" << std::to_string(mData[i].pos[0]) << "," 
 							  << std::to_string(mData[i].pos[1]) << "], \"tag\":"
 							  << std::to_string(mData[i].flag) << "}";
@@ -299,6 +300,25 @@ void BasicParticleSystem::getCurrentData(std::string filename, int resolution, F
 		file << "[";
 		for (IndexInt x=0; x<resolution; x++){
 			file << std::to_string(flags.getAt(Vec3((float) x, (float) y, 0.)));
+			if (!(x == resolution - 1)){
+				file << ",";
+			}
+		}
+		file << "]";
+		if (!(y == resolution - 1)){
+			file << ",";
+		}
+	}
+
+	file << "], \"vel\": [";
+
+	for (IndexInt y=0; y<resolution; y++){
+		file << "[";
+		for (IndexInt x=0; x<resolution; x++){
+			file << "[" << std::to_string(vel.getCentered(x, y, 0)[0])
+				 << "," << std::to_string(vel.getCentered(x, y, 0)[1])
+				 << "," << std::to_string(vel.getCentered(x, y, 0)[2]) << "]";
+
 			if (!(x == resolution - 1)){
 				file << ",";
 			}

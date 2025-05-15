@@ -5,7 +5,9 @@
 from manta import *
 
 RESOLUTION = 64
-FILENAME = "../flip_simple.json"
+FILENAME = "../analysis/data/flip_simple.json"
+TITLE = "FLIP simple"
+CFL = 2
 MAX_TIME = 300
 
 # solver params
@@ -17,7 +19,13 @@ if (dim==2):
 	gs.z=1
 	particleNumber = 3 # use more particles in 2d
 s = Solver(name='main', gridSize = gs, dim=dim)
-s.timestep = 0.5
+
+# Adaptive time stepping
+s.cfl         = CFL            # maximal velocity per cell and timestep, 3 is fairly strict
+s.frameLength = 0.8                 # length of one frame (in "world time")
+s.timestep    = s.frameLength 
+s.timestepMin = 0.001 
+s.timestepMax = 2
 
 # prepare grids and particles
 flags    = s.create(FlagGrid)
@@ -47,29 +55,12 @@ if (GUI):
 	gui.show()
 	#gui.pause()
 
-def getFromType(type):
-	match type:
-		case 0:
-			return "TypeNone"
-		case 1:
-			return "TypeFluid"
-		case 2:
-			return "TypeObstacle"
-		case 4: 
-			return "TypeEmpty"
-		case 8:
-			return "TypeInflow"
-		case 16:
-			return "TypeOutflow"
-		case 32:
-			return "TypeOpen"
-		case 64:
-			return "TypeStick"
-	return "InternalType"
-
 pp.clearFile(FILENAME)
 #main loop
 for t in range(MAX_TIME):
+	maxVel = vel.getMax()
+	s.adaptTimestep( maxVel )
+
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 	
 	# FLIP 
@@ -81,7 +72,7 @@ for t in range(MAX_TIME):
 	addGravity(flags=flags, vel=vel, gravity=(0,-0.002,0))
 
 	if 1:
-		pp.getCurrentData(FILENAME, RESOLUTION, flags=flags, lastFrame=t == (MAX_TIME - 1))
+		pp.getCurrentData(FILENAME, TITLE, CFL, RESOLUTION, flags=flags, vel=vel, lastFrame=t == (MAX_TIME - 1))
 
 	# pressure solve
 	setWallBcs(flags=flags, vel=vel)    
