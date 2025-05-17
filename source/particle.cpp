@@ -261,7 +261,7 @@ void BasicParticleSystem::clearFile(std::string filename) {
 	file.close();
 }
 
-void BasicParticleSystem::getCurrentData(std::string filename, std::string title, int cfl, int resolution, FlagGrid& flags, MACGrid &vel, bool lastFrame){
+void BasicParticleSystem::getCurrentData(std::string filename, std::string title, float cfl, int resolution, FlagGrid& flags, MACGrid &vel, bool lastFrame){
 	std::ifstream infile(filename, std::ios::ate);
     bool isEmpty = (infile.tellg() == 0);
     infile.close();

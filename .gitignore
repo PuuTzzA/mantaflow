@@ -6,6 +6,7 @@
 *.pyc
 *.bin
 *.json
+*.png
 manta/
 .vscode/
 waveletNoiseTile.bin

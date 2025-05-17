@@ -5,11 +5,12 @@
 from manta import *
 
 RESOLUTION = 64
-FILENAME = "../flip_obstacle.json"
-MAX_TIME = 300
-TITLE = "FLIP simple"
+TITLE = "FLIP obstacle medium CFL"
+FILENAME = f'../analysis/data/{TITLE.replace(" ", "_")}.json'
 CFL = 2
 MAX_TIME = 300
+NUM_FRAMES_RENDERED = 6
+EXPORT = True
 
 dim    = 2
 res    = RESOLUTION
@@ -89,10 +90,14 @@ updateFractions( flags=flags, phiObs=phiObs, fractions=fractions, boundaryWidth=
 setObstacleFlags(flags=flags, phiObs=phiObs, fractions=fractions)
 
 lastFrame = -1
-if 1 and (GUI):
+if (GUI):
 	gui = Gui()
 	gui.show()
-	#gui.pause()
+	gui.windowSize(800, 800)
+	gui.setCamPos(0, 0, -1.3)
+	#gui.nextRealDisplayMode()
+	#gui.nextRealDisplayMode()
+	#gui.nextRealDisplayMode()
 
 # save reference any grid, to automatically determine grid size
 if saveParts:
@@ -106,8 +111,8 @@ for t in range(MAX_TIME):
 	s.adaptTimestep( maxVel )
 	mantaMsg('\nFrame %i, time-step size %f' % (s.frame, s.timestep))
 	
-	if 0:
-		pp.getCurrentData(FILENAME, TITLE, CFL, RESOLUTION, flags=flags, lastFrame=t == (MAX_TIME - 1))
+	if EXPORT:
+		pp.getCurrentData(FILENAME, TITLE, CFL, RESOLUTION, flags=flags, vel=vel, lastFrame=t == (MAX_TIME - 1))
 
 	# FLIP 
 	pp.advectInGrid(flags=flags, vel=vel, integrationMode=IntRK4, deleteInObstacle=False, stopInObstacle=False )
@@ -165,7 +170,10 @@ for t in range(MAX_TIME):
 		if 0 and (GUI):
 			gui.screenshot( 'flip06_%04d.png' % s.frame );
 
+	if (EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):
+		gui.screenshot( f'../analysis/images/{TITLE.replace(" ", "_")}_{str(t).zfill(4)}.png')
+
 	#s.printMemInfo()
-	lastFrame = s.frame;
+	lastFrame = s.frame
 
 

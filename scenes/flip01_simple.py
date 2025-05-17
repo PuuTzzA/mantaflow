@@ -5,10 +5,12 @@
 from manta import *
 
 RESOLUTION = 64
-FILENAME = "../analysis/data/flip_simple.json"
-TITLE = "FLIP simple"
-CFL = 2
+TITLE = "FLIP simple high CFL"
+FILENAME = f'../analysis/data/{TITLE.replace(" ", "_")}.json'
+CFL = 5
 MAX_TIME = 300
+NUM_FRAMES_RENDERED = 6
+EXPORT = True
 
 # solver params
 dim = 2
@@ -53,7 +55,11 @@ sampleFlagsWithParticles( flags=flags, parts=pp, discretization=particleNumber, 
 if (GUI):
 	gui = Gui()
 	gui.show()
-	#gui.pause()
+	gui.windowSize(800, 800)
+	gui.setCamPos(0, 0, -1.3)
+	gui.nextRealDisplayMode()
+	gui.nextRealDisplayMode()
+	gui.nextRealDisplayMode()
 
 pp.clearFile(FILENAME)
 #main loop
@@ -71,7 +77,7 @@ for t in range(MAX_TIME):
 
 	addGravity(flags=flags, vel=vel, gravity=(0,-0.002,0))
 
-	if 1:
+	if EXPORT:
 		pp.getCurrentData(FILENAME, TITLE, CFL, RESOLUTION, flags=flags, vel=vel, lastFrame=t == (MAX_TIME - 1))
 
 	# pressure solve
@@ -86,5 +92,8 @@ for t in range(MAX_TIME):
 	flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags, parts=pp, partVel=pVel, flipRatio=0.97 )
 	
 	#gui.screenshot( 'flipt_%04d.png' % t );
+	if (EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):
+		gui.screenshot( f'../analysis/images/{TITLE.replace(" ", "_")}_{str(t).zfill(4)}.png')
+
 	s.step()
 

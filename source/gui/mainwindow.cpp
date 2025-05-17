@@ -285,6 +285,9 @@ void MainWnd::nextParts() {
 void MainWnd::nextPdata() {
 	emit painterEvent(Painter::EventToggleParticles); 
 }
+void MainWnd::nextRealDisplayMode(){
+	emit painterEvent(Painter::EventNextRealDisplayMode); 
+}
 void MainWnd::nextVec3Display() {
 	emit painterEvent(Painter::EventNextVecDisplayMode); 
 }

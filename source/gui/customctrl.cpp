@@ -173,6 +173,8 @@ void Gui::nextMeshDisplay() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "n
 
 void Gui::toggleHideGrids() { QMetaObject::invokeMethod(mGuiPtr->getWindow(), "toggleHideGrids" ); }
 
+void Gui::nextRealDisplayMode() {QMetaObject::invokeMethod(mGuiPtr->getWindow(), "nextRealDisplayMode" );}
+
 void Gui::setCamPos(float x, float y, float z) {
 	QMetaObject::invokeMethod(mGuiPtr->getWindow(), "setCamPos", Q_ARG(float, x), Q_ARG(float, y), Q_ARG(float, z));    
 }

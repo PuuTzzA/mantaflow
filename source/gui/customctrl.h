@@ -127,6 +127,7 @@ public:
 	PYTHON() void nextMesh();
 	PYTHON() void nextVec3Display();
 	PYTHON() void nextMeshDisplay();
+	PYTHON() void nextRealDisplayMode();
 	PYTHON() void nextPartDisplay(); 
 	PYTHON() void toggleHideGrids();
 	PYTHON() void setCamPos(float x, float y, float z);

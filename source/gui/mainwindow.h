@@ -58,6 +58,7 @@ public slots:
 	void nextMesh();
 	void nextParts();
 	void nextPdata();
+	void nextRealDisplayMode()
 	void nextVec3Display();
 	void nextPartDisplay();
 	void nextMeshDisplay();
