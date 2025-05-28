@@ -7,10 +7,10 @@ from manta import *
 RESOLUTION = 64
 TITLE = "FLIP simple high CFL"
 FILENAME = f'../analysis/data/{TITLE.replace(" ", "_")}.json'
-CFL = 5
+CFL = 3
 MAX_TIME = 300
 NUM_FRAMES_RENDERED = 6
-EXPORT = True
+EXPORT = False
 
 # solver params
 dim = 2
