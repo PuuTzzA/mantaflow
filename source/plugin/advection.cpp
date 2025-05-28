@@ -624,13 +624,13 @@ namespace Manta
 		newGrid(i, j, k) = grid.getInterpolatedHi(newPos, 2);
 	}
 
-	std::vector<Vec3i> getInterpolationStencil(Vec3 x, int resX, int resY)
+	std::vector<Vec3i> getInterpolationStencil(Vec3 x, Vec3i gs)
 	{
 		int i = std::floor(x[0] - 0.5);
 		int j = std::floor(x[1] - 0.5);
 
-		i = Manta::clamp(i, 0, resX - 2);
-		j = Manta::clamp(j, 0, resY - 2);
+		i = Manta::clamp(i, 0, gs[0] - 2);
+		j = Manta::clamp(j, 0, gs[1] - 2);
 
 		return std::vector<Vec3i>{Vec3i{i, j, 0}, Vec3i{i + 1, j, 0}, Vec3i{i, j + 1, 0}, Vec3i{i + 1, j + 1, 0}};
 	}
@@ -661,47 +661,63 @@ namespace Manta
 
 		// weights[k][p] = weight from cell k to cell p (cell indeces k/p = i * gridSize[0] + j)
 		std::vector<std::vector<Real>> weights(numCells, std::vector<Real>(numCells, Real{0.0}));
-		std::vector<Real>(numCells, 0.);
+		std::vector<Real> beta(numCells, 0.);
+		std::vector<Real> gamma(numCells, 0.);
 
-		for (IndexInt i = 2; i < gridSize[0] - 2; i++)
-		{
-			for (IndexInt j = 2; j < gridSize[0] - 2; j++)
-			{
-				int k = 0;
-				newGrid(i, j, k) = 0;
-			}
-		}
+		int bnd = 1;
 
-		for (IndexInt i = 2; i < gridSize[0] - 2; i++)
+		for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
 		{
-			for (IndexInt j = 2; j < gridSize[0] - 2; j++)
+			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
 
 				Vec3 newPos = Vec3(i + 0.5, j + 0.5, k + 0.5);
 				newPos -= dt * vel.getCentered(i, j, k);
 
-				auto neighbours = getInterpolationStencil(newPos, gridSize[0], gridSize[1]);
+				auto neighbours = getInterpolationStencil(newPos, gridSize);
 
 				for (const auto &n : neighbours)
 				{
-					newGrid(i, j, k) += interpolationWeight(newPos, n) * grid(n);
-				}
+					// newGrid(i, j, k) += interpolationWeight(newPos, n) * grid(n);
 
-				if (i == 2 && j == 2)
-				{
-					printf("2 und 2, newPos(%f, %f, %f), neighbours: \n", newPos[0], newPos[1], newPos[2]);
-
-					for (const auto &n : neighbours)
-					{
-						std::cout << n << ", with weight: " << interpolationWeight(newPos, n) << endl;
-					}
-
-					printf("--");
+					Real w = interpolationWeight(newPos, n);
+					weights[n[0] * gridSize[0] + n[1]][i * gridSize[0] + j] = w;
+					beta[n[0] * gridSize[0] + n[1]] += n;
 				}
 
 				/* Vec3 pos = Vec3(i + 0.5f, j + 0.5f, k + 0.5f) - vel.getCentered(i, j, k) * dt;
 				newGrid(i, j, k) = grid.getInterpolatedHi(pos, 2); */
+			}
+		}
+
+		for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
+		{
+			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
+			{
+				int k = 0;
+
+				IndexInt cellID = i * gridSize[0] + j;
+				if (beta[cellID] < 1)
+				{
+					Vec3 posForward = Vec3(i + 0.5, j + 0.5, k + 0.5) + dt * vel.getCentered(i, j, k);
+					auto neighbours = getInterpolationStencil(posForward, gridSize);
+
+					for (const auto &n : neighbours)
+					{
+						Real w interpolationWeight(posForward, n);
+						weights[cellID][n[0] * gridSize[0] + n[1]] += (1 - beta[cellID]) * w;
+						beta[cellID] += (1 - beta[cellID] * w); // closer to 1
+					}
+				}
+			}
+		}
+
+		for (IndexInt i = 0; i < numCells; i++)
+		{
+			for (IndexInt j = 0; j < numCells; j++)
+			{	
+				gamma[j] += weights[i][j];
 			}
 		}
 
