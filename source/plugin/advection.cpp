@@ -683,7 +683,7 @@ namespace Manta
 
 					Real w = interpolationWeight(newPos, n);
 					weights[n[0] * gridSize[0] + n[1]][i * gridSize[0] + j] = w;
-					beta[n[0] * gridSize[0] + n[1]] += n;
+					//beta[n[0] * gridSize[0] + n[1]] += n;
 				}
 
 				/* Vec3 pos = Vec3(i + 0.5f, j + 0.5f, k + 0.5f) - vel.getCentered(i, j, k) * dt;
@@ -705,7 +705,7 @@ namespace Manta
 
 					for (const auto &n : neighbours)
 					{
-						Real w interpolationWeight(posForward, n);
+						Real w = interpolationWeight(posForward, n);
 						weights[cellID][n[0] * gridSize[0] + n[1]] += (1 - beta[cellID]) * w;
 						beta[cellID] += (1 - beta[cellID] * w); // closer to 1
 					}
@@ -716,7 +716,7 @@ namespace Manta
 		for (IndexInt i = 0; i < numCells; i++)
 		{
 			for (IndexInt j = 0; j < numCells; j++)
-			{	
+			{
 				gamma[j] += weights[i][j];
 			}
 		}
