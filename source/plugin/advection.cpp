@@ -839,6 +839,11 @@ namespace Manta
 					IndexInt cellI = x * gridSize[0] + y;
 					IndexInt cellI_1 = (x + 1) * gridSize[0] + y;
 
+					if (flags(x, y, k) != 1 || flags(x + 1, y, k) != 1) // 1 == Type Fluid
+					{
+						continue;
+					}
+
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
 
 					gamma[cellI] += fluxGamma;
@@ -858,6 +863,13 @@ namespace Manta
 					int k = 0;
 					IndexInt cellI = x * gridSize[0] + y;
 					IndexInt cellI_1 = cellI + 1;
+
+					if (flags(x, y, k) != 1 || flags(x, y + 1, k) != 1) // 1 == Type Fluid
+					{
+						continue;
+					}
+
+					std::cout << "moin" << std::endl;
 
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
 
