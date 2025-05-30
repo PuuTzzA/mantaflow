@@ -869,8 +869,6 @@ namespace Manta
 						continue;
 					}
 
-					std::cout << "moin" << std::endl;
-
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
 
 					gamma[cellI] += fluxGamma;
