@@ -828,7 +828,7 @@ namespace Manta
 		// Step 7: Diffuse gamma using Gaus seidel Sweep
 		recalculateGamma(gamma, weights);
 
-		for (int _ = 0; _ < 7; _++)
+		for (int _ = 0; _ < 0; _++)
 		{
 			// X-Dimension
 			for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
@@ -904,6 +904,22 @@ namespace Manta
 		}
 		else
 			errMsg("AdvectSemiLagrange: Grid Type is not supported (only Real, Vec3, MAC, Levelset)");
+	}
+
+	PYTHON()
+	Real calculateMass(const Grid<Real> *grid)
+	{
+		Vec3i gridSize = grid->getParent()->getGridSize();
+		int bnd = 1;
+		Real sum = 0;
+		for (IndexInt x = bnd; x < gridSize[1] - bnd; x++)
+		{
+			for (IndexInt y = bnd; y < gridSize[0] - bnd; y++)
+			{
+				sum += grid->operator()(x, y, 0);
+			}
+		}
+		return sum;
 	}
 
 } // end namespace DDF
