@@ -16,6 +16,7 @@
 #include "kernel.h"
 #include <limits>
 #include <unordered_map>
+#include <array>
 
 using namespace std;
 
@@ -828,7 +829,7 @@ namespace Manta
 		// Step 7: Diffuse gamma using Gaus seidel Sweep
 		recalculateGamma(gamma, weights);
 
-		for (int _ = 0; _ < 0; _++)
+		for (int _ = 0; _ < 3; _++)
 		{
 			// X-Dimension
 			for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
@@ -907,19 +908,24 @@ namespace Manta
 	}
 
 	PYTHON()
-	Real calculateMass(const Grid<Real> *grid)
+	std::string calculateMass(const Grid<Real> *grid)
 	{
 		Vec3i gridSize = grid->getParent()->getGridSize();
 		int bnd = 1;
 		Real sum = 0;
+		Real min = std::numeric_limits<Real>::infinity();
+		Real max = -std::numeric_limits<Real>::infinity();
 		for (IndexInt x = bnd; x < gridSize[1] - bnd; x++)
 		{
 			for (IndexInt y = bnd; y < gridSize[0] - bnd; y++)
 			{
-				sum += grid->operator()(x, y, 0);
+				Real val = grid->operator()(x, y, 0);
+				sum += val;
+				min = std::min(min, val);
+				max = std::max(max, val);
 			}
 		}
-		return sum;
+		return std::to_string(sum) + "," + std::to_string(min) + "," + std::to_string(max);
 	}
 
 } // end namespace DDF
