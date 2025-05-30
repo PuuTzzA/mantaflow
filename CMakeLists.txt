@@ -17,6 +17,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 set(VERBOSE 1)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True) # Ensures that C++17 is used, errors if not available
+set(CMAKE_CXX_EXTENSIONS False)       # Optional: Disables GNU extensions if you want pure C++17
+                                      # For structured bindings, this is usually fine.
+                                      # If you rely on GNU extensions, set this to True or remove the line.
+
 set(MANTAVERSION "0.13")
 
 #******************************************************************************
@@ -157,7 +163,7 @@ set(SOURCES
 )
 add_executable(prep ${SOURCES})
 if(NOT WIN32)
-	set_target_properties(prep PROPERTIES COMPILE_FLAGS "-Wall -O2")
+	set_target_properties(prep PROPERTIES COMPILE_FLAGS ${CXX_STANDARD_TO_USE_FLAG} "-Wall -O2")
 endif()
 
 #******************************************************************************
@@ -715,27 +721,56 @@ endif()
 if(NOT WIN32)
 	if(DEBUG)
 		# stricter: no optimizations and inlining
-		set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " -O0 -fno-inline -Wall ")
+		set_target_properties(${EXECMD} ${CXX_STANDARD_TO_USE_FLAG} PROPERTIES COMPILE_FLAGS " -O0 -fno-inline -Wall ")
 	else()
 		# non-debug, optimized version
-		set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " -O3 -Wall ")
+		set_target_properties(${EXECMD} ${CXX_STANDARD_TO_USE_FLAG} PROPERTIES COMPILE_FLAGS " -O3 -Wall ")
 	endif()
 endif()
 
 # if supported, use c++14 for all pre-processed c++ sources
+# if supported, use C++ standard for all pre-processed c++ sources
 include(CheckCXXCompilerFlag)
+# Check for C++17 first
+CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17) # Or the flag your compiler uses, e.g., /std:c++17 for MSVC
 CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-set(CXX_STANDARD_FLAG " ")
-if(COMPILER_SUPPORTS_CXX14)
-	set(CXX_STANDARD_FLAG " -std=c++14 ")
+
+set(CXX_STANDARD_TO_USE_FLAG " ") # Default to no specific flag if none are supported (should not happen with CMAKE_CXX_STANDARD_REQUIRED)
+
+if(COMPILER_SUPPORTS_CXX17)
+    set(CXX_STANDARD_TO_USE_FLAG " -std=c++17 ") # Or your compiler's specific flag
+elseif(COMPILER_SUPPORTS_CXX14)
+    message(STATUS "Compiler does not support C++17, falling back to C++14.")
+    set(CXX_STANDARD_TO_USE_FLAG " -std=c++14 ")
 elseif(COMPILER_SUPPORTS_CXX11)
-	set(CXX_STANDARD_FLAG " -std=c++11 ")
+    message(STATUS "Compiler does not support C++14 or C++17, falling back to C++11.")
+    set(CXX_STANDARD_TO_USE_FLAG " -std=c++11 ")
 elseif(COMPILER_SUPPORTS_CXX0X)
-	set(CXX_STANDARD_FLAG " -std=c++0x ")
+    message(STATUS "Compiler does not support C++11, C++14 or C++17, falling back to C++0x.")
+    set(CXX_STANDARD_TO_USE_FLAG " -std=c++0x ")
+else()
+    message(WARNING "Could not determine a suitable C++ standard flag for prepped sources. Relying on CMAKE_CXX_FLAGS.")
 endif()
-set_source_files_properties(${PREPPED_SOURCES} ${PP_REGCPP} PROPERTIES COMPILE_FLAGS ${CXX_STANDARD_FLAG})
+
+# Only set if we found a flag, otherwise let CMAKE_CXX_STANDARD do its job
+if(NOT "${CXX_STANDARD_TO_USE_FLAG}" STREQUAL " ")
+    set_source_files_properties(${PREPPED_SOURCES} ${PP_REGCPP} PROPERTIES COMPILE_FLAGS ${CXX_STANDARD_TO_USE_FLAG})
+else()
+    # If CMAKE_CXX_STANDARD is 17 and required, CMake should have already set the appropriate flags.
+    # This 'else' might not even be strictly necessary if CMAKE_CXX_STANDARD_REQUIRED is True.
+    message(STATUS "Using CMAKE_CXX_STANDARD for prepped sources.")
+endif()
+
+# Also, ensure the target-specific flags append this or are aware of it
+if(NOT WIN32)
+    if(DEBUG)
+        set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " ${CXX_STANDARD_TO_USE_FLAG} -O0 -fno-inline -Wall ")
+    else()
+        set_target_properties(${EXECMD} PROPERTIES COMPILE_FLAGS " ${CXX_STANDARD_TO_USE_FLAG} -O3 -Wall ")
+    endif()
+endif()
 
 # sanity check for openvdb support
 if(OPENVDB AND NOT COMPILER_SUPPORTS_CXX14)
