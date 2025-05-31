@@ -16,6 +16,7 @@
 #include "kernel.h"
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
 #include <array>
 
 using namespace std;
@@ -24,6 +25,7 @@ namespace Manta
 {
 	template <typename T>
 	using Sparse2DMap = std::unordered_map<IndexInt, std::unordered_map<IndexInt, T>>;
+	using Reverse2dMap = std::unordered_map<IndexInt, std::unordered_set<IndexInt>>;
 
 	//! Semi-Lagrange interpolation kernel
 	KERNEL(bnd = 1)
@@ -591,18 +593,20 @@ namespace Manta
 			errMsg("AdvectSemiLagrange: Grid Type is not supported (only Real, Vec3, MAC, Levelset)");
 	}
 
+	// THOMAS mass and momentum conserving advection step
+
 	//! Semi-Lagrange interpolation kernel
 	KERNEL(bnd = 1)
 	void fillHelper(Grid<Real> &dst)
 	{
 		dst(i, j, k) = 1;
-		// dst(i, j, k) = 1;
 	}
 
 	PYTHON()
 	void fillWithOnes(Grid<Real> *grid)
 	{
 		fillHelper(*grid).run();
+		std::cout << "moin" << std::endl;
 	}
 
 	Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt)
@@ -614,8 +618,6 @@ namespace Manta
 
 		return pos + dt * 1 / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
 	}
-
-	// THOMAS mass and momentum conserving advection step
 
 	std::vector<Vec3i> getInterpolationStencil(Vec3 x, Vec3i gs)
 	{
@@ -710,6 +712,7 @@ namespace Manta
 
 		// weights[k][p] = weight from cell k to cell p (cell indeces k/p = i * gridSize[0] + j)
 		Sparse2DMap<Real> weights;
+		Reverse2dMap reverseWeights;
 		std::vector<Real> beta(numCells, 0.);
 		std::vector<Real> gamma(numCells, 0.);
 
@@ -732,6 +735,7 @@ namespace Manta
 					IndexInt cellI = n[0] * gridSize[0] + n[1];
 					Real w = interpolationWeight(newPos, n);
 					weights[cellI][cellJ] = w;
+					reverseWeights[cellJ].insert(cellI);
 					beta[cellI] += w;
 
 					// newGrid(i, j, k) += interpolationWeight(newPos, n) * grid(n);
@@ -761,6 +765,7 @@ namespace Manta
 						IndexInt cellJ = n[0] * gridSize[0] + n[1];
 
 						weights[cellI][cellJ] += w * amountToDistribute;
+						reverseWeights[cellJ].insert(cellI);
 					}
 				}
 			}
@@ -782,14 +787,9 @@ namespace Manta
 
 				Real factor = gammaCumulative(i, j, k) / gamma[cellJ];
 
-				for (auto &[_, innerMap] : weights)
+				for (IndexInt cellI : reverseWeights[cellJ])
 				{
-					auto it = innerMap.find(cellJ);
-					if (it != innerMap.end())
-					{
-						// Update the value
-						it->second *= factor; // Example operation
-					}
+					weights[cellI][cellJ] *= factor;
 				}
 			}
 		}
