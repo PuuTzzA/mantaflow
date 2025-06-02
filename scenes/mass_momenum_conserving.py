@@ -101,10 +101,12 @@ while s.frame < frames:
 		advectSemiLagrange( flags=flags, vel=vel, grid=heat,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=fuel,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=react, order=2 )
-		advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
 
 		#advectSemiLagrange( flags=flags, vel=vel, grid=innen0außen1, order=2 )
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=gamma_cumulative)
+
+		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=gamma_cumulative)
 	else:
 	    massMomentumConservingAdvect( flags=flags, vel=vel, gird=innen0außen1, gammacumulative=gamma_cumulative)
 		 
