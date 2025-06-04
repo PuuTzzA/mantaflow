@@ -697,43 +697,27 @@ namespace Manta
 		return result;
 	}
 
-	std::vector<Vec3i> getInterpolationStencil(Vec3 x, Vec3i gs, Vec3 &offset)
-	{
-		int i = std::floor(x[0] - offset[0]);
-		int j = std::floor(x[1] - offset[1]);
-
-		i = Manta::clamp(i, 0, gs[0] - 2);
-		j = Manta::clamp(j, 0, gs[1] - 2);
-
-		return std::vector<Vec3i>{Vec3i{i, j, 0}, Vec3i{i + 1, j, 0}, Vec3i{i, j + 1, 0}, Vec3i{i + 1, j + 1, 0}};
-	}
-
-	Real interpolationWeight(Vec3 pos, Vec3i cell, Vec3 &offset)
-	{
-		Real dx = cell[0] + offset[0] - pos[0];
-		Real dy = cell[1] + offset[1] - pos[1];
-
-		Real wx = cell[0] + offset[0] < pos[0] ? 1 + dx : 1 - dx;
-		Real wy = cell[1] + offset[1] < pos[1] ? 1 + dy : 1 - dy;
-
-		return wx * wy;
-	}
-
-	KERNEL(bnd = 1)
+	KERNEL()
 	template <class T>
-	void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset)
+	void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
 	{
+		if (!flags.isFluid(i, j, k))
+		{
+			newGrid(i, j, k) = 1;
+			return;
+		}
+
 		Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
 		newPos = customTrace(newPos, vel, -dt);
 
-		auto neighbours = getInterpolationStencil(newPos, gridSize, offset);
-		for (const auto &n : neighbours)
+		auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
+		for (const auto &[n, w] : neighboursAndWeights)
 		{
-			newGrid(i, j, k) += interpolationWeight(newPos, n, offset) * grid(n);
+			newGrid(i, j, k) += w * grid(n);
 		}
 	}
 
-	KERNEL(bnd = 1)
+	KERNEL()
 	template <class T>
 	void setNewGammaCum(Grid<Real> &gammaCum, std::vector<Real> gamma, Vec3i gridSize)
 	{
@@ -773,7 +757,7 @@ namespace Manta
 
 		// For testing of the "normal" advection step that is used in this function
 		/* Grid<T> testGrid(parent);
-		advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset);
+		advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags);
 		grid.swap(testGrid);
 		return; */
 
@@ -783,7 +767,7 @@ namespace Manta
 		Real dt = parent->getDt();
 		Vec3i gridSize = parent->getGridSize();
 		Grid<Real> newGammaCum(parent);
-		advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset);
+		advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
 		gammaCumulative.swap(newGammaCum);
 
 		// main advection part
@@ -803,16 +787,21 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
+
+				if (!flags.isFluid(i, j, k))
+				{
+					continue;
+				}
+
 				IndexInt cellJ = i * gridSize[1] + j;
 
 				Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
 				newPos = customTrace(newPos, vel, -dt);
 
-				auto neighbours = getInterpolationStencil(newPos, gridSize, offset);
-				for (const auto &n : neighbours)
+				auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
+				for (const auto &[n, w] : neighboursAndWeights)
 				{
 					IndexInt cellI = n[0] * gridSize[1] + n[1];
-					Real w = interpolationWeight(newPos, n, offset);
 					weights[cellI][cellJ] = w;
 					reverseWeights[cellJ].insert(cellI);
 					beta[cellI] += w;
@@ -828,6 +817,11 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
+				if (!flags.isFluid(i, j, k))
+				{
+					continue;
+				}
+
 				IndexInt cellI = i * gridSize[1] + j;
 
 				if (beta[cellI] < 1 - EPSILON)
@@ -837,10 +831,9 @@ namespace Manta
 
 					Real amountToDistribute = 1. - beta[cellI];
 
-					auto neighbours = getInterpolationStencil(posForward, gridSize, offset);
-					for (const auto &n : neighbours)
+					auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, posForward, gridSize, offset);
+					for (const auto &[n, w] : neighboursAndWeights)
 					{
-						Real w = interpolationWeight(posForward, n, offset);
 						IndexInt cellJ = n[0] * gridSize[1] + n[1];
 
 						weights[cellI][cellJ] += w * amountToDistribute;
@@ -1011,9 +1004,9 @@ namespace Manta
 				Grid<Real> newVelY(parent);
 				Grid<Real> newVelZ(parent);
 
-				advectGammaCum<Real>(vel, velX, newVelX, dt, gridSize, offsetX);
-				advectGammaCum<Real>(vel, velY, newVelY, dt, gridSize, offsetY);
-				advectGammaCum<Real>(vel, velZ, newVelZ, dt, gridSize, offsetZ);
+				advectGammaCum<Real>(vel, velX, newVelX, dt, gridSize, offsetX, flags);
+				advectGammaCum<Real>(vel, velY, newVelY, dt, gridSize, offsetY, flags);
+				advectGammaCum<Real>(vel, velZ, newVelZ, dt, gridSize, offsetZ, flags);
 
 				Grids2MAC(grid, newVelX, newVelY, newVelZ);
 				return;
