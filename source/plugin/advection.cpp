@@ -720,19 +720,21 @@ namespace Manta
 		std::vector<std::tuple<Vec3i, Real>> result{};
 		result.reserve(4);
 
-		if (!flags.isObstacle(i, j, 0))
+		const Real EPSILON = 1e-5;
+
+		if (w00 > EPSILON)
 		{
 			result.push_back({Vec3i{i, j, 0}, w00});
 		}
-		if (!flags.isObstacle(i + 1, j, 0))
+		if (w10 > EPSILON)
 		{
 			result.push_back({Vec3i{i + 1, j, 0}, w10});
 		}
-		if (!flags.isObstacle(i, j + 1, 0))
+		if (w01 > EPSILON)
 		{
 			result.push_back({Vec3i{i, j + 1, 0}, w01});
 		}
-		if (!flags.isObstacle(i + 1, j + 1, 0))
+		if (w11 > EPSILON)
 		{
 			result.push_back({Vec3i{i + 1, j + 1, 0}, w11});
 		}
@@ -746,14 +748,7 @@ namespace Manta
 	{
 		if (!flags.isFluid(i, j, k))
 		{
-			if (flags.isOutflow(i, j, k))
-			{
-				newGrid(i, j, k) = 0; // For gammaCumulative in outflow, should be 0
-			}
-			else
-			{
-				newGrid(i, j, k) = 1; // For other non-fluid (e.g. obstacles), 1 might be intended
-			}
+			newGrid(i, j, k) = 1;
 			return;
 		}
 
@@ -838,7 +833,7 @@ namespace Manta
 			{
 				int k = 0;
 
-				if (!flags.isFluid(i, j, k))
+				if (flags.isObstacle(i, j, k))
 				{
 					continue;
 				}
@@ -867,7 +862,7 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
-				if (!flags.isFluid(i, j, k))
+				if (flags.isObstacle(i, j, k))
 				{
 					continue;
 				}
@@ -902,6 +897,12 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
+
+				if (flags.isObstacle(i, j, k))
+				{
+					continue;
+				}
+
 				IndexInt cellJ = i * gridSize[1] + j;
 
 				if (gamma[cellJ] < EPSILON)
@@ -920,6 +921,11 @@ namespace Manta
 		recalculateBeta(beta, weights); // should be 1 for all beta, maybe no need to recalculate, just set to 1
 		for (IndexInt cellI = 0; cellI < numCells; cellI++)
 		{
+			if (flags.isObstacle(cellI / gridSize[1], cellI % gridSize[1], 0))
+			{
+				continue;
+			}
+
 			if (beta[cellI] < EPSILON)
 				continue; // avoid division by 0
 
@@ -951,6 +957,8 @@ namespace Manta
 		// Step 7: Diffuse gamma using Gaus seidel Sweep
 		recalculateGamma(gamma, weights);
 
+		Real testMaxFlux = 0.1;
+
 		for (int _ = 0; _ < 5; _++)
 		{
 			// X-Dimension
@@ -968,6 +976,7 @@ namespace Manta
 					}
 
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
+					fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
 
 					gamma[cellI] += fluxGamma;
 					gamma[cellI_1] -= fluxGamma;
@@ -975,6 +984,9 @@ namespace Manta
 					T gammaToMove = newGrid(x + 1, y, k) * (fluxGamma / gamma[cellI_1]);
 					newGrid(x, y, k) += gammaToMove;
 					newGrid(x + 1, y, k) -= gammaToMove;
+
+					newGrid(x, y, k) = Manta::clamp(newGrid(x, y, k), 0.f, newGrid(x, y, k));
+					newGrid(x + 1, y, k) = Manta::clamp(newGrid(x + 1, y, k), 0.f, newGrid(x + 1, y, k));
 				}
 			}
 
@@ -993,6 +1005,7 @@ namespace Manta
 					}
 
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
+					fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
 
 					gamma[cellI] += fluxGamma;
 					gamma[cellI_1] -= fluxGamma;
@@ -1000,6 +1013,9 @@ namespace Manta
 					T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
 					newGrid(x, y, k) += gammaToMove;
 					newGrid(x, y + 1, k) -= gammaToMove;
+
+					newGrid(x, y, k) = Manta::clamp(newGrid(x, y, k), 0.f, newGrid(x, y, k));
+					newGrid(x, y + 1, k) = Manta::clamp(newGrid(x, y + 1, k), 0.f, newGrid(x, y + 1, k));
 				}
 			}
 		}
