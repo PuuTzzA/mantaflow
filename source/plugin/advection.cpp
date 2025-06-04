@@ -602,11 +602,25 @@ namespace Manta
 		dst(i, j, k) = 1;
 	}
 
-	PYTHON()
-	void fillWithOnes(Grid<Real> *grid)
+	KERNEL(bnd = 1)
+	void fillHelperMAC(MACGrid &dst)
 	{
-		fillHelper(*grid).run();
-		std::cout << "moin" << std::endl;
+		dst(i, j, k) = Vec3(1., 1., 1.);
+	}
+
+	PYTHON()
+	void fillWithOnes(GridBase *grid)
+	{
+		if (grid->getType() & GridBase::TypeReal)
+		{
+			fillHelper(*((Grid<Real> *)grid)).run();
+			std::cout << "filled Grid<Real> with ones" << std::endl;
+		}
+		else if (grid->getType() & GridBase::TypeMAC)
+		{
+			fillHelperMAC(*((MACGrid *)grid)).run();
+			std::cout << "filled MACGrid with ones" << std::endl;
+		}
 	}
 
 	Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt)
@@ -694,10 +708,10 @@ namespace Manta
 		const Real EPSILON = 1e-5;
 
 		// For testing of the "normal" advection step that is used in this function
-		Grid<T> testGrid(parent);
+		/* Grid<T> testGrid(parent);
 		advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset);
 		grid.swap(testGrid);
-		return;
+		return; */
 
 		GridType newGrid(parent); // source
 
@@ -830,7 +844,7 @@ namespace Manta
 		// Step 7: Diffuse gamma using Gaus seidel Sweep
 		recalculateGamma(gamma, weights);
 
-		for (int _ = 0; _ < 6; _++)
+		for (int _ = 0; _ < 5; _++)
 		{
 			// X-Dimension
 			for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
@@ -910,225 +924,39 @@ namespace Manta
 		Real dt = parent->getDt();
 		Vec3i gridSize = parent->getGridSize();
 
-		/* Grid<T> newGrid(parent);
-		advectGammaCum<T>(vel, grid, newGrid, parent->getDt(), parent->getGridSize());
-		grid.swap(newGrid);
-		return; */
-
 		Grid<Real> velX(parent);
 		Grid<Real> velY(parent);
 		Grid<Real> velZ(parent);
 
-		MAC2Grids(grid, velX, velY, velZ);
+		Grid<Real> gammaX(parent);
+		Grid<Real> gammaY(parent);
+		Grid<Real> gammaZ(parent);
 
-		Grid<Real> newVelX(parent);
-		Grid<Real> newVelY(parent);
-		Grid<Real> newVelZ(parent);
+		MAC2Grids(grid, velX, velY, velZ);
+		MAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ);
 
 		Vec3 offsetX = Vec3(0., 0.5, 0.5);
 		Vec3 offsetY = Vec3(0.5, 0., 0.5);
 		Vec3 offsetZ = Vec3(0.5, 0.5, 0.);
 
-		advectGammaCum<Real>(vel, velX, newVelX, dt, gridSize, offsetX);
-		advectGammaCum<Real>(vel, velY, newVelY, dt, gridSize, offsetY);
-		advectGammaCum<Real>(vel, velZ, newVelZ, dt, gridSize, offsetZ);
+		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX);
+		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velY, gammaY, offsetY);
+		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
 
-		Grids2MAC(grid, newVelX, newVelY, newVelZ);
+		/* 		Grid<Real> newVelX(parent);
+				Grid<Real> newVelY(parent);
+				Grid<Real> newVelZ(parent);
+
+				advectGammaCum<Real>(vel, velX, newVelX, dt, gridSize, offsetX);
+				advectGammaCum<Real>(vel, velY, newVelY, dt, gridSize, offsetY);
+				advectGammaCum<Real>(vel, velZ, newVelZ, dt, gridSize, offsetZ);
+
+				Grids2MAC(grid, newVelX, newVelY, newVelZ);
+				return;
+		 */
+		Grids2MAC(grid, velX, velY, velZ);
+		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ);
 		return;
-
-		/* Grid<T> testGrid(parent);
-		advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset);
-		grid.swap(testGrid);
-		return; */
-
-		MACGrid newGrid(parent); // source
-								 /*
-										 // Advect the cummulative Gamma the same way as later the rest
-										 Real dt = parent->getDt();
-										 Vec3i gridSize = parent->getGridSize();
-										 MACGrid newGammaCum(parent);
-										 advectGammaCumMAC(vel, gammaCumulative, newGammaCum, dt, gridSize);
-										 gammaCumulative.swap(newGammaCum);
-						 
-										 // main advection part
-										 long unsigned numCells = gridSize[0] * gridSize[1] * gridSize[2];
-						 
-										 // weights[k][p] = weight from cell k to cell p (cell indeces k/p = i * gridSize[0] + j)
-										 Sparse2DMap<Real> weights;
-										 Reverse2dMap reverseWeights;
-										 std::vector<Real> beta(numCells, 0.);
-										 std::vector<Real> gamma(numCells, 0.);
-						 
-										 int bnd = 1;
-						 
-												// Step 1: backwards step
-												for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
-												{
-													for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
-													{
-														int k = 0;
-														IndexInt cellJ = i * gridSize[0] + j;
-						 
-														Vec3 newPos = Vec3(i + 0.5, j + 0.5, k + 0.5);
-														newPos = customTrace(newPos, vel, -dt);
-						 
-														auto neighbours = getInterpolationStencil(newPos, gridSize);
-														for (const auto &n : neighbours)
-														{
-															IndexInt cellI = n[0] * gridSize[0] + n[1];
-															Real w = interpolationWeight(newPos, n);
-															weights[cellI][cellJ] = w;
-															reverseWeights[cellJ].insert(cellI);
-															beta[cellI] += w;
-						 
-															// newGrid(i, j, k) += interpolationWeight(newPos, n) * grid(n);
-														}
-													}
-												}
-						 
-												// Step 2: forward step for all beta < 1
-												for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
-												{
-													for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
-													{
-														int k = 0;
-														IndexInt cellI = i * gridSize[0] + j;
-						 
-														if (beta[cellI] < 1 - EPSILON)
-														{
-															Vec3 posForward = Vec3(i + 0.5, j + 0.5, k + 0.5);
-															posForward = customTrace(posForward, vel, dt);
-						 
-															Real amountToDistribute = 1. - beta[cellI];
-						 
-															auto neighbours = getInterpolationStencil(posForward, gridSize);
-															for (const auto &n : neighbours)
-															{
-																Real w = interpolationWeight(posForward, n);
-																IndexInt cellJ = n[0] * gridSize[0] + n[1];
-						 
-																weights[cellI][cellJ] += w * amountToDistribute;
-																reverseWeights[cellJ].insert(cellI);
-															}
-														}
-													}
-												}
-						 
-												// Step 3: compute Gamma
-												recalculateGamma(gamma, weights);
-						 
-												// Step 4: Clamp gamma to the cumulative gamma
-												for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
-												{
-													for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
-													{
-														int k = 0;
-														IndexInt cellJ = i * gridSize[0] + j;
-						 
-														if (gamma[cellJ] < EPSILON)
-															continue; // avoid division by 0
-						 
-														Real factor = gammaCumulative(i, j, k) / gamma[cellJ];
-						 
-														for (IndexInt cellI : reverseWeights[cellJ])
-														{
-															weights[cellI][cellJ] *= factor;
-														}
-													}
-												}
-						 
-												// Step 5: Clamp beta to 1 for conservation
-												recalculateBeta(beta, weights); // should be 1 for all beta, maybe no need to recalculate, just set to 1
-												for (IndexInt cellI = 0; cellI < numCells; cellI++)
-												{
-													if (beta[cellI] < EPSILON)
-														continue; // avoid division by 0
-						 
-													Real factor = 1 / beta[cellI];
-						 
-													for (auto &[_, value] : weights[cellI])
-													{
-														value *= factor;
-													}
-												}
-						 
-												// Step 6: calculate the an intermediate result
-												for (const auto &[cellI, innerMap] : weights)
-												{
-													for (const auto &[cellJ, weight] : innerMap)
-													{
-														int k = 0;
-						 
-														IndexInt cellI_i = cellI / gridSize[0];
-														IndexInt cellI_j = cellI % gridSize[0];
-						 
-														IndexInt cellJ_i = cellJ / gridSize[0];
-														IndexInt cellJ_j = cellJ % gridSize[0];
-						 
-														newGrid(cellJ_i, cellJ_j, k) += weight * grid(cellI_i, cellI_j, k);
-													}
-												}
-						 
-												// Step 7: Diffuse gamma using Gaus seidel Sweep
-												recalculateGamma(gamma, weights);
-						 
-												for (int _ = 0; _ < 6; _++)
-												{
-													// X-Dimension
-													for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
-													{
-														for (IndexInt x = bnd; x < gridSize[0] - bnd - 1; x++)
-														{
-															int k = 0;
-															IndexInt cellI = x * gridSize[0] + y;
-															IndexInt cellI_1 = (x + 1) * gridSize[0] + y;
-						 
-															if (flags(x, y, k) != 1 || flags(x + 1, y, k) != 1) // 1 == Type Fluid
-															{
-																continue;
-															}
-						 
-															Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-						 
-															gamma[cellI] += fluxGamma;
-															gamma[cellI_1] -= fluxGamma;
-						 
-															T gammaToMove = newGrid(x + 1, y, k) * (fluxGamma / gamma[cellI_1]);
-															newGrid(x, y, k) += gammaToMove;
-															newGrid(x + 1, y, k) -= gammaToMove;
-														}
-													}
-						 
-													// Y-Dimension
-													for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
-													{
-														for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
-														{
-															int k = 0;
-															IndexInt cellI = x * gridSize[0] + y;
-															IndexInt cellI_1 = cellI + 1;
-						 
-															if (flags(x, y, k) != 1 || flags(x, y + 1, k) != 1) // 1 == Type Fluid
-															{
-																continue;
-															}
-						 
-															Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-						 
-															gamma[cellI] += fluxGamma;
-															gamma[cellI_1] -= fluxGamma;
-						 
-															T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
-															newGrid(x, y, k) += gammaToMove;
-															newGrid(x, y + 1, k) -= gammaToMove;
-														}
-													}
-												}
-						 
-												setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
-												grid.swap(newGrid);
-												// MassMomentum<T>(flags, vel, grid, newGrid, parent->getDt());
-												// grid.swap(newGrid); */
 	}
 
 	PYTHON()

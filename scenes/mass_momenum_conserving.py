@@ -19,7 +19,7 @@ smokeTempDiff = 0.1
 s.frameLength = 1.2   # length of one frame (in "world time")
 s.timestepMin = 0.2   # time step range
 s.timestepMax = 2.0
-s.cfl         = 1   # maximal velocity per cell
+s.cfl         = 30   # maximal velocity per cell
 s.timestep    = (s.timestepMax+s.timestepMin)*0.5
 timings = Timings()
 
@@ -33,11 +33,18 @@ heat = s.create(RealGrid)
 flame = s.create(RealGrid)
 pressure = s.create(RealGrid)
 innen0außen1 = s.create(RealGrid)
-gamma_cumulative = s.create(RealGrid)
+
+density_gamma = s.create(RealGrid)
+react_gamma = s.create(RealGrid)
+fuel_gamma = s.create(RealGrid)
+heat_gamma = s.create(RealGrid)
+innen0außen1_gamma = s.create(RealGrid)
+vel_gamma = s.create(MACGrid)
+
 doOpen = True
 
 # how many frames to calculate 
-frames = 250
+frames = 50
 
 # noise field
 noise = s.create(NoiseField, loadFromFile=True)
@@ -78,6 +85,10 @@ boxSize = vec3(res/8, 0.05*res, res/8)
 boxCenter = gs*vec3(0.5, 0.15, 0.5)
 sourceBox = s.create( Box, center=boxCenter, size=boxSize )
 
+test_start = 0
+test_min = 1000000
+test_max = -1000000
+
 # main loop
 while s.frame < frames:
 	maxvel = vel.getMax()
@@ -86,7 +97,12 @@ while s.frame < frames:
 
 	if s.frame < 1:
 		densityInflow( flags=flags, density=innen0außen1, noise=noise, shape=sourceBox, scale=1, sigma=0.5 )
-		fillWithOnes( grid=gamma_cumulative )
+		fillWithOnes( grid=density_gamma )
+		fillWithOnes( grid=heat_gamma )
+		fillWithOnes( grid=fuel_gamma )
+		fillWithOnes( grid=react_gamma )
+		fillWithOnes( grid=innen0außen1_gamma )
+		fillWithOnes( grid=vel_gamma )
 	
 	if s.timeTotal<200:
 		densityInflow( flags=flags, density=density, noise=noise, shape=sourceBox, scale=1, sigma=0.5 )
@@ -96,20 +112,27 @@ while s.frame < frames:
 
 	processBurn( fuel=fuel, density=density, react=react, heat=heat )
 
-	if true:
+	if True:
 		advectSemiLagrange( flags=flags, vel=vel, grid=density, order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=heat,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=fuel,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=react, order=2 )
 
-		#advectSemiLagrange( flags=flags, vel=vel, grid=innen0außen1, order=2 )
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=gamma_cumulative)
+		advectSemiLagrange( flags=flags, vel=vel, grid=innen0außen1, order=2 )
+		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
-		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=gamma_cumulative)
+		advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
+		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=gamma_cumulative)
 	else:
-	    massMomentumConservingAdvect( flags=flags, vel=vel, gird=innen0außen1, gammacumulative=gamma_cumulative)
-		 
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=heat, gammaCumulative=heat_gamma)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=fuel, gammaCumulative=fuel_gamma)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=react, gammaCumulative=react_gamma)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
+
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
+
 	if doOpen:
 		resetOutflow( flags=flags, real=density )
 
@@ -129,5 +152,12 @@ while s.frame < frames:
 	#timings.display()
 	stats = calculateMass(grid=innen0außen1).split(",")
 	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")
+
+	if s.frame == 0:
+		test_start = stats[0]
+	test_min = min(test_min, float(stats[0]))
+	test_max = max(test_max, float(stats[0]))
+
 	s.step()
 
+mantaMsg(f"Summary of Total Mass:\nStart: {test_start}, Min: {test_min}, Max: {test_max}")
