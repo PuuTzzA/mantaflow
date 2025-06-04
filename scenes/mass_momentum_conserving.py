@@ -67,9 +67,9 @@ bWidth=1
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
 
-""" setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
+setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
 
-obsPos = vec3(0.5, 0.6, 0)
+""" obsPos = vec3(0.5, 0.6, 0)
 obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
 obsSize = 0.1
 
@@ -80,7 +80,7 @@ setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=bWidth)
 
 flags.fillGrid()
 
-obs.applyToGrid(grid=density, value=0.) # clear smoke inside """
+obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags """
 
 #if doOpen:
 #	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
@@ -146,8 +146,8 @@ while s.frame < frames:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=react, gammaCumulative=react_gamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
-		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
-		advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
 
 	if doOpen:
 		resetOutflow( flags=flags, real=density )

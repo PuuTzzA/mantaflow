@@ -645,19 +645,19 @@ namespace Manta
 
 		Real w00 = 0., w10 = 0., w01 = 0., w11 = 0.;
 
-		if (flags.isFluid(i, j, 0))
+		if (!flags.isObstacle(i, j, 0))
 		{
 			w00 = (1 - fx) * (1 - fy);
 		}
-		if (flags.isFluid(i + 1, j, 0))
+		if (!flags.isObstacle(i + 1, j, 0))
 		{
 			w10 = fx * (1 - fy);
 		}
-		if (flags.isFluid(i, j + 1, 0))
+		if (!flags.isObstacle(i, j + 1, 0))
 		{
 			w01 = (1 - fx) * fy;
 		}
-		if (flags.isFluid(i + 1, j + 1, 0))
+		if (!flags.isObstacle(i + 1, j + 1, 0))
 		{
 			w11 = fx * fy;
 		}
@@ -677,19 +677,19 @@ namespace Manta
 		std::vector<std::tuple<Vec3i, Real>> result{};
 		result.reserve(4);
 
-		if (flags.isFluid(i, j, 0))
+		if (!flags.isObstacle(i, j, 0))
 		{
 			result.push_back({Vec3i{i, j, 0}, w00});
 		}
-		if (flags.isFluid(i + 1, j, 0))
+		if (!flags.isObstacle(i + 1, j, 0))
 		{
 			result.push_back({Vec3i{i + 1, j, 0}, w10});
 		}
-		if (flags.isFluid(i, j + 1, 0))
+		if (!flags.isObstacle(i, j + 1, 0))
 		{
 			result.push_back({Vec3i{i, j + 1, 0}, w01});
 		}
-		if (flags.isFluid(i + 1, j + 1, 0))
+		if (!flags.isObstacle(i + 1, j + 1, 0))
 		{
 			result.push_back({Vec3i{i + 1, j + 1, 0}, w11});
 		}
@@ -701,7 +701,7 @@ namespace Manta
 	template <class T>
 	void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
 	{
-		if (!flags.isFluid(i, j, k))
+		if (flags.isObstacle(i, j, k))
 		{
 			newGrid(i, j, k) = 1;
 			return;
@@ -788,7 +788,7 @@ namespace Manta
 			{
 				int k = 0;
 
-				if (!flags.isFluid(i, j, k))
+				if (flags.isObstacle(i, j, k))
 				{
 					continue;
 				}
@@ -817,7 +817,7 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
-				if (!flags.isFluid(i, j, k))
+				if (flags.isObstacle(i, j, k))
 				{
 					continue;
 				}
