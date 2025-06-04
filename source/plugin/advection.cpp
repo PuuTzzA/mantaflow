@@ -673,7 +673,7 @@ namespace Manta
 	template <class T>
 	void setNewGammaCum(Grid<Real> &gammaCum, std::vector<Real> gamma, Vec3i gridSize)
 	{
-		gammaCum(i, j, k) = gamma[i * gridSize[0] + j];
+		gammaCum(i, j, k) = gamma[i * gridSize[1] + j];
 	}
 
 	void recalculateBeta(std::vector<Real> &beta, const Sparse2DMap<Real> &weights)
@@ -739,7 +739,7 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
-				IndexInt cellJ = i * gridSize[0] + j;
+				IndexInt cellJ = i * gridSize[1] + j;
 
 				Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
 				newPos = customTrace(newPos, vel, -dt);
@@ -747,7 +747,7 @@ namespace Manta
 				auto neighbours = getInterpolationStencil(newPos, gridSize, offset);
 				for (const auto &n : neighbours)
 				{
-					IndexInt cellI = n[0] * gridSize[0] + n[1];
+					IndexInt cellI = n[0] * gridSize[1] + n[1];
 					Real w = interpolationWeight(newPos, n, offset);
 					weights[cellI][cellJ] = w;
 					reverseWeights[cellJ].insert(cellI);
@@ -764,7 +764,7 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
-				IndexInt cellI = i * gridSize[0] + j;
+				IndexInt cellI = i * gridSize[1] + j;
 
 				if (beta[cellI] < 1 - EPSILON)
 				{
@@ -777,7 +777,7 @@ namespace Manta
 					for (const auto &n : neighbours)
 					{
 						Real w = interpolationWeight(posForward, n, offset);
-						IndexInt cellJ = n[0] * gridSize[0] + n[1];
+						IndexInt cellJ = n[0] * gridSize[1] + n[1];
 
 						weights[cellI][cellJ] += w * amountToDistribute;
 						reverseWeights[cellJ].insert(cellI);
@@ -795,7 +795,7 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
-				IndexInt cellJ = i * gridSize[0] + j;
+				IndexInt cellJ = i * gridSize[1] + j;
 
 				if (gamma[cellJ] < EPSILON)
 					continue; // avoid division by 0
@@ -831,11 +831,11 @@ namespace Manta
 			{
 				int k = 0;
 
-				IndexInt cellI_i = cellI / gridSize[0];
-				IndexInt cellI_j = cellI % gridSize[0];
+				IndexInt cellI_i = cellI / gridSize[1];
+				IndexInt cellI_j = cellI % gridSize[1];
 
-				IndexInt cellJ_i = cellJ / gridSize[0];
-				IndexInt cellJ_j = cellJ % gridSize[0];
+				IndexInt cellJ_i = cellJ / gridSize[1];
+				IndexInt cellJ_j = cellJ % gridSize[1];
 
 				newGrid(cellJ_i, cellJ_j, k) += weight * grid(cellI_i, cellI_j, k);
 			}
@@ -852,8 +852,8 @@ namespace Manta
 				for (IndexInt x = bnd; x < gridSize[0] - bnd - 1; x++)
 				{
 					int k = 0;
-					IndexInt cellI = x * gridSize[0] + y;
-					IndexInt cellI_1 = (x + 1) * gridSize[0] + y;
+					IndexInt cellI = x * gridSize[1] + y;
+					IndexInt cellI_1 = (x + 1) * gridSize[1] + y;
 
 					if (flags(x, y, k) != 1 || flags(x + 1, y, k) != 1) // 1 == Type Fluid
 					{
@@ -877,7 +877,7 @@ namespace Manta
 				for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
 				{
 					int k = 0;
-					IndexInt cellI = x * gridSize[0] + y;
+					IndexInt cellI = x * gridSize[1] + y;
 					IndexInt cellI_1 = cellI + 1;
 
 					if (flags(x, y, k) != 1 || flags(x, y + 1, k) != 1) // 1 == Type Fluid

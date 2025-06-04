@@ -5,8 +5,8 @@ from manta import *
 
 # solver params
 dim = 2
-res = 50
-gs = vec3(res, res, res)
+res = 20
+gs = vec3(res, 1.5 * res, res)
 if dim==2:
 	gs.z=1
 s = Solver(name='main', gridSize = gs, dim=dim)
@@ -19,7 +19,7 @@ smokeTempDiff = 0.1
 s.frameLength = 1.2   # length of one frame (in "world time")
 s.timestepMin = 0.2   # time step range
 s.timestepMax = 2.0
-s.cfl         = 30   # maximal velocity per cell
+s.cfl         = 1   # maximal velocity per cell
 s.timestep    = (s.timestepMax+s.timestepMin)*0.5
 timings = Timings()
 
@@ -44,7 +44,7 @@ vel_gamma = s.create(MACGrid)
 doOpen = True
 
 # how many frames to calculate 
-frames = 50
+frames = 100
 
 # noise field
 noise = s.create(NoiseField, loadFromFile=True)
@@ -66,19 +66,35 @@ vortFlames = 0.5
 bWidth=1
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
+
+""" setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
+
+obsPos = vec3(0.5, 0.6, 0)
+obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
+obsSize = 0.1
+
+obs = Sphere( parent=s, center=gs*obsPos, radius=res*obsSize)
+phiObs = obs.computeLevelset()
+
+setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=bWidth) 
+
+flags.fillGrid()
+
+obs.applyToGrid(grid=density, value=0.) # clear smoke inside """
+
 #if doOpen:
 #	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
 
 if (GUI):
 	gui = Gui()
 	gui.show(True)
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	#gui.pause()
+	#gui.nextRealGrid()
+	#gui.nextRealGrid()
+	#gui.nextRealGrid()
+	#gui.nextRealGrid()
+	#gui.nextRealGrid()
+	#gui.nextRealGrid()
+	##gui.pause()
 
 # source: cube in center of domain (x, y), standing on bottom of the domain
 boxSize = vec3(res/8, 0.05*res, res/8)
@@ -112,14 +128,14 @@ while s.frame < frames:
 
 	processBurn( fuel=fuel, density=density, react=react, heat=heat )
 
-	if True:
+	if False:
 		advectSemiLagrange( flags=flags, vel=vel, grid=density, order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=heat,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=fuel,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=react, order=2 )
 
-		advectSemiLagrange( flags=flags, vel=vel, grid=innen0außen1, order=2 )
-		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
+		#advectSemiLagrange( flags=flags, vel=vel, grid=innen0außen1, order=2 )
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
 		advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
 		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=gamma_cumulative)
@@ -130,8 +146,8 @@ while s.frame < frames:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=react, gammaCumulative=react_gamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
-		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
+		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
 
 	if doOpen:
 		resetOutflow( flags=flags, real=density )
