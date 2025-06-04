@@ -623,14 +623,57 @@ namespace Manta
 		}
 	}
 
-	Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt)
+	Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i &gs)
 	{
+		if (flags.isObstacle(pos))
+		{
+			throw runtime_error("trace not starting from fluid cell");
+		}
+
 		Vec3 k1 = vel.getInterpolatedHi(pos, 2);
-		Vec3 k2 = vel.getInterpolatedHi(pos + dt / 2 * k1, 2);
-		Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2 * k2, 2);
+		Vec3 k2 = vel.getInterpolatedHi(pos + dt / 2. * k1, 2);
+		Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2. * k2, 2);
 		Vec3 k4 = vel.getInterpolatedHi(pos + dt * k3, 2);
 
-		return pos + dt * 1 / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
+		Vec3 nextPos = pos + dt * 1. / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
+
+		nextPos.x = Manta::clamp(nextPos.x, static_cast<Real>(0.), static_cast<Real>(gs[0] - 1));
+		nextPos.y = Manta::clamp(nextPos.y, static_cast<Real>(0.), static_cast<Real>(gs[1] - 1));
+		nextPos.z = Manta::clamp(nextPos.z, static_cast<Real>(0.), static_cast<Real>(gs[2] - 1));
+
+		if (!flags.isObstacle(nextPos))
+		{
+			return nextPos;
+		}
+
+		Vec3 segmentStart = pos;
+		Vec3 segmentEnd = nextPos;
+		Vec3 lastKnownFluidPos = pos;
+
+		Vec3 direction = segmentEnd - segmentStart;
+		Real totalDistance = norm(direction); // Assuming Vec3 has a norm() or length() method
+
+		if (totalDistance < 1e-9)
+		{
+			if (!flags.isObstacle(segmentStart))
+				return segmentStart;
+
+			return pos;
+		}
+
+		int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.5))); // e.g. step by 0.25 grid units
+
+		for (int i = 1; i <= numSearchSteps; ++i)
+		{
+			Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
+			Vec3 currentTestPoint = segmentEnd - t * direction;
+
+			if (!flags.isObstacle(currentTestPoint))
+			{
+				return currentTestPoint;
+			}
+		}
+		return pos;
 	}
 
 	std::vector<std::tuple<Vec3i, Real>> getInterpolationstencilAndWeights(const FlagGrid &flags, Vec3 x, Vec3i gs, Vec3 &offset)
@@ -699,16 +742,23 @@ namespace Manta
 
 	KERNEL()
 	template <class T>
-	void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
+	void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags, Vec3i &gs)
 	{
-		if (flags.isObstacle(i, j, k))
+		if (!flags.isFluid(i, j, k))
 		{
-			newGrid(i, j, k) = 1;
+			if (flags.isOutflow(i, j, k))
+			{
+				newGrid(i, j, k) = 0; // For gammaCumulative in outflow, should be 0
+			}
+			else
+			{
+				newGrid(i, j, k) = 1; // For other non-fluid (e.g. obstacles), 1 might be intended
+			}
 			return;
 		}
 
 		Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-		newPos = customTrace(newPos, vel, -dt);
+		newPos = customTrace(newPos, vel, -dt, flags, gs);
 
 		auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
 		for (const auto &[n, w] : neighboursAndWeights)
@@ -767,7 +817,7 @@ namespace Manta
 		Real dt = parent->getDt();
 		Vec3i gridSize = parent->getGridSize();
 		Grid<Real> newGammaCum(parent);
-		advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
+		advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags, gridSize);
 		gammaCumulative.swap(newGammaCum);
 
 		// main advection part
@@ -788,7 +838,7 @@ namespace Manta
 			{
 				int k = 0;
 
-				if (flags.isObstacle(i, j, k))
+				if (!flags.isFluid(i, j, k))
 				{
 					continue;
 				}
@@ -796,7 +846,7 @@ namespace Manta
 				IndexInt cellJ = i * gridSize[1] + j;
 
 				Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-				newPos = customTrace(newPos, vel, -dt);
+				newPos = customTrace(newPos, vel, -dt, flags, gridSize);
 
 				auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
 				for (const auto &[n, w] : neighboursAndWeights)
@@ -817,7 +867,7 @@ namespace Manta
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 			{
 				int k = 0;
-				if (flags.isObstacle(i, j, k))
+				if (!flags.isFluid(i, j, k))
 				{
 					continue;
 				}
@@ -827,7 +877,7 @@ namespace Manta
 				if (beta[cellI] < 1 - EPSILON)
 				{
 					Vec3 posForward = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-					posForward = customTrace(posForward, vel, dt);
+					posForward = customTrace(posForward, vel, dt, flags, gridSize);
 
 					Real amountToDistribute = 1. - beta[cellI];
 
@@ -912,7 +962,7 @@ namespace Manta
 					IndexInt cellI = x * gridSize[1] + y;
 					IndexInt cellI_1 = (x + 1) * gridSize[1] + y;
 
-					if (flags(x, y, k) != 1 || flags(x + 1, y, k) != 1) // 1 == Type Fluid
+					if (!flags.isFluid(x, y, k) || !flags.isFluid(x + 1, y, k)) // 1 == Type Fluid
 					{
 						continue;
 					}
@@ -937,7 +987,7 @@ namespace Manta
 					IndexInt cellI = x * gridSize[1] + y;
 					IndexInt cellI_1 = cellI + 1;
 
-					if (flags(x, y, k) != 1 || flags(x, y + 1, k) != 1) // 1 == Type Fluid
+					if (!flags.isFluid(x, y, k) || !flags.isFluid(x, y + 1, k)) // 1 == Type Fluid
 					{
 						continue;
 					}
@@ -1043,11 +1093,11 @@ namespace Manta
 		Real sum = 0;
 		Real min = std::numeric_limits<Real>::infinity();
 		Real max = -std::numeric_limits<Real>::infinity();
-		for (IndexInt x = bnd; x < gridSize[1] - bnd; x++)
+		for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
 		{
-			for (IndexInt y = bnd; y < gridSize[0] - bnd; y++)
+			for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
 			{
-				Real val = grid->operator()(x, y, 0);
+				Real val = grid->operator()(i, j, 0);
 				sum += val;
 				min = std::min(min, val);
 				max = std::max(max, val);

@@ -5,7 +5,7 @@ from manta import *
 
 # solver params
 dim = 2
-res = 20
+res = 30
 gs = vec3(res, 1.5 * res, res)
 if dim==2:
 	gs.z=1
@@ -19,7 +19,7 @@ smokeTempDiff = 0.1
 s.frameLength = 1.2   # length of one frame (in "world time")
 s.timestepMin = 0.2   # time step range
 s.timestepMax = 2.0
-s.cfl         = 1   # maximal velocity per cell
+s.cfl         = 3   # maximal velocity per cell
 s.timestep    = (s.timestepMax+s.timestepMin)*0.5
 timings = Timings()
 
@@ -67,11 +67,9 @@ bWidth=1
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
 
-setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
-
-""" obsPos = vec3(0.5, 0.6, 0)
+obsPos = vec3(0.5, 0.63, 0)
 obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
-obsSize = 0.1
+obsSize = 0.11
 
 obs = Sphere( parent=s, center=gs*obsPos, radius=res*obsSize)
 phiObs = obs.computeLevelset()
@@ -80,10 +78,10 @@ setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=bWidth)
 
 flags.fillGrid()
 
-obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags """
+obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
 
-#if doOpen:
-#	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
+if doOpen:
+	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
 
 if (GUI):
 	gui = Gui()
