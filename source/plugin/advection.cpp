@@ -633,6 +633,70 @@ namespace Manta
 		return pos + dt * 1 / 6 * (k1 + 2 * k2 + 2 * k3 + k4);
 	}
 
+	std::vector<std::tuple<Vec3i, Real>> getInterpolationstencilAndWeights(const FlagGrid &flags, Vec3 x, Vec3i gs, Vec3 &offset)
+	{
+		int i = std::floor(x[0] - offset[0]);
+		int j = std::floor(x[1] - offset[1]);
+		i = Manta::clamp(i, 0, gs[0] - 2);
+		j = Manta::clamp(j, 0, gs[1] - 2);
+
+		Real fx = x[0] - offset[0] - i;
+		Real fy = x[1] - offset[1] - j;
+
+		Real w00 = 0., w10 = 0., w01 = 0., w11 = 0.;
+
+		if (flags.isFluid(i, j, 0))
+		{
+			w00 = (1 - fx) * (1 - fy);
+		}
+		if (flags.isFluid(i + 1, j, 0))
+		{
+			w10 = fx * (1 - fy);
+		}
+		if (flags.isFluid(i, j + 1, 0))
+		{
+			w01 = (1 - fx) * fy;
+		}
+		if (flags.isFluid(i + 1, j + 1, 0))
+		{
+			w11 = fx * fy;
+		}
+
+		Real tot = w00 + w01 + w10 + w11;
+
+		if (tot < 1e-5)
+		{
+			return {};
+		}
+
+		w00 /= tot;
+		w10 /= tot;
+		w01 /= tot;
+		w11 /= tot;
+
+		std::vector<std::tuple<Vec3i, Real>> result{};
+		result.reserve(4);
+
+		if (flags.isFluid(i, j, 0))
+		{
+			result.push_back({Vec3i{i, j, 0}, w00});
+		}
+		if (flags.isFluid(i + 1, j, 0))
+		{
+			result.push_back({Vec3i{i + 1, j, 0}, w10});
+		}
+		if (flags.isFluid(i, j + 1, 0))
+		{
+			result.push_back({Vec3i{i, j + 1, 0}, w01});
+		}
+		if (flags.isFluid(i + 1, j + 1, 0))
+		{
+			result.push_back({Vec3i{i + 1, j + 1, 0}, w11});
+		}
+
+		return result;
+	}
+
 	std::vector<Vec3i> getInterpolationStencil(Vec3 x, Vec3i gs, Vec3 &offset)
 	{
 		int i = std::floor(x[0] - offset[0]);
