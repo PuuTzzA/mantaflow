@@ -742,23 +742,24 @@ namespace Manta
 		return result;
 	}
 
-	KERNEL()
+	KERNEL(bnd = 0)
 	template <class T>
 	void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags, Vec3i &gs)
 	{
-		if (!flags.isFluid(i, j, k))
+		if (flags.isObstacle(i, j, k))
 		{
 			newGrid(i, j, k) = 1;
-			return;
 		}
-
-		Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-		newPos = customTrace(newPos, vel, -dt, flags, gs);
-
-		auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
-		for (const auto &[n, w] : neighboursAndWeights)
+		else
 		{
-			newGrid(i, j, k) += w * grid(n);
+			Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
+			newPos = customTrace(newPos, vel, -dt, flags, gs);
+
+			auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
+			for (const auto &[n, w] : neighboursAndWeights)
+			{
+				newGrid(i, j, k) += w * grid(n);
+			}
 		}
 	}
 
@@ -802,7 +803,8 @@ namespace Manta
 
 		// For testing of the "normal" advection step that is used in this function
 		/* Grid<T> testGrid(parent);
-		advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags);
+		Vec3i testGS = parent->getGridSize();
+		advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags, testGS);
 		grid.swap(testGrid);
 		return; */
 
@@ -976,7 +978,7 @@ namespace Manta
 					}
 
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-					fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
+					// fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
 
 					gamma[cellI] += fluxGamma;
 					gamma[cellI_1] -= fluxGamma;
@@ -1005,7 +1007,7 @@ namespace Manta
 					}
 
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-					fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
+					// fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
 
 					gamma[cellI] += fluxGamma;
 					gamma[cellI_1] -= fluxGamma;
