@@ -37,6 +37,7 @@ vel      = s.create(MACGrid)
 velOld   = s.create(MACGrid)
 pressure = s.create(RealGrid)
 tmpVec3  = s.create(VecGrid)
+
 pp       = s.create(BasicParticleSystem) 
 # add velocity data to particles
 pVel     = pp.create(PdataVec3) 
