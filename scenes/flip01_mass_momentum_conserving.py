@@ -12,6 +12,8 @@ MAX_TIME = 300
 NUM_FRAMES_RENDERED = 6
 EXPORT = False
 
+doOpen = False
+
 # solver params
 dim = 2
 particleNumber = 2
@@ -40,7 +42,27 @@ pp       = s.create(BasicParticleSystem)
 pVel     = pp.create(PdataVec3) 
 
 # scene setup
-flags.initDomain(boundaryWidth=0) 
+bWidth=1
+flags.initDomain( boundaryWidth=bWidth )
+flags.fillGrid()
+
+obsPos = vec3(0.5, 0.1, 0)
+obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
+obsSize = 0.11
+
+obs = Box( parent=s, p0=gs*vec3(0.5,0,0), p1=gs*vec3(0.6,0.1,1))
+#obs = Sphere( parent=s, center=gs*obsPos, radius=res*obsSize)
+phiObs = obs.computeLevelset()
+
+setObstacleFlags(flags=flags, phiObs=phiObs) 
+
+flags.fillGrid()
+
+#obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
+
+if doOpen:
+	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
+
 # enable one of the following
 fluidbox = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(0.25, 0.5, 1)) # breaking dam
 #fluidbox = Box( parent=s, p0=gs*vec3(0.4,0.72,0.4), p1=gs*vec3(0.6,0.92,0.6)) # centered falling block
@@ -60,6 +82,7 @@ if (GUI):
 	gui.nextRealDisplayMode()
 	gui.nextRealDisplayMode()
 	gui.nextRealDisplayMode()
+	#gui.pause()
 
 pp.clearFile(FILENAME)
 #main loop
@@ -74,6 +97,10 @@ for t in range(MAX_TIME):
 	mapPartsToMAC(vel=vel, flags=flags, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 ) 
 	extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) 
 	markFluidCells( parts=pp, flags=flags )
+
+	if doOpen:
+		resetOutflow( flags=flags)
+
 
 	addGravity(flags=flags, vel=vel, gravity=(0,-0.002,0))
 

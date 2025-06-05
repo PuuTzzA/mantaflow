@@ -627,7 +627,7 @@ namespace Manta
 	{
 		if (flags.isObstacle(pos))
 		{
-			throw runtime_error("trace not starting from fluid cell");
+			throw runtime_error("trace starting from obstacle!");
 		}
 
 		Vec3 k1 = vel.getInterpolatedHi(pos, 2);
@@ -651,7 +651,7 @@ namespace Manta
 		Vec3 lastKnownFluidPos = pos;
 
 		Vec3 direction = segmentEnd - segmentStart;
-		Real totalDistance = norm(direction); // Assuming Vec3 has a norm() or length() method
+		Real totalDistance = norm(direction);
 
 		if (totalDistance < 1e-9)
 		{
@@ -661,8 +661,7 @@ namespace Manta
 			return pos;
 		}
 
-		int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.5))); // e.g. step by 0.25 grid units
-
+		int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.5)));
 		for (int i = 1; i <= numSearchSteps; ++i)
 		{
 			Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
@@ -748,7 +747,7 @@ namespace Manta
 	{
 		if (flags.isObstacle(i, j, k))
 		{
-			newGrid(i, j, k) = 1;
+			// newGrid(i, j, k) = 1;
 		}
 		else
 		{
@@ -1031,24 +1030,22 @@ namespace Manta
 	KERNEL()
 	void MAC2Grids(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
 	{
-		Vec3 data = vel.getAtMACnoInterpolation(i, j, k);
+		// Vec3 data = vel.getAtMACnoInterpolation(i, j, k);
+		Vec3 data = vel(i, j, k);
 		velX(i, j, k) = data.x;
 		velY(i, j, k) = data.y;
 		velZ(i, j, k) = data.z;
 	}
 
-	KERNEL()
+	KERNEL(bnd = 1)
 	void Grids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
 	{
-		vel.setAtMACnoInterpolation(i, j, k, Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k)));
+		// vel.setAtMACnoInterpolation(i, j, k, Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k)));
+		vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
 	}
 
 	void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative)
 	{
-		const Real EPSILON = 1e-5;
-		Real dt = parent->getDt();
-		Vec3i gridSize = parent->getGridSize();
-
 		Grid<Real> velX(parent);
 		Grid<Real> velY(parent);
 		Grid<Real> velZ(parent);
@@ -1057,40 +1054,38 @@ namespace Manta
 		Grid<Real> gammaY(parent);
 		Grid<Real> gammaZ(parent);
 
+		MAC2Grids(grid, velX, velY, velZ);
+		MAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ);
 
-		getComponent(grid, velX, 0);
-		getComponent(grid, velY, 1);
-		getComponent(grid, velZ, 2);
+		/* Vec3 offsetX = Vec3(0.5, 0.0, 0.0);
+		Vec3 offsetY = Vec3(0.0, 0.5, 0.0);
+		Vec3 offsetZ = Vec3(0.0, 0.0, 0.5); */
 
-/* 		MAC2Grids(grid, velX, velY, velZ);
-		MAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ); */
+		Vec3 offsetX = Vec3(0.0, 0.5, 0.5);
+		Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
+		Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
 
-		Vec3 offsetX = Vec3(0., 0.5, 0.5);
-		Vec3 offsetY = Vec3(0.5, 0., 0.5);
-		Vec3 offsetZ = Vec3(0.5, 0.5, 0.);
-
-		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX);
+		
+/* 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX);
 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velY, gammaY, offsetY);
-		// fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
+		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
+ */
+		Real dt = parent->getDt();
+		Vec3i gridSize = parent->getGridSize();
 
-		/* 		Grid<Real> newVelX(parent);
-				Grid<Real> newVelY(parent);
-				Grid<Real> newVelZ(parent);
+		Grid<Real> newVelX(parent);
+		Grid<Real> newVelY(parent);
+		Grid<Real> newVelZ(parent);
 
-				advectGammaCum<Real>(vel, velX, newVelX, dt, gridSize, offsetX, flags);
-				advectGammaCum<Real>(vel, velY, newVelY, dt, gridSize, offsetY, flags);
-				advectGammaCum<Real>(vel, velZ, newVelZ, dt, gridSize, offsetZ, flags);
+		advectGammaCum<Real>(vel, velX, newVelX, dt, gridSize, offsetX, flags, gridSize);
+		advectGammaCum<Real>(vel, velY, newVelY, dt, gridSize, offsetY, flags, gridSize);
+		advectGammaCum<Real>(vel, velZ, newVelZ, dt, gridSize, offsetZ, flags, gridSize);
 
-				Grids2MAC(grid, newVelX, newVelY, newVelZ);
-				return;
-				*/
+		Grids2MAC(grid, newVelX, newVelY, newVelZ);
+		return;
 
-		setComponent(velX, grid, 0);
-		setComponent(velY, grid, 1);
-		setComponent(velZ, grid, 2);
-
-/* 		Grids2MAC(grid, velX, velY, velZ);
-		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ); */
+		Grids2MAC(grid, velX, velY, velZ);
+		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ);
 		return;
 	}
 

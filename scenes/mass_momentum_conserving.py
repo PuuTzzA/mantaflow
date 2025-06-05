@@ -67,7 +67,7 @@ bWidth=1
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
 
-obsPos = vec3(0.5, 0.63, 0)
+""" obsPos = vec3(0.5, 0.63, 0)
 obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
 obsSize = 0.11
 
@@ -79,10 +79,10 @@ setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=4)
 flags.fillGrid()
 
 obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
-
-if doOpen:
+ """
+""" if doOpen:
 	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
-
+ """
 if (GUI):
 	gui = Gui()
 	gui.show(True)
@@ -92,7 +92,7 @@ if (GUI):
 	#gui.nextRealGrid()
 	#gui.nextRealGrid()
 	#gui.nextRealGrid()
-	##gui.pause()
+	#gui.pause()
 
 # source: cube in center of domain (x, y), standing on bottom of the domain
 boxSize = vec3(res/8, 0.05*res, res/8)
