@@ -144,8 +144,8 @@ while s.frame < frames:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=react, gammaCumulative=react_gamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
-		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
-		advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
 
 	if doOpen:
 		resetOutflow( flags=flags, real=density )

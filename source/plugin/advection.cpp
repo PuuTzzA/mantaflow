@@ -1057,8 +1057,13 @@ namespace Manta
 		Grid<Real> gammaY(parent);
 		Grid<Real> gammaZ(parent);
 
-		MAC2Grids(grid, velX, velY, velZ);
-		MAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ);
+
+		getComponent(grid, velX, 0);
+		getComponent(grid, velY, 1);
+		getComponent(grid, velZ, 2);
+
+/* 		MAC2Grids(grid, velX, velY, velZ);
+		MAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ); */
 
 		Vec3 offsetX = Vec3(0., 0.5, 0.5);
 		Vec3 offsetY = Vec3(0.5, 0., 0.5);
@@ -1066,7 +1071,7 @@ namespace Manta
 
 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX);
 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velY, gammaY, offsetY);
-		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
+		// fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
 
 		/* 		Grid<Real> newVelX(parent);
 				Grid<Real> newVelY(parent);
@@ -1078,9 +1083,14 @@ namespace Manta
 
 				Grids2MAC(grid, newVelX, newVelY, newVelZ);
 				return;
-		 */
-		Grids2MAC(grid, velX, velY, velZ);
-		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ);
+				*/
+
+		setComponent(velX, grid, 0);
+		setComponent(velY, grid, 1);
+		setComponent(velZ, grid, 2);
+
+/* 		Grids2MAC(grid, velX, velY, velZ);
+		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ); */
 		return;
 	}
 
