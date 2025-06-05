@@ -255,7 +255,7 @@ public:
 	inline Vec3 getAtMACZ(int i, int j, int k) const;
 	// THOMAS extra functions
 	inline Vec3 getAtMACnoInterpolation(int i, int j, int k) const;
-	inline void setAtMACnoInterpolation(int i, int j, int k, Vec3 val) const;
+	inline void setAtMACnoInterpolation(int i, int j, int k, Vec3 val);
 	// interpolation
 	inline Vec3 getInterpolated(const Vec3& pos) const { return interpolMAC(mData, mSize, mStrideZ, pos); }
 	inline void setInterpolated(const Vec3& pos, const Vec3& val, Vec3* tmp) const { return setInterpolMAC(mData, mSize, mStrideZ, pos, val, tmp); }
@@ -476,7 +476,7 @@ inline Vec3 MACGrid::getAtMACnoInterpolation(int i, int j, int k) const {
 	return mData[index(i, j, k)];
 }
 
-inline void MACGrid::setAtMACnoInterpolation(int i, int j, int k, Vec3 val) const {
+inline void MACGrid::setAtMACnoInterpolation(int i, int j, int k, Vec3 val) {
 	mData[index(i, j, k)] = val;
 }
 
