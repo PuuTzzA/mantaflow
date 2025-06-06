@@ -784,7 +784,7 @@ namespace Manta
 
 	void recalculateGamma(std::vector<Real> &gamma, const Sparse2DMap<Real> &weights)
 	{
-		std::fill(gamma.begin(), gamma.end(), 0);
+		std::fill(gamma.begin(), gamma.end(), 0.0);
 		for (const auto &[cellI, innerMap] : weights)
 		{
 			for (const auto &[cellJ, value] : innerMap)
@@ -807,8 +807,6 @@ namespace Manta
 		grid.swap(testGrid);
 		return; */
 
-		GridType newGrid(parent); // source
-
 		// Advect the cummulative Gamma the same way as later the rest
 		Real dt = parent->getDt();
 		Vec3i gridSize = parent->getGridSize();
@@ -819,6 +817,7 @@ namespace Manta
 		// main advection part
 		long unsigned numCells = gridSize[0] * gridSize[1] * gridSize[2];
 
+		GridType newGrid(parent);
 		// weights[k][p] = weight from cell k to cell p (cell indeces k/p = i * gridSize[0] + j)
 		Sparse2DMap<Real> weights;
 		Reverse2dMap reverseWeights;
@@ -851,8 +850,6 @@ namespace Manta
 					weights[cellI][cellJ] = w;
 					reverseWeights[cellJ].insert(cellI);
 					beta[cellI] += w;
-
-					// newGrid(i, j, k) += interpolationWeight(newPos, n) * grid(n);
 				}
 			}
 		}
@@ -889,10 +886,8 @@ namespace Manta
 			}
 		}
 
-		// Step 3: compute Gamma
+		// Step 3: Clamp gamma to the cumulative gamma
 		recalculateGamma(gamma, weights);
-
-		// Step 4: Clamp gamma to the cumulative gamma
 		for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
 		{
 			for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
@@ -918,8 +913,8 @@ namespace Manta
 			}
 		}
 
-		// Step 5: Clamp beta to 1 for conservation
-		recalculateBeta(beta, weights); // should be 1 for all beta, maybe no need to recalculate, just set to 1
+		// Step 4: Clamp beta to 1 for conservation
+		recalculateBeta(beta, weights);
 		for (IndexInt cellI = 0; cellI < numCells; cellI++)
 		{
 			if (flags.isObstacle(cellI / gridSize[1], cellI % gridSize[1], 0))
@@ -938,7 +933,7 @@ namespace Manta
 			}
 		}
 
-		// Step 6: calculate the an intermediate result
+		// Step 5 calculate the an intermediate result
 		for (const auto &[cellI, innerMap] : weights)
 		{
 			for (const auto &[cellJ, weight] : innerMap)
@@ -955,11 +950,8 @@ namespace Manta
 			}
 		}
 
-		// Step 7: Diffuse gamma using Gaus seidel Sweep
+		// Step 6: Diffuse gamma using Gaus seidel Sweep
 		recalculateGamma(gamma, weights);
-
-		Real testMaxFlux = 0.1;
-
 		for (int _ = 0; _ < 5; _++)
 		{
 			// X-Dimension
@@ -977,7 +969,6 @@ namespace Manta
 					}
 
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-					// fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
 
 					gamma[cellI] += fluxGamma;
 					gamma[cellI_1] -= fluxGamma;
@@ -985,9 +976,6 @@ namespace Manta
 					T gammaToMove = newGrid(x + 1, y, k) * (fluxGamma / gamma[cellI_1]);
 					newGrid(x, y, k) += gammaToMove;
 					newGrid(x + 1, y, k) -= gammaToMove;
-
-					newGrid(x, y, k) = Manta::clamp(newGrid(x, y, k), 0.f, newGrid(x, y, k));
-					newGrid(x + 1, y, k) = Manta::clamp(newGrid(x + 1, y, k), 0.f, newGrid(x + 1, y, k));
 				}
 			}
 
@@ -1006,7 +994,6 @@ namespace Manta
 					}
 
 					Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-					// fluxGamma = Manta::clamp(fluxGamma, 0.f, testMaxFlux);
 
 					gamma[cellI] += fluxGamma;
 					gamma[cellI_1] -= fluxGamma;
@@ -1014,23 +1001,17 @@ namespace Manta
 					T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
 					newGrid(x, y, k) += gammaToMove;
 					newGrid(x, y + 1, k) -= gammaToMove;
-
-					newGrid(x, y, k) = Manta::clamp(newGrid(x, y, k), 0.f, newGrid(x, y, k));
-					newGrid(x, y + 1, k) = Manta::clamp(newGrid(x, y + 1, k), 0.f, newGrid(x, y + 1, k));
 				}
 			}
 		}
 
 		setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
 		grid.swap(newGrid);
-		// MassMomentum<T>(flags, vel, grid, newGrid, parent->getDt());
-		// grid.swap(newGrid);
 	}
 
 	KERNEL()
 	void MAC2Grids(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
 	{
-		// Vec3 data = vel.getAtMACnoInterpolation(i, j, k);
 		Vec3 data = vel(i, j, k);
 		velX(i, j, k) = data.x;
 		velY(i, j, k) = data.y;
@@ -1040,7 +1021,6 @@ namespace Manta
 	KERNEL(bnd = 1)
 	void Grids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
 	{
-		// vel.setAtMACnoInterpolation(i, j, k, Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k)));
 		vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
 	}
 
@@ -1065,24 +1045,9 @@ namespace Manta
 		Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
 		Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
 
-		
-/* 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX);
+		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX);
 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velY, gammaY, offsetY);
 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
- */
-		Real dt = parent->getDt();
-		Vec3i gridSize = parent->getGridSize();
-
-		Grid<Real> newVelX(parent);
-		Grid<Real> newVelY(parent);
-		Grid<Real> newVelZ(parent);
-
-		advectGammaCum<Real>(vel, velX, newVelX, dt, gridSize, offsetX, flags, gridSize);
-		advectGammaCum<Real>(vel, velY, newVelY, dt, gridSize, offsetY, flags, gridSize);
-		advectGammaCum<Real>(vel, velZ, newVelZ, dt, gridSize, offsetZ, flags, gridSize);
-
-		Grids2MAC(grid, newVelX, newVelY, newVelZ);
-		return;
 
 		Grids2MAC(grid, velX, velY, velZ);
 		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ);

@@ -80,9 +80,9 @@ flags.fillGrid()
 
 obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
  """
-""" if doOpen:
+if doOpen:
 	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
- """
+
 if (GUI):
 	gui = Gui()
 	gui.show(True)
