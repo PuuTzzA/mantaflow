@@ -5,7 +5,7 @@ from manta import *
 
 # solver params
 dim = 2
-res = 64 
+res = 30 
 gs = vec3(res, 1.5 * res, res)
 if dim==2:
 	gs.z=1

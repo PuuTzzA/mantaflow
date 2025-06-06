@@ -25,7 +25,7 @@ if (dim==2):
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # Adaptive time stepping
-s.cfl         = CFL            # maximal velocity per cell and timestep, 3 is fairly strict
+s.cfl         = 30            # maximal velocity per cell and timestep, 3 is fairly strict
 s.frameLength = 0.8                 # length of one frame (in "world time")
 s.timestep    = s.frameLength 
 s.timestepMin = 0.001 
@@ -106,7 +106,7 @@ for t in range(MAX_TIME):
 
 	else:
 		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		massMomentumConservingAdvectWater( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
 	
 	markFluidCells( parts=pp, flags=flags )
 
