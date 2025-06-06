@@ -34,6 +34,7 @@ s.timestepMax = 2
 # prepare grids and particles
 flags    = s.create(FlagGrid)
 vel      = s.create(MACGrid)
+vel_gamma = s.create(MACGrid)
 velOld   = s.create(MACGrid)
 pressure = s.create(RealGrid)
 tmpVec3  = s.create(VecGrid)
@@ -88,15 +89,25 @@ if (GUI):
 pp.clearFile(FILENAME)
 #main loop
 for t in range(MAX_TIME):
+	if s.frame < 1:
+		fillWithOnes( grid=vel_gamma )
+
 	maxVel = vel.getMax()
 	s.adaptTimestep( maxVel )
 
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
-	
+
 	# FLIP 
-	pp.advectInGrid(flags=flags, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) 
-	mapPartsToMAC(vel=vel, flags=flags, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 ) 
-	extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) 
+	pp.advectInGrid(flags=flags, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
+
+	if False:
+		mapPartsToMAC(vel=vel, flags=flags, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 ) # maps velocity from particles to grid
+		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) # idk
+
+	else:
+		#advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+	
 	markFluidCells( parts=pp, flags=flags )
 
 	if doOpen:
@@ -117,7 +128,7 @@ for t in range(MAX_TIME):
 	extrapolateMACSimple( flags=flags, vel=vel )
 	
 	# FLIP velocity update
-	flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags, parts=pp, partVel=pVel, flipRatio=0.97 )
+	flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags, parts=pp, partVel=pVel, flipRatio=0.97 ) # add difference to per particle velocity
 	
 	#gui.screenshot( 'flipt_%04d.png' % t );
 	if (EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):

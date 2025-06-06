@@ -5,7 +5,7 @@ from manta import *
 
 # solver params
 dim = 2
-res = 50
+res = 64 
 gs = vec3(res, 1.5 * res, res)
 if dim==2:
 	gs.z=1
@@ -42,6 +42,7 @@ innen0außen1_gamma = s.create(RealGrid)
 vel_gamma = s.create(MACGrid)
 
 doOpen = False
+doObstacle = True
 
 # how many frames to calculate 
 frames = 100
@@ -63,22 +64,23 @@ vortGlobal = 0.1
 vortFlames = 0.5
 
 # initialize domain with boundary
-bWidth=0
+bWidth=1
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
 
-obsPos = vec3(0.5, 0.63, 0)
-obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
-obsSize = 0.11
+if doObstacle:
+	obsPos = vec3(0.5, 0.63, 0)
+	obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
+	obsSize = 0.11
 
-obs = Sphere( parent=s, center=gs*obsPos, radius=res*obsSize)
-phiObs = obs.computeLevelset()
+	obs = Sphere( parent=s, center=gs*obsPos, radius=res*obsSize)
+	phiObs = obs.computeLevelset()
 
-setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=4) 
+	setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=4) 
 
-flags.fillGrid()
+	flags.fillGrid()
 
-obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
+	obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
 
 if doOpen:
 	setOpenBound( flags, bWidth,'Y',FlagOutflow|FlagEmpty )
@@ -126,7 +128,7 @@ while s.frame < frames:
 
 	processBurn( fuel=fuel, density=density, react=react, heat=heat )
 
-	if True:
+	if False:
 		advectSemiLagrange( flags=flags, vel=vel, grid=density, order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=heat,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=fuel,   order=2 )
