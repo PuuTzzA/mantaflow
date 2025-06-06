@@ -596,13 +596,13 @@ namespace Manta
 	// THOMAS mass and momentum conserving advection step
 
 	//! Semi-Lagrange interpolation kernel
-	KERNEL(bnd = 1)
+	KERNEL()
 	void fillHelper(Grid<Real> &dst)
 	{
 		dst(i, j, k) = 1;
 	}
 
-	KERNEL(bnd = 1)
+	KERNEL()
 	void fillHelperMAC(MACGrid &dst)
 	{
 		dst(i, j, k) = Vec3(1., 1., 1.);
@@ -623,6 +623,11 @@ namespace Manta
 		}
 	}
 
+	bool isValid(int i, int j, int k, const FlagGrid &flags, Vec3i &gs)
+	{
+		return !flags.isObstacle(i, j, k) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1;
+	}
+
 	Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i &gs)
 	{
 		if (flags.isObstacle(pos))
@@ -635,11 +640,7 @@ namespace Manta
 		Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2. * k2, 2);
 		Vec3 k4 = vel.getInterpolatedHi(pos + dt * k3, 2);
 
-		Vec3 nextPos = pos + dt * 1. / 6. * (k1 + 2. * k2 + 2. * k3 + k4);
-
-		nextPos.x = Manta::clamp(nextPos.x, static_cast<Real>(0.), static_cast<Real>(gs[0] - 1));
-		nextPos.y = Manta::clamp(nextPos.y, static_cast<Real>(0.), static_cast<Real>(gs[1] - 1));
-		nextPos.z = Manta::clamp(nextPos.z, static_cast<Real>(0.), static_cast<Real>(gs[2] - 1));
+		Vec3 nextPos = pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
 
 		if (!flags.isObstacle(nextPos))
 		{
@@ -655,51 +656,48 @@ namespace Manta
 
 		if (totalDistance < 1e-9)
 		{
-			if (!flags.isObstacle(segmentStart))
-				return segmentStart;
-
 			return pos;
 		}
 
-		int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.5)));
+		int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
 		for (int i = 1; i <= numSearchSteps; ++i)
 		{
 			Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
-			Vec3 currentTestPoint = segmentEnd - t * direction;
+			Vec3 currentTestPoint = segmentStart + t * direction;
 
 			if (!flags.isObstacle(currentTestPoint))
 			{
-				return currentTestPoint;
+				lastKnownFluidPos = currentTestPoint;
 			}
 		}
-		return pos;
+		return lastKnownFluidPos;
 	}
 
-	std::vector<std::tuple<Vec3i, Real>> getInterpolationstencilAndWeights(const FlagGrid &flags, Vec3 x, Vec3i gs, Vec3 &offset)
+	std::vector<std::tuple<Vec3i, Real>> getInterpolationstencilAndWeights(const FlagGrid &flags, Vec3 x, Vec3i &gs, Vec3 &offset)
 	{
-		int i = std::floor(x[0] - offset[0]);
-		int j = std::floor(x[1] - offset[1]);
-		i = Manta::clamp(i, 0, gs[0] - 2);
-		j = Manta::clamp(j, 0, gs[1] - 2);
+		x -= offset;
 
-		Real fx = x[0] - offset[0] - i;
-		Real fy = x[1] - offset[1] - j;
+		int i = std::floor(x[0]);
+		int j = std::floor(x[1]);
+
+		Real fx = x[0] - i;
+		Real fy = x[1] - j;
 
 		Real w00 = 0., w10 = 0., w01 = 0., w11 = 0.;
 
-		if (!flags.isObstacle(i, j, 0))
+		if (isValid(i, j, 0, flags, gs))
 		{
 			w00 = (1 - fx) * (1 - fy);
 		}
-		if (!flags.isObstacle(i + 1, j, 0))
+		if (isValid(i + 1, j, 0, flags, gs))
 		{
 			w10 = fx * (1 - fy);
 		}
-		if (!flags.isObstacle(i, j + 1, 0))
+		if (isValid(i, j + 1, 0, flags, gs))
 		{
 			w01 = (1 - fx) * fy;
 		}
-		if (!flags.isObstacle(i + 1, j + 1, 0))
+		if (isValid(i + 1, j + 1, 0, flags, gs))
 		{
 			w11 = fx * fy;
 		}
@@ -824,7 +822,7 @@ namespace Manta
 		std::vector<Real> beta(numCells, 0.);
 		std::vector<Real> gamma(numCells, 0.);
 
-		int bnd = 1;
+		int bnd = 0;
 
 		// Step 1: backwards step
 		for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
@@ -946,11 +944,6 @@ namespace Manta
 				IndexInt cellJ_i = cellJ / gridSize[1];
 				IndexInt cellJ_j = cellJ % gridSize[1];
 
-				if (flags.isOutflow(cellJ_i, cellJ_j, k))
-				{
-					continue;
-				}
-
 				newGrid(cellJ_i, cellJ_j, k) += weight * grid(cellI_i, cellI_j, k);
 			}
 		}
@@ -968,7 +961,7 @@ namespace Manta
 					IndexInt cellI = x * gridSize[1] + y;
 					IndexInt cellI_1 = (x + 1) * gridSize[1] + y;
 
-					if (!flags.isFluid(x, y, k) || !flags.isFluid(x + 1, y, k)) // 1 == Type Fluid
+					if (!flags.isFluid(x, y, k) || !flags.isFluid(x + 1, y, k))
 					{
 						continue;
 					}
@@ -993,7 +986,7 @@ namespace Manta
 					IndexInt cellI = x * gridSize[1] + y;
 					IndexInt cellI_1 = cellI + 1;
 
-					if (!flags.isFluid(x, y, k) || !flags.isFluid(x, y + 1, k)) // 1 == Type Fluid
+					if (!flags.isFluid(x, y, k) || !flags.isFluid(x, y + 1, k))
 					{
 						continue;
 					}
@@ -1023,8 +1016,8 @@ namespace Manta
 		velZ(i, j, k) = data.z;
 	}
 
-	KERNEL(bnd = 1)
-	void Grids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
+	KERNEL()
+	void Grids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ, const FlagGrid &flags)
 	{
 		vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
 	}
@@ -1054,8 +1047,8 @@ namespace Manta
 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velY, gammaY, offsetY);
 		fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
 
-		Grids2MAC(grid, velX, velY, velZ);
-		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ);
+		Grids2MAC(grid, velX, velY, velZ, flags);
+		Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ, flags);
 		return;
 	}
 

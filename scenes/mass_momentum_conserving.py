@@ -5,7 +5,7 @@ from manta import *
 
 # solver params
 dim = 2
-res = 30
+res = 50
 gs = vec3(res, 1.5 * res, res)
 if dim==2:
 	gs.z=1
@@ -41,7 +41,7 @@ heat_gamma = s.create(RealGrid)
 innen0außen1_gamma = s.create(RealGrid)
 vel_gamma = s.create(MACGrid)
 
-doOpen = True
+doOpen = False
 
 # how many frames to calculate 
 frames = 100
@@ -63,11 +63,11 @@ vortGlobal = 0.1
 vortFlames = 0.5
 
 # initialize domain with boundary
-bWidth=1
+bWidth=0
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
 
-""" obsPos = vec3(0.5, 0.63, 0)
+obsPos = vec3(0.5, 0.63, 0)
 obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
 obsSize = 0.11
 
@@ -79,9 +79,9 @@ setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=4)
 flags.fillGrid()
 
 obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
- """
+
 if doOpen:
-	setOpenBound( flags, bWidth,'yY',FlagOutflow|FlagEmpty )
+	setOpenBound( flags, bWidth,'Y',FlagOutflow|FlagEmpty )
 
 if (GUI):
 	gui = Gui()
@@ -126,14 +126,14 @@ while s.frame < frames:
 
 	processBurn( fuel=fuel, density=density, react=react, heat=heat )
 
-	if False:
+	if True:
 		advectSemiLagrange( flags=flags, vel=vel, grid=density, order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=heat,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=fuel,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=react, order=2 )
 
-		#advectSemiLagrange( flags=flags, vel=vel, grid=innen0außen1, order=2 )
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
+		advectSemiLagrange( flags=flags, vel=vel, grid=innen0außen1, order=2 )
+		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
 		advectSemiLagrange( flags=flags, vel=vel, grid=vel,   order=2 )
 		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=gamma_cumulative)
