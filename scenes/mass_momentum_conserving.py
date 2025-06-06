@@ -126,7 +126,7 @@ while s.frame < frames:
 
 	processBurn( fuel=fuel, density=density, react=react, heat=heat )
 
-	if True:
+	if False:
 		advectSemiLagrange( flags=flags, vel=vel, grid=density, order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=heat,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=fuel,   order=2 )

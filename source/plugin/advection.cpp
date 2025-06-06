@@ -946,6 +946,11 @@ namespace Manta
 				IndexInt cellJ_i = cellJ / gridSize[1];
 				IndexInt cellJ_j = cellJ % gridSize[1];
 
+				if (flags.isOutflow(cellJ_i, cellJ_j, k))
+				{
+					continue;
+				}
+
 				newGrid(cellJ_i, cellJ_j, k) += weight * grid(cellI_i, cellI_j, k);
 			}
 		}
