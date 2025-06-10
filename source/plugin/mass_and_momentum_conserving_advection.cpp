@@ -637,6 +637,19 @@ namespace Manta
         grid.swap(newGrid);
     }
 
+    inline bool isValidInOne(Vec3 firstPos, Vec3 secondPos, const FlagGrid &flags, const FlagGrid &flags_2, Vec3i gs)
+    {
+        if (firstPos[0] < 0 || firstPos[0] >= gs[0] || firstPos[1] < 0 || firstPos[1] >= gs[1] || firstPos[2] < 0 || firstPos[2] >= gs[2])
+        {
+            return false;
+        }
+        if (secondPos[0] < 0 || secondPos[0] >= gs[0] || secondPos[1] < 0 || secondPos[1] >= gs[1] || secondPos[2] < 0 || secondPos[2] >= gs[2])
+        {
+            return false;
+        }
+        return (flags_2.isFluid(firstPos) || flags_2.isFluid(firstPos)) && (flags_2.isFluid(secondPos) || flags_2.isFluid(secondPos));
+    }
+
     template <class GridType>
     void fnMassMomentumConservingAdvectWater(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset)
     {
@@ -646,11 +659,11 @@ namespace Manta
         std::cout << "Water version" << std::endl;
 
         // For testing of the "normal" advection step that is used in this function
-        /* Grid<T> testGrid(parent);
-        Vec3i testGS = parent->getGridSize();
-        advectGammaCumWater<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags, testGS);
-        grid.swap(testGrid);
-        return; */
+        /*         Grid<T> testGrid(parent);
+                Vec3i testGS = parent->getGridSize();
+                advectGammaCumWater<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags_n, testGS);
+                grid.swap(testGrid);
+                return; */
 
         // Advect the cummulative Gamma the same way as later the rest
         Real dt = parent->getDt();
@@ -678,7 +691,7 @@ namespace Manta
             {
                 int k = 0;
 
-                if (!(flags_n_plus_one.isFluid(i, j, k)))
+                if (!(flags_n.isFluid(i, j, k)))
                 {
                     continue;
                 }
@@ -705,7 +718,7 @@ namespace Manta
             for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
             {
                 int k = 0;
-                if (!(flags_n.isFluid(i, j, k)))
+                if (!(flags_n_plus_one.isFluid(i, j, k)))
                 {
                     continue;
                 }
@@ -733,10 +746,29 @@ namespace Manta
                     }
                     else
                     {
-                        IndexInt cellJ = std::floor(posForward[0]) * gridSize[1] + std::floor(posForward[1]);
+                        int x = std::floor(posForward[0]);
+                        int y = std::floor(posForward[1]);
+                        int k = 0;
 
-                        weights[cellI][cellJ] += amountToDistribute;
-                        reverseWeights[cellJ].insert(cellI);
+                        std::vector<IndexInt> candidates;
+                        if (flags_n_plus_one.isFluid(x, y, k))
+                            candidates.push_back(x * gridSize[1] + y);
+                        if (flags_n_plus_one.isFluid(x + 1, y, k))
+                            candidates.push_back((x + 1) * gridSize[1] + y);
+                        if (flags_n_plus_one.isFluid(x, y + 1, k))
+                            candidates.push_back(x * gridSize[1] + (y + 1));
+                        if (flags_n_plus_one.isFluid(x + 1, y + 1, k))
+                            candidates.push_back((x + 1) * gridSize[1] + (y + 1));
+
+                        if (!candidates.empty())
+                        {
+                            Real w = 1.0 / candidates.size();
+                            for (auto cellJ : candidates)
+                            {
+                                weights[cellI][cellJ] += w * amountToDistribute;
+                                reverseWeights[cellJ].insert(cellI);
+                            }
+                        }
                     }
                 }
             }
@@ -750,7 +782,7 @@ namespace Manta
             {
                 int k = 0;
 
-                if (!flags_n_plus_one.isFluid(i, j, k))
+                if (!(flags_n_plus_one.isFluid(i, j, k) || flags_n.isFluid(i, j, k)))
                 {
                     continue;
                 }
@@ -773,7 +805,7 @@ namespace Manta
         recalculateBeta(beta, weights);
         for (IndexInt cellI = 0; cellI < numCells; cellI++)
         {
-            if (!flags_n.isFluid(cellI / gridSize[1], cellI % gridSize[1], 0))
+            if (!(flags_n.isFluid(cellI / gridSize[1], cellI % gridSize[1], 0) || flags_n_plus_one.isFluid(cellI / gridSize[1], cellI % gridSize[1], 0)))
             {
                 continue;
             }
@@ -819,8 +851,13 @@ namespace Manta
                     IndexInt cellI = x * gridSize[1] + y;
                     IndexInt cellI_1 = (x + 1) * gridSize[1] + y;
 
-                    if (!flags_n_plus_one.isFluid(x, y, k) || !flags_n_plus_one.isFluid(x + 1, y, k))
+                    if (!isValidInOne(Vec3(x, y, k), Vec3(x + 1, y, k), flags_n, flags_n_plus_one, gridSize))
                     {
+                        continue;
+                    }
+
+                    if (gamma[cellI] < EPSILON || gamma[cellI_1] < EPSILON){
+                        std::cout << "gamma is zero" << std::endl;
                         continue;
                     }
 
@@ -830,35 +867,44 @@ namespace Manta
                     gamma[cellI_1] -= fluxGamma;
 
                     T gammaToMove = newGrid(x + 1, y, k) * (fluxGamma / gamma[cellI_1]);
+
+                    if (!std::isfinite(gammaToMove))
+                    {
+                        std::cerr << "gammaToMove is not finite! "
+                                  << "fluxGamma=" << fluxGamma << ", "
+                                  << "gamma[cellI_1]=" << gamma[cellI_1] << "\n";
+                        std::abort();
+                    }
+
                     newGrid(x, y, k) += gammaToMove;
                     newGrid(x + 1, y, k) -= gammaToMove;
                 }
             }
 
-            // Y-Dimension
-            for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
-            {
-                for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
-                {
-                    int k = 0;
-                    IndexInt cellI = x * gridSize[1] + y;
-                    IndexInt cellI_1 = cellI + 1;
+            /*             // Y-Dimension
+                        for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
+                        {
+                            for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
+                            {
+                                int k = 0;
+                                IndexInt cellI = x * gridSize[1] + y;
+                                IndexInt cellI_1 = cellI + 1;
 
-                    if (!flags_n_plus_one.isFluid(x, y, k) || !flags_n_plus_one.isFluid(x, y + 1, k))
-                    {
-                        continue;
-                    }
+                                if (!isValidInOne(Vec3(x, y, k), Vec3(x, y + 1, k), flags_n, flags_n_plus_one, gridSize))
+                                {
+                                    continue;
+                                }
 
-                    Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
+                                Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
 
-                    gamma[cellI] += fluxGamma;
-                    gamma[cellI_1] -= fluxGamma;
+                                gamma[cellI] += fluxGamma;
+                                gamma[cellI_1] -= fluxGamma;
 
-                    T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
-                    newGrid(x, y, k) += gammaToMove;
-                    newGrid(x, y + 1, k) -= gammaToMove;
-                }
-            }
+                                T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
+                                newGrid(x, y, k) += gammaToMove;
+                                newGrid(x, y + 1, k) -= gammaToMove;
+                            }
+                        } */
         }
 
         setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
