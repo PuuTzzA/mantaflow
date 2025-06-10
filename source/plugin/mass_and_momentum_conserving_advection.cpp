@@ -1,5 +1,6 @@
 #include "vectorbase.h"
 #include "grid.h"
+#include "particle.h"
 #include "kernel.h"
 #include <limits>
 #include <unordered_map>
@@ -42,7 +43,7 @@ namespace Manta
 
     bool isValid(int i, int j, int k, const FlagGrid &flags, Vec3i &gs)
     {
-        return (flags.isFluid(i, j, k) || flags.isOutflow(i, j, k) || flags.isInflow(i, j, k)) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1;
+        return (flags.isFluid(i, j, k) || flags.isOutflow(i, j, k) || flags.isInflow(i, j, k)) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1 && k >= 0 && k <= gs[2] - 1;
     }
 
     Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i &gs)
@@ -104,16 +105,16 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
-    Vec3 customTraceWaterBack(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i &gs, Vec3 &offset)
+    Vec3 customTraceWaterBack(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, Vec3i &gs, Vec3 &offset)
     {
-        if (flags.isObstacle(pos))
+        if (flags_n.isObstacle(pos))
         {
             throw std::runtime_error("trace starting from obstacle!");
         }
 
         Vec3 nextPos = RK4(pos, dt, vel);
 
-        if (flags.isFluid(nextPos))
+        if (flags_n.isFluid(nextPos))
         {
             return nextPos;
         }
@@ -121,10 +122,10 @@ namespace Manta
         if (offset[0] == 0.0) // MAC Grid X-component
         {
             Vec3 nextPos1 = RK4(pos - Vec3(0.5, 0, 0), dt, vel);
-            bool firstInside = flags.isFluid(nextPos + Vec3(0.5, 0, 0));
+            bool firstInside = flags_n.isFluid(nextPos + Vec3(0.5, 0, 0));
 
             Vec3 nextPos2 = RK4(pos + Vec3(0.5, 0, 0), dt, vel);
-            bool secondInside = flags.isFluid(nextPos - Vec3(0.5, 0, 0));
+            bool secondInside = flags_n.isFluid(nextPos - Vec3(0.5, 0, 0));
 
             if (firstInside && secondInside)
             {
@@ -143,10 +144,10 @@ namespace Manta
         if (offset[1] == 0.0) // MAC Grid Y-component
         {
             Vec3 nextPos1 = RK4(pos - Vec3(0, 0.5, 0), dt, vel);
-            bool firstInside = flags.isFluid(nextPos + Vec3(0, 0.5, 0));
+            bool firstInside = flags_n.isFluid(nextPos + Vec3(0, 0.5, 0));
 
             Vec3 nextPos2 = RK4(pos + Vec3(0, 0.5, 0), dt, vel);
-            bool secondInside = flags.isFluid(nextPos - Vec3(0, 0.5, 0));
+            bool secondInside = flags_n.isFluid(nextPos - Vec3(0, 0.5, 0));
 
             if (firstInside && secondInside)
             {
@@ -180,7 +181,7 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             Vec3 currentTestPoint = segmentStart + t * direction;
 
-            if (flags.isFluid(currentTestPoint))
+            if (flags_n.isFluid(currentTestPoint))
             {
                 lastKnownFluidPos = currentTestPoint;
             }
@@ -211,10 +212,11 @@ namespace Manta
 
         if (totalDistance < 1e-9)
         {
-            return {nextPos, false};
+            return {nextPos, true};
         }
 
         int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
+        bool foundFluid = false;
         for (int i = 1; i <= numSearchSteps; ++i)
         {
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
@@ -223,10 +225,11 @@ namespace Manta
             if (flags.isFluid(currentTestPoint))
             {
                 lastKnownFluidPos = currentTestPoint;
+                foundFluid = true;
             }
-            else
+            else if (foundFluid)
             {
-                break;
+                return {lastKnownFluidPos, true};
             }
         }
         return {lastKnownFluidPos, true};
@@ -238,61 +241,110 @@ namespace Manta
 
         int i = std::floor(x[0]);
         int j = std::floor(x[1]);
+        int k = std::floor(x[2]);
 
         Real fx = x[0] - i;
         Real fy = x[1] - j;
+        Real fz = x[2] - k;
 
-        Real w00 = 0., w10 = 0., w01 = 0., w11 = 0.;
+        Real w000, w100, w010, w110;
+        Real w001, w101, w011, w111;
 
-        if (isValid(i, j, 0, flags, gs))
+        w000 = w100 = w010 = w110 = 0.;
+        w001 = w101 = w011 = w111 = 0.;
+
+        if (isValid(i, j, k, flags, gs))
         {
-            w00 = (1 - fx) * (1 - fy);
+            w000 = (1 - fx) * (1 - fy) * (1 - fz);
         }
-        if (isValid(i + 1, j, 0, flags, gs))
+        if (isValid(i + 1, j, k, flags, gs))
         {
-            w10 = fx * (1 - fy);
+            w100 = fx * (1 - fy) * (1 - fz);
         }
-        if (isValid(i, j + 1, 0, flags, gs))
+        if (isValid(i, j + 1, k, flags, gs))
         {
-            w01 = (1 - fx) * fy;
+            w010 = (1 - fx) * fy * (1 - fz);
         }
-        if (isValid(i + 1, j + 1, 0, flags, gs))
+        if (isValid(i + 1, j + 1, k, flags, gs))
         {
-            w11 = fx * fy;
+            w110 = fx * fy * (1 - fz);
         }
 
-        Real tot = w00 + w01 + w10 + w11;
+        if (gs.z > 1)
+        {
+            if (isValid(i, j, k + 1, flags, gs))
+            {
+                w001 = (1 - fx) * (1 - fy) * fz;
+            }
+            if (isValid(i + 1, j, k + 1, flags, gs))
+            {
+                w101 = fx * (1 - fy) * fz;
+            }
+            if (isValid(i, j + 1, k + 1, flags, gs))
+            {
+                w011 = (1 - fx) * fy * fz;
+            }
+            if (isValid(i + 1, j + 1, k + 1, flags, gs))
+            {
+                w111 = fx * fy * fz;
+            }
+        }
+
+        Real tot = w000 + w010 + w100 + w110;
+
+        if (gs.z > 1)
+        {
+            tot += w001 + w011 + w101 + w111;
+        }
 
         if (tot < 1e-5)
         {
             return {};
         }
 
-        w00 /= tot;
-        w10 /= tot;
-        w01 /= tot;
-        w11 /= tot;
+        w000 /= tot;
+        w100 /= tot;
+        w010 /= tot;
+        w110 /= tot;
+        if (gs.z > 1)
+        {
+            w001 /= tot;
+            w101 /= tot;
+            w011 /= tot;
+            w111 /= tot;
+        }
 
         std::vector<std::tuple<Vec3i, Real>> result{};
-        result.reserve(4);
+        result.reserve(gs.z > 1 ? 8 : 4);
 
         const Real EPSILON = 1e-5;
 
-        if (w00 > EPSILON)
+        if (w000 > EPSILON)
         {
-            result.push_back({Vec3i{i, j, 0}, w00});
+            result.push_back({Vec3i{i, j, 0}, w000});
         }
-        if (w10 > EPSILON)
+        if (w100 > EPSILON)
         {
-            result.push_back({Vec3i{i + 1, j, 0}, w10});
+            result.push_back({Vec3i{i + 1, j, 0}, w100});
         }
-        if (w01 > EPSILON)
+        if (w010 > EPSILON)
         {
-            result.push_back({Vec3i{i, j + 1, 0}, w01});
+            result.push_back({Vec3i{i, j + 1, 0}, w010});
         }
-        if (w11 > EPSILON)
+        if (w110 > EPSILON)
         {
-            result.push_back({Vec3i{i + 1, j + 1, 0}, w11});
+            result.push_back({Vec3i{i + 1, j + 1, 0}, w110});
+        }
+        if (gs.z > 1)
+        {
+            if (w001 > EPSILON)
+                result.push_back({Vec3i{i, j, k + 1}, w001});
+            if (w101 > EPSILON)
+                result.push_back({Vec3i{i + 1, j, k + 1}, w101});
+            if (w011 > EPSILON)
+                result.push_back({Vec3i{i, j + 1, k + 1}, w011});
+            if (w111 > EPSILON)
+                result.push_back({Vec3i{i + 1, j + 1, k + 1}, w111});
         }
 
         return result;
@@ -636,7 +688,7 @@ namespace Manta
                 IndexInt cellJ = i * gridSize[1] + j;
 
                 Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-                newPos = customTraceWaterBack(newPos, vel, -dt, flags_n, gridSize, offset);
+                newPos = customTraceWaterBack(newPos, vel, -dt, flags_n, flags_n_plus_one, gridSize, offset);
 
                 auto neighboursAndWeights = getInterpolationstencilAndWeights(flags_n, newPos, gridSize, offset);
                 for (const auto &[n, w] : neighboursAndWeights)
@@ -672,7 +724,7 @@ namespace Manta
 
                     if (!hitObstacle)
                     {
-                        auto neighboursAndWeights = getInterpolationstencilAndWeights(flags_n, posForward, gridSize, offset);
+                        auto neighboursAndWeights = getInterpolationstencilAndWeights(flags_n_plus_one, posForward, gridSize, offset);
                         for (const auto &[n, w] : neighboursAndWeights)
                         {
                             IndexInt cellJ = n[0] * gridSize[1] + n[1];
@@ -723,7 +775,7 @@ namespace Manta
         recalculateBeta(beta, weights);
         for (IndexInt cellI = 0; cellI < numCells; cellI++)
         {
-            if (!flags_n_plus_one.isFluid(cellI / gridSize[1], cellI % gridSize[1], 0))
+            if (!flags_n.isFluid(cellI / gridSize[1], cellI % gridSize[1], 0))
             {
                 continue;
             }
@@ -758,59 +810,59 @@ namespace Manta
 
         // Step 6: Diffuse gamma using Gaus seidel Sweep
         recalculateGamma(gamma, weights);
-        /*         for (int _ = 0; _ < 5; _++)
+        for (int _ = 0; _ < 5; _++)
+        {
+            // X-Dimension
+            for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
+            {
+                for (IndexInt x = bnd; x < gridSize[0] - bnd - 1; x++)
                 {
-                    // X-Dimension
-                    for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
+                    int k = 0;
+                    IndexInt cellI = x * gridSize[1] + y;
+                    IndexInt cellI_1 = (x + 1) * gridSize[1] + y;
+
+                    if (!flags_n_plus_one.isFluid(x, y, k) || !flags_n_plus_one.isFluid(x + 1, y, k))
                     {
-                        for (IndexInt x = bnd; x < gridSize[0] - bnd - 1; x++)
-                        {
-                            int k = 0;
-                            IndexInt cellI = x * gridSize[1] + y;
-                            IndexInt cellI_1 = (x + 1) * gridSize[1] + y;
-
-                            if (!flags_n_plus_one.isFluid(x, y, k) || !flags_n_plus_one.isFluid(x + 1, y, k))
-                            {
-                                continue;
-                            }
-
-                            Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-
-                            gamma[cellI] += fluxGamma;
-                            gamma[cellI_1] -= fluxGamma;
-
-                            T gammaToMove = newGrid(x + 1, y, k) * (fluxGamma / gamma[cellI_1]);
-                            newGrid(x, y, k) += gammaToMove;
-                            newGrid(x + 1, y, k) -= gammaToMove;
-                        }
+                        continue;
                     }
 
-                    // Y-Dimension
-                    for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
-                    {
-                        for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
-                        {
-                            int k = 0;
-                            IndexInt cellI = x * gridSize[1] + y;
-                            IndexInt cellI_1 = cellI + 1;
+                    Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
 
-                            if (!flags_n_plus_one.isFluid(x, y, k) || !flags_n_plus_one.isFluid(x, y + 1, k))
-                            {
-                                continue;
-                            }
+                    gamma[cellI] += fluxGamma;
+                    gamma[cellI_1] -= fluxGamma;
 
-                            Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
-
-                            gamma[cellI] += fluxGamma;
-                            gamma[cellI_1] -= fluxGamma;
-
-                            T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
-                            newGrid(x, y, k) += gammaToMove;
-                            newGrid(x, y + 1, k) -= gammaToMove;
-                        }
-                    }
+                    T gammaToMove = newGrid(x + 1, y, k) * (fluxGamma / gamma[cellI_1]);
+                    newGrid(x, y, k) += gammaToMove;
+                    newGrid(x + 1, y, k) -= gammaToMove;
                 }
-         */
+            }
+
+            // Y-Dimension
+            for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
+            {
+                for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
+                {
+                    int k = 0;
+                    IndexInt cellI = x * gridSize[1] + y;
+                    IndexInt cellI_1 = cellI + 1;
+
+                    if (!flags_n_plus_one.isFluid(x, y, k) || !flags_n_plus_one.isFluid(x, y + 1, k))
+                    {
+                        continue;
+                    }
+
+                    Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
+
+                    gamma[cellI] += fluxGamma;
+                    gamma[cellI_1] -= fluxGamma;
+
+                    T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
+                    newGrid(x, y, k) += gammaToMove;
+                    newGrid(x, y + 1, k) -= gammaToMove;
+                }
+            }
+        }
+
         setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
         grid.swap(newGrid);
     }
@@ -928,18 +980,18 @@ namespace Manta
         return std::to_string(sum) + "," + std::to_string(min) + "," + std::to_string(max);
     }
 
-    /*     KERNEL(points)
-        void knAdvectParticlesForward(ParticleSystem &particles, const MACGrid &vel, Real dt)
-        {
-            Vec3 pos = particles.getPos(idx);
-            particles.setPos(idx, pos + dt * vel.getInterpolated(pos));
-        }
+    KERNEL(points)
+    void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt)
+    {
+        Vec3 pos = particles.getPos(idx);
+        particles.setPos(idx, pos + dt * vel.getInterpolatedHi(pos, 2));
+    }
 
-        PYTHON()
-        void advectParticlesForward(ParticleBase *particles, const MACGrid *vel)
-        {
-            knAdvectParticlesForward(*particles, *vel);
-        } */
+    PYTHON()
+    void advectParticlesForward(BasicParticleSystem *particles, const MACGrid *vel)
+    {
+        knAdvectParticlesForward(*particles, *vel, vel->getParent()->getDt());
+    }
 
     // TEST, für mehr performance, geht noch nicht
     KERNEL()

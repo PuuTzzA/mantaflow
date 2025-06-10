@@ -8,7 +8,7 @@ RESOLUTION = 64
 TITLE = "FLIP simple high CFL"
 FILENAME = f'../analysis/data/{TITLE.replace(" ", "_")}.json'
 CFL = 1
-MAX_TIME = 300
+MAX_TIME = 1000
 NUM_FRAMES_RENDERED = 6
 EXPORT = False
 
@@ -25,11 +25,11 @@ if (dim==2):
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # Adaptive time stepping
-s.cfl         = 30            # maximal velocity per cell and timestep, 3 is fairly strict
+s.cfl         = 1           # maximal velocity per cell and timestep, 3 is fairly strict
 s.frameLength = 0.8                 # length of one frame (in "world time")
 s.timestep    = s.frameLength 
 s.timestepMin = 0.001 
-s.timestepMax = 2
+s.timestepMax = 200
 
 # prepare grids and particles
 flags_n    = s.create(FlagGrid)
@@ -111,7 +111,10 @@ for t in range(MAX_TIME):
 		markFluidCells( parts=pp, flags=flags_n )
 
 	else:
+		#pp.advectInMACGrid(vel=vel)
 		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
+		#advectParticlesForward( particles=pp, vel=vel)
+		
 		markFluidCells( parts=pp, flags=flags_n_plus_one)
 
 		#advectSemiLagrange( flags=flags_n, vel=vel, grid=vel,   order=2 )

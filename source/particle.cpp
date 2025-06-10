@@ -340,6 +340,16 @@ void BasicParticleSystem::getCurrentData(std::string filename, std::string title
     file.close(); // Close the file
 }
 
+void BasicParticleSystem::advectInMACGrid(const MACGrid *vel){
+	IndexInt s = 0;
+	IndexInt e = (IndexInt)mData.size();
+	Real dt = vel->getParent()->getDt();
+
+	for(IndexInt i=s; i<e; ++i) {	
+		mData[i].pos += dt * vel->getInterpolatedHi(mData[i].pos, 2); 
+	}
+}
+
 std::string BasicParticleSystem::getDataPointer() {
 	std::ostringstream out;
 	out << &mData;

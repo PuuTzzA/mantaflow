@@ -213,10 +213,11 @@ public:
 	//! dangerous, get low level access - avoid usage, only used in vortex filament advection for now
 	std::vector<BasicParticleData>& getData() { return mData; }
 
+	// THOMAS Functions
 	PYTHON() void printParts(IndexInt start=-1, IndexInt stop=-1, bool printIndex=false);
 	PYTHON() void clearFile(std::string filename = "data.txt");
 	PYTHON() void getCurrentData(std::string filename, std::string title, float cfl, int resolution, FlagGrid& flags, MACGrid &vel, bool lastFrame=false);
-
+	PYTHON() void advectInMACGrid(const MACGrid *vel);
 	//! get data pointer of particle data
 	PYTHON() std::string getDataPointer();
 };
