@@ -105,7 +105,7 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
-    Vec3 customTraceWaterBack(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, Vec3i &gs, Vec3 &offset)
+    Vec3 customTraceWaterBack(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags_n, Vec3i &gs, Vec3 &offset)
     {
         if (flags_n.isObstacle(pos))
         {
@@ -122,10 +122,10 @@ namespace Manta
         if (offset[0] == 0.0) // MAC Grid X-component
         {
             Vec3 nextPos1 = RK4(pos - Vec3(0.5, 0, 0), dt, vel);
-            bool firstInside = flags_n.isFluid(nextPos + Vec3(0.5, 0, 0));
+            bool firstInside = flags_n.isFluid(nextPos1);
 
             Vec3 nextPos2 = RK4(pos + Vec3(0.5, 0, 0), dt, vel);
-            bool secondInside = flags_n.isFluid(nextPos - Vec3(0.5, 0, 0));
+            bool secondInside = flags_n.isFluid(nextPos2);
 
             if (firstInside && secondInside)
             {
@@ -133,21 +133,21 @@ namespace Manta
             }
             if (firstInside)
             {
-                return nextPos1;
+                return nextPos1 + Vec3(0.5, 0, 0);
             }
             if (secondInside)
             {
-                return nextPos2;
+                return nextPos2 - Vec3(0.5, 0, 0);
             }
         }
 
         if (offset[1] == 0.0) // MAC Grid Y-component
         {
             Vec3 nextPos1 = RK4(pos - Vec3(0, 0.5, 0), dt, vel);
-            bool firstInside = flags_n.isFluid(nextPos + Vec3(0, 0.5, 0));
+            bool firstInside = flags_n.isFluid(nextPos1);
 
             Vec3 nextPos2 = RK4(pos + Vec3(0, 0.5, 0), dt, vel);
-            bool secondInside = flags_n.isFluid(nextPos - Vec3(0, 0.5, 0));
+            bool secondInside = flags_n.isFluid(nextPos2);
 
             if (firstInside && secondInside)
             {
@@ -155,11 +155,11 @@ namespace Manta
             }
             if (firstInside)
             {
-                return nextPos1;
+                return nextPos1 + Vec3(0, 0.5, 0);
             }
             if (secondInside)
             {
-                return nextPos2;
+                return nextPos2 - Vec3(0, 0.5, 0);
             }
         }
 
@@ -269,7 +269,6 @@ namespace Manta
         {
             w110 = fx * fy * (1 - fz);
         }
-
         if (gs.z > 1)
         {
             if (isValid(i, j, k + 1, flags, gs))
@@ -291,7 +290,6 @@ namespace Manta
         }
 
         Real tot = w000 + w010 + w100 + w110;
-
         if (gs.z > 1)
         {
             tot += w001 + w011 + w101 + w111;
@@ -680,7 +678,7 @@ namespace Manta
             {
                 int k = 0;
 
-                if (!flags_n.isFluid(i, j, k))
+                if (!(flags_n_plus_one.isFluid(i, j, k)))
                 {
                     continue;
                 }
@@ -688,7 +686,7 @@ namespace Manta
                 IndexInt cellJ = i * gridSize[1] + j;
 
                 Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-                newPos = customTraceWaterBack(newPos, vel, -dt, flags_n, flags_n_plus_one, gridSize, offset);
+                newPos = customTraceWaterBack(newPos, vel, -dt, flags_n, gridSize, offset);
 
                 auto neighboursAndWeights = getInterpolationstencilAndWeights(flags_n, newPos, gridSize, offset);
                 for (const auto &[n, w] : neighboursAndWeights)
@@ -707,7 +705,7 @@ namespace Manta
             for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
             {
                 int k = 0;
-                if (!flags_n.isFluid(i, j, k))
+                if (!(flags_n.isFluid(i, j, k)))
                 {
                     continue;
                 }
