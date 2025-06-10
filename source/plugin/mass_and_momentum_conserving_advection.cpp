@@ -856,7 +856,8 @@ namespace Manta
                         continue;
                     }
 
-                    if (gamma[cellI] < EPSILON || gamma[cellI_1] < EPSILON){
+                    if (gamma[cellI] < EPSILON || gamma[cellI_1] < EPSILON)
+                    {
                         std::cout << "gamma is zero" << std::endl;
                         continue;
                     }
@@ -881,30 +882,36 @@ namespace Manta
                 }
             }
 
-            /*             // Y-Dimension
-                        for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
-                        {
-                            for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
-                            {
-                                int k = 0;
-                                IndexInt cellI = x * gridSize[1] + y;
-                                IndexInt cellI_1 = cellI + 1;
+            // Y-Dimension
+            for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
+            {
+                for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
+                {
+                    int k = 0;
+                    IndexInt cellI = x * gridSize[1] + y;
+                    IndexInt cellI_1 = cellI + 1;
 
-                                if (!isValidInOne(Vec3(x, y, k), Vec3(x, y + 1, k), flags_n, flags_n_plus_one, gridSize))
-                                {
-                                    continue;
-                                }
+                    if (!isValidInOne(Vec3(x, y, k), Vec3(x, y + 1, k), flags_n, flags_n_plus_one, gridSize))
+                    {
+                        continue;
+                    }
 
-                                Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
+                    if (gamma[cellI] < EPSILON || gamma[cellI_1] < EPSILON)
+                    {
+                        std::cout << "gamma is zero" << std::endl;
+                        continue;
+                    }
 
-                                gamma[cellI] += fluxGamma;
-                                gamma[cellI_1] -= fluxGamma;
+                    Real fluxGamma = (gamma[cellI_1] - gamma[cellI]) / 2;
 
-                                T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
-                                newGrid(x, y, k) += gammaToMove;
-                                newGrid(x, y + 1, k) -= gammaToMove;
-                            }
-                        } */
+                    gamma[cellI] += fluxGamma;
+                    gamma[cellI_1] -= fluxGamma;
+
+                    T gammaToMove = newGrid(x, y + 1, k) * (fluxGamma / gamma[cellI_1]);
+                    newGrid(x, y, k) += gammaToMove;
+                    newGrid(x, y + 1, k) -= gammaToMove;
+                }
+            }
         }
 
         setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
