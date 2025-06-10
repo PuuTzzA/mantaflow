@@ -15,6 +15,10 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 smokeDensity = -0.001
 smokeTempDiff = 0.1
 
+doOpen = True
+doObstacle = True
+doConserving = True
+
 # set time step range
 s.frameLength = 1.2   # length of one frame (in "world time")
 s.timestepMin = 0.2   # time step range
@@ -40,9 +44,6 @@ fuel_gamma = s.create(RealGrid)
 heat_gamma = s.create(RealGrid)
 innen0außen1_gamma = s.create(RealGrid)
 vel_gamma = s.create(MACGrid)
-
-doOpen = False
-doObstacle = True
 
 # how many frames to calculate 
 frames = 100
@@ -128,7 +129,7 @@ while s.frame < frames:
 
 	processBurn( fuel=fuel, density=density, react=react, heat=heat )
 
-	if False:
+	if not doConserving:
 		advectSemiLagrange( flags=flags, vel=vel, grid=density, order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=heat,   order=2 )
 		advectSemiLagrange( flags=flags, vel=vel, grid=fuel,   order=2 )
@@ -165,7 +166,7 @@ while s.frame < frames:
 
 	updateFlame( react=react, flame=flame )
 
-	#timings.display()
+	timings.display()
 	stats = calculateMass(grid=innen0außen1).split(",")
 	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")
 
