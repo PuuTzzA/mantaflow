@@ -15,7 +15,7 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 smokeDensity = -0.001
 smokeTempDiff = 0.1
 
-doOpen = True
+doOpen = False
 doObstacle = True
 doConserving = True
 

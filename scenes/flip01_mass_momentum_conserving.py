@@ -4,15 +4,16 @@
 # 
 from manta import *
 
-RESOLUTION = 64
+RESOLUTION = 50
 TITLE = "FLIP simple high CFL"
 FILENAME = f'../analysis/data/{TITLE.replace(" ", "_")}.json'
 CFL = 1
-MAX_TIME = 1000
+MAX_TIME = 600
 NUM_FRAMES_RENDERED = 6
 EXPORT = False
 
 doOpen = False
+doConserving = True
 
 # solver params
 dim = 2
@@ -25,15 +26,17 @@ if (dim==2):
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # Adaptive time stepping
-s.cfl         = 1           # maximal velocity per cell and timestep, 3 is fairly strict
+s.cfl         = 3000          # maximal velocity per cell and timestep, 3 is fairly strict
 s.frameLength = 0.8                 # length of one frame (in "world time")
 s.timestep    = s.frameLength 
 s.timestepMin = 0.001 
-s.timestepMax = 200
+s.timestepMax = 20000
 
 # prepare grids and particles
 flags_n    = s.create(FlagGrid)
 flags_n_plus_one = s.create(FlagGrid)
+test_real_grid = s.create(RealGrid)
+test_real_grid_gamma = s.create(RealGrid)
 vel      = s.create(MACGrid)
 vel_gamma = s.create(MACGrid)
 velOld   = s.create(MACGrid)
@@ -87,16 +90,23 @@ if (GUI):
 	gui.show()
 	gui.windowSize(800, 800)
 	gui.setCamPos(0, 0, -1.3)
-	gui.nextRealDisplayMode()
-	gui.nextRealDisplayMode()
-	gui.nextRealDisplayMode()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
+	#gui.nextRealDisplayMode()
 	#gui.pause()
 
 pp.clearFile(FILENAME)
+
+test_start = 0
+test_min = 1000000
+test_max = -1000000
+
 #main loop
 for t in range(MAX_TIME):
 	if s.frame < 1:
 		fillWithOnes( grid=vel_gamma )
+		fillFluidWithOnes( grid=test_real_grid, flags=flags_n )
+		fillWithOnes( grid=test_real_grid_gamma )
 
 	maxVel = vel.getMax()
 	s.adaptTimestep( maxVel )
@@ -104,11 +114,12 @@ for t in range(MAX_TIME):
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	# FLIP 
-	if False:
+	if not doConserving:
 		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
 		mapPartsToMAC(vel=vel, flags=flags_n, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 ) # maps velocity from particles to grid
 		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) # idk
 		markFluidCells( parts=pp, flags=flags_n )
+		advectSemiLagrange( flags=flags_n, vel=vel, grid=test_real_grid, order=2 )
 
 	else:
 		#pp.advectInMACGrid(vel=vel)
@@ -117,6 +128,8 @@ for t in range(MAX_TIME):
 		
 		markFluidCells( parts=pp, flags=flags_n_plus_one)
 
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
+		
 		#advectSemiLagrange( flags=flags_n, vel=vel, grid=vel,   order=2 )
 		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma)
 
@@ -142,9 +155,19 @@ for t in range(MAX_TIME):
 	# FLIP velocity update
 	flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 ) # add difference to per particle velocity
 	
+	stats = calculateMass(grid=test_real_grid).split(",")
+	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")
+
 	#gui.screenshot( 'flipt_%04d.png' % t );
 	if (EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):
 		gui.screenshot( f'../analysis/images/{TITLE.replace(" ", "_")}_{str(t).zfill(4)}.png')
 
+	if s.frame == 0:
+		test_start = stats[0]
+	test_min = min(test_min, float(stats[0]))
+	test_max = max(test_max, float(stats[0]))
+
 	s.step()
+
+mantaMsg(f"Summary of Total Mass:\nStart: {test_start}, Min: {test_min}, Max: {test_max}")
 
