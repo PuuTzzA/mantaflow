@@ -39,15 +39,14 @@ test_real_grid = s.create(RealGrid)
 test_real_grid_gamma = s.create(RealGrid)
 vel      = s.create(MACGrid)
 vel_gamma = s.create(MACGrid)
+vel_extrapolated = s.create(MACGrid)
 velOld   = s.create(MACGrid)
 pressure = s.create(RealGrid)
 tmpVec3  = s.create(VecGrid)
 
 pp       = s.create(BasicParticleSystem) 
-level_set_particles = s.create(BasicParticleSystem)
 # add velocity data to particles
 pVel     = pp.create(PdataVec3) 
-level_set_particles_phi = level_set_particles.create(PdataReal)
 
 # scene setup
 bWidth=1
@@ -89,6 +88,12 @@ phi_fluid = fluidbox.computeLevelset()
 phi_fluid.initFromFlags( flags=flags_n )
 phi_fluid.reinitMarching( flags=flags_n )
 
+level_set_particles = s.create(BasicParticleSystem)
+level_set_particles_phi = level_set_particles.create(PdataReal)
+
+sampleLevelsetBorderWithParticles( phi=phi_fluid, flags=flags_n, particles=level_set_particles)
+testSeedParticles( phi=phi_fluid, flags=flags_n, g=test_real_grid, particles=level_set_particles)
+
 # note, there's no resamplig here, so we need _LOTS_ of particles...
 sampleFlagsWithParticles( flags=flags_n, parts=pp, discretization=particleNumber, randomness=0.2 )
 
@@ -100,7 +105,7 @@ if (GUI):
 	gui.nextRealGrid()
 	gui.nextRealGrid()
 	#gui.nextRealDisplayMode()
-	#gui.pause()
+	gui.pause()
 
 pp.clearFile(FILENAME)
 
@@ -131,9 +136,18 @@ for t in range(MAX_TIME):
 	else:
 		#pp.advectInMACGrid(vel=vel)
 		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
-		advectParticlesForward( particles=pp, vel=vel, flags=flags_n)
-		
+
+		vel_extrapolated.copyFrom(vel)
+		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated )
+
+		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
+
+
+
+		advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
 		markFluidCells( parts=pp, flags=flags_n_plus_one)
+
+
 
 		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
 		

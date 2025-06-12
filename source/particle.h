@@ -38,6 +38,8 @@ public:
 		PBUBBLE       = (1<<2),
 		PFOAM         = (1<<3),
 		PTRACER       = (1<<4),
+		PINSIDE       = (1<<5), // THOMAS, for Particle Level Set
+		POUTSIDE	  = (1<<6), // THOMAS
 		PDELETE       = (1<<10), // mark as deleted, will be deleted in next compress() step
 		PINVALID      = (1<<30), // unused
 	};

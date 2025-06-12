@@ -204,6 +204,7 @@ set(PP_SOURCES
 	source/edgecollapse.cpp
 	source/plugin/advection.cpp
 	source/plugin/mass_and_momentum_conserving_advection.cpp
+	source/plugin/particle_level_set.cpp
 	source/plugin/extforces.cpp
 	source/plugin/apic.cpp
 	source/plugin/flip.cpp
