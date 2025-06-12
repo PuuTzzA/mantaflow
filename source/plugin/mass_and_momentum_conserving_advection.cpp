@@ -482,7 +482,7 @@ namespace Manta
 
     KERNEL(bnd = 0)
     template <class T>
-    void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags, Vec3i &gs)
+    void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
     {
         if (flags.isObstacle(i, j, k))
         {
@@ -491,7 +491,7 @@ namespace Manta
         else
         {
             Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-            newPos = customTrace(newPos, vel, -dt, flags, gs);
+            newPos = customTrace(newPos, vel, -dt, flags, gridSize);
 
             auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
             for (const auto &[n, w] : neighboursAndWeights)
@@ -503,7 +503,7 @@ namespace Manta
 
     KERNEL(bnd = 0)
     template <class T>
-    void advectGammaCumWater(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags, Vec3i &gs)
+    void advectGammaCumWater(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
     {
         if (flags.isObstacle(i, j, k))
         {
@@ -512,7 +512,7 @@ namespace Manta
         else
         {
             Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-            newPos = customTraceWaterBack(newPos, vel, -dt, flags, gs, offset);
+            newPos = customTraceWaterBack(newPos, vel, -dt, flags, gridSize, offset);
 
             auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
             for (const auto &[n, w] : neighboursAndWeights)
@@ -562,8 +562,7 @@ namespace Manta
 
         // For testing of the "normal" advection step that is used in this function
         /* Grid<T> testGrid(parent);
-        Vec3i testGS = parent->getGridSize();
-        advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags, testGS);
+        advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags);
         grid.swap(testGrid);
         return; */
 
@@ -571,7 +570,7 @@ namespace Manta
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
         Grid<Real> newGammaCum(parent);
-        advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags, gridSize);
+        advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
         gammaCumulative.swap(newGammaCum);
 
         // main advection part
@@ -785,8 +784,7 @@ namespace Manta
 
         // For testing of the "normal" advection step that is used in this function
         /* Grid<T> testGrid(parent);
-        Vec3i testGS = parent->getGridSize();
-        advectGammaCumWater<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags_n, testGS);
+        advectGammaCumWater<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags_n);
         grid.swap(testGrid);
         return; */
 
@@ -794,7 +792,7 @@ namespace Manta
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
         Grid<Real> newGammaCum(parent);
-        advectGammaCumWater<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags_n, gridSize);
+        advectGammaCumWater<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags_n);
         gammaCumulative.swap(newGammaCum);
 
         // main advection part
@@ -1181,9 +1179,24 @@ namespace Manta
     }
 
     PYTHON()
-    void advectParticlesForward(BasicParticleSystem *particles, const MACGrid *vel, const FlagGrid* flags)
+    void advectParticlesForward(BasicParticleSystem *particles, const MACGrid *vel, const FlagGrid *flags)
     {
         knAdvectParticlesForward(*particles, *vel, vel->getParent()->getDt(), *flags, vel->getParent()->getGridSize());
+    }
+
+    PYTHON()
+    void simpleSLAdvection(const FlagGrid *flags, const MACGrid *vel, Grid<Real> *grid)
+    {
+        Manta::FluidSolver *parent = flags->getParent();
+        Real dt = parent->getDt();
+        Vec3i gridSize = parent->getGridSize();
+        Vec3 offset = Vec3(0.5, 0.5, 0.5);
+
+        Grid<Real> newGrid(parent);
+
+        advectGammaCum<Real>(*vel, *grid, newGrid, dt, gridSize, offset, *flags);
+
+        grid->swap(newGrid);
     }
 
     // TEST, für mehr performance, geht noch nicht
@@ -1215,8 +1228,7 @@ namespace Manta
 
         // For testing of the "normal" advection step that is used in this function
         /* Grid<T> testGrid(parent);
-        Vec3i testGS = parent->getGridSize();
-        advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags, testGS);
+        advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags);
         grid.swap(testGrid);
         return; */
 
@@ -1224,7 +1236,7 @@ namespace Manta
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
         Grid<Real> newGammaCum(parent);
-        advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags, gridSize);
+        advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
         gammaCumulative.swap(newGammaCum);
 
         // main advection part
