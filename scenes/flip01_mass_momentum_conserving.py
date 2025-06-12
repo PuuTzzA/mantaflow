@@ -44,8 +44,10 @@ pressure = s.create(RealGrid)
 tmpVec3  = s.create(VecGrid)
 
 pp       = s.create(BasicParticleSystem) 
+level_set_particles = s.create(BasicParticleSystem)
 # add velocity data to particles
 pVel     = pp.create(PdataVec3) 
+level_set_particles_phi = level_set_particles.create(PdataReal)
 
 # scene setup
 bWidth=1
@@ -79,8 +81,13 @@ fluidbox = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(0.25, 0.5, 1)) # breakin
 #fluidbox = Box( parent=s, p0=gs*vec3(0.4,0.72,0.4), p1=gs*vec3(0.6,0.92,0.6)) # centered falling block
 phiInit = fluidbox.computeLevelset()
 flags_n.updateFromLevelset(phiInit)
-flags_n_plus_one.updateFromLevelset(phiInit)
+flags_n_plus_one.updateFromLevelset(phiInit )
 # phiInit is not needed from now on!
+
+# level set method 
+phi_fluid = fluidbox.computeLevelset()
+phi_fluid.initFromFlags( flags=flags_n )
+phi_fluid.reinitMarching( flags=flags_n )
 
 # note, there's no resamplig here, so we need _LOTS_ of particles...
 sampleFlagsWithParticles( flags=flags_n, parts=pp, discretization=particleNumber, randomness=0.2 )
@@ -123,8 +130,8 @@ for t in range(MAX_TIME):
 
 	else:
 		#pp.advectInMACGrid(vel=vel)
-		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
-		#advectParticlesForward( particles=pp, vel=vel)
+		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
+		advectParticlesForward( particles=pp, vel=vel, flags=flags_n)
 		
 		markFluidCells( parts=pp, flags=flags_n_plus_one)
 
@@ -149,11 +156,11 @@ for t in range(MAX_TIME):
 	solvePressure(flags=flags_n, vel=vel, pressure=pressure)
 	setWallBcs(flags=flags_n, vel=vel)
 
-	# we dont have any levelset, ie no extrapolation, so make sure the velocities are valid
-	extrapolateMACSimple( flags=flags_n, vel=vel )
-	
-	# FLIP velocity update
-	flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 ) # add difference to per particle velocity
+	if not doConserving:
+		# we dont have any levelset, ie no extrapolation, so make sure the velocities are valid
+		extrapolateMACSimple( flags=flags_n, vel=vel )
+		# FLIP velocity update
+		flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 ) # add difference to per particle velocity
 	
 	stats = calculateMass(grid=test_real_grid).split(",")
 	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")

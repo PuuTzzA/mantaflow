@@ -78,6 +78,16 @@ namespace Manta
         return flags.isFluid(i, j, k) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1 && k >= 0 && k <= gs[2] - 1;
     }
 
+    inline Vec3 RK4(Vec3 pos, Real dt, const MACGrid &vel)
+    {
+        Vec3 k1 = vel.getInterpolatedHi(pos, 2);
+        Vec3 k2 = vel.getInterpolatedHi(pos + dt / 2. * k1, 2);
+        Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2. * k2, 2);
+        Vec3 k4 = vel.getInterpolatedHi(pos + dt * k3, 2);
+
+        return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
+    }
+
     Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i &gs)
     {
         if (flags.isObstacle(pos))
@@ -85,12 +95,7 @@ namespace Manta
             throw std::runtime_error("trace starting from obstacle!");
         }
 
-        Vec3 k1 = vel.getInterpolatedHi(pos, 2);
-        Vec3 k2 = vel.getInterpolatedHi(pos + dt / 2. * k1, 2);
-        Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2. * k2, 2);
-        Vec3 k4 = vel.getInterpolatedHi(pos + dt * k3, 2);
-
-        Vec3 nextPos = pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
+        Vec3 nextPos = RK4(pos, dt, vel);
 
         if (!flags.isObstacle(nextPos))
         {
@@ -125,16 +130,6 @@ namespace Manta
             }
         }
         return lastKnownFluidPos;
-    }
-
-    inline Vec3 RK4(Vec3 pos, Real dt, const MACGrid &vel)
-    {
-        Vec3 k1 = vel.getInterpolatedHi(pos, 2);
-        Vec3 k2 = vel.getInterpolatedHi(pos + dt / 2. * k1, 2);
-        Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2. * k2, 2);
-        Vec3 k4 = vel.getInterpolatedHi(pos + dt * k3, 2);
-
-        return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
     Vec3 customTraceWaterBack(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags_n, Vec3i &gs, Vec3 &offset)
@@ -1178,16 +1173,17 @@ namespace Manta
     }
 
     KERNEL(points)
-    void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt)
+    void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i gs)
     {
         Vec3 pos = particles.getPos(idx);
-        particles.setPos(idx, pos + dt * vel.getInterpolatedHi(pos, 2));
+        pos = customTrace(pos, vel, dt, flags, gs);
+        particles.setPos(idx, pos);
     }
 
     PYTHON()
-    void advectParticlesForward(BasicParticleSystem *particles, const MACGrid *vel)
+    void advectParticlesForward(BasicParticleSystem *particles, const MACGrid *vel, const FlagGrid* flags)
     {
-        knAdvectParticlesForward(*particles, *vel, vel->getParent()->getDt());
+        knAdvectParticlesForward(*particles, *vel, vel->getParent()->getDt(), *flags, vel->getParent()->getGridSize());
     }
 
     // TEST, für mehr performance, geht noch nicht
