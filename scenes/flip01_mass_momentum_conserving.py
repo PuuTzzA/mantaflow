@@ -141,14 +141,20 @@ for t in range(MAX_TIME):
 		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10 )
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
 		simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid )
-		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii )
-		reinitializeLevelset( phi=phi_fluid )
-		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii )
+		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
+		reinitializeLevelset( phi=phi_fluid, flags=flags_n )
+		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
+
+		if (t % 10 == 0):
+			reseedParticles(phi=phi_fluid, flags=flags_n, particles=level_set_particles, radii=particle_radii)
+
 		reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
 
+		setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=0.0)
+
 		# as long as level set does not work lasdkfjalsdkjflaskjdf
-		advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
-		markFluidCells( parts=pp, flags=flags_n_plus_one)
+		#advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
+		#markFluidCells( parts=pp, flags=flags_n_plus_one)
 		# end as long as level set does not work alskdjföalskdfjöalskj
 
 		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
