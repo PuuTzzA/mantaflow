@@ -15,13 +15,13 @@ namespace Manta
 
     //! Semi-Lagrange interpolation kernel
     KERNEL()
-    void fillHelper(Grid<Real> &dst)
+    void knFillHelper(Grid<Real> &dst)
     {
         dst(i, j, k) = 1;
     }
 
     KERNEL()
-    void fillHelperMAC(MACGrid &dst)
+    void knFillHelperMAC(MACGrid &dst)
     {
         dst(i, j, k) = Vec3(1., 1., 1.);
     }
@@ -31,18 +31,18 @@ namespace Manta
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fillHelper(*((Grid<Real> *)grid)).run();
+            knFillHelper(*((Grid<Real> *)grid)).run();
             std::cout << "filled Grid<Real> with ones" << std::endl;
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fillHelperMAC(*((MACGrid *)grid)).run();
+            knFillHelperMAC(*((MACGrid *)grid)).run();
             std::cout << "filled MACGrid with ones" << std::endl;
         }
     }
 
     KERNEL()
-    void fluidFillHelper(Grid<Real> &grid, const FlagGrid &flags)
+    void knFluidFillHelper(Grid<Real> &grid, const FlagGrid &flags)
     {
         if (flags.isFluid(i, j, k))
         {
@@ -59,8 +59,35 @@ namespace Manta
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fluidFillHelper(*((Grid<Real> *)grid), *flags);
+            knFluidFillHelper(*((Grid<Real> *)grid), *flags);
             std::cout << "filled fluid cells in Grid<Real> with ones" << std::endl;
+        }
+        else
+        {
+            throw std::runtime_error("fill fluid with ones not implemented for this grid type!");
+        }
+    }
+
+    KERNEL()
+    void knFluidLSFillHelper(Grid<Real> &grid, const FlagGrid &flags, const Grid<Real> &phi, Real level)
+    {
+        if (!flags.isObstacle(i, j, k) && phi(i, j, k) < level)
+        {
+            grid(i, j, k) = 1.;
+        }
+        else
+        {
+            grid(i, j, k) = 0.;
+        }
+    }
+
+    PYTHON()
+    void fillLevelsetWithOnes(GridBase *grid, const FlagGrid *flags, const Grid<Real> *phi, Real level)
+    {
+        if (grid->getType() & GridBase::TypeReal)
+        {
+            knFluidLSFillHelper(*((Grid<Real> *)grid), *flags, *phi, level);
+            std::cout << "filled fluid based on phi in Grid<Real> with ones" << std::endl;
         }
         else
         {
@@ -482,7 +509,7 @@ namespace Manta
 
     KERNEL(bnd = 0)
     template <class T>
-    void advectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
+    void knAdvectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
     {
         if (flags.isObstacle(i, j, k))
         {
@@ -503,7 +530,7 @@ namespace Manta
 
     KERNEL(bnd = 0)
     template <class T>
-    void advectGammaCumWater(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
+    void knAdvectGammaCumWater(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
     {
         if (flags.isObstacle(i, j, k))
         {
@@ -524,7 +551,7 @@ namespace Manta
 
     KERNEL()
     template <class T>
-    void setNewGammaCum(Grid<Real> &gammaCum, std::vector<Real> gamma, Vec3i gridSize)
+    void knSetNewGammaCum(Grid<Real> &gammaCum, std::vector<Real> gamma, Vec3i gridSize)
     {
         gammaCum(i, j, k) = gamma[i * gridSize[1] + j];
     }
@@ -570,7 +597,7 @@ namespace Manta
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
         Grid<Real> newGammaCum(parent);
-        advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
+        knAdvectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
         gammaCumulative.swap(newGammaCum);
 
         // main advection part
@@ -765,7 +792,7 @@ namespace Manta
             }
         }
 
-        setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
+        knSetNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
         grid.swap(newGrid);
     }
 
@@ -792,7 +819,7 @@ namespace Manta
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
         Grid<Real> newGammaCum(parent);
-        advectGammaCumWater<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags_n);
+        knAdvectGammaCumWater<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags_n);
         gammaCumulative.swap(newGammaCum);
 
         // main advection part
@@ -1053,12 +1080,12 @@ namespace Manta
             }
         }
 
-        setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
+        knSetNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
         grid.swap(newGrid);
     }
 
     KERNEL()
-    void MAC2Grids(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
+    void knMAC2Grids(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
     {
         Vec3 data = vel(i, j, k);
         velX(i, j, k) = data.x;
@@ -1067,7 +1094,7 @@ namespace Manta
     }
 
     KERNEL()
-    void Grids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ, const FlagGrid &flags)
+    void knGrids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ, const FlagGrid &flags)
     {
         vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
     }
@@ -1082,8 +1109,8 @@ namespace Manta
         Grid<Real> gammaY(parent);
         Grid<Real> gammaZ(parent);
 
-        MAC2Grids(grid, velX, velY, velZ);
-        MAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ);
+        knMAC2Grids(grid, velX, velY, velZ);
+        knMAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ);
 
         /* Vec3 offsetX = Vec3(0.5, 0.0, 0.0);
         Vec3 offsetY = Vec3(0.0, 0.5, 0.0);
@@ -1106,8 +1133,8 @@ namespace Manta
             fnMassMomentumConservingAdvectWater<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ);
         }
 
-        Grids2MAC(grid, velX, velY, velZ, flags);
-        Grids2MAC(gammaCumulative, gammaX, gammaY, gammaZ, flags);
+        knGrids2MAC(grid, velX, velY, velZ, flags);
+        knGrids2MAC(gammaCumulative, gammaX, gammaY, gammaZ, flags);
         return;
     }
 
@@ -1194,7 +1221,7 @@ namespace Manta
 
         Grid<Real> newGrid(parent);
 
-        advectGammaCum<Real>(*vel, *grid, newGrid, dt, gridSize, offset, *flags);
+        knAdvectGammaCum<Real>(*vel, *grid, newGrid, dt, gridSize, offset, *flags);
 
         grid->swap(newGrid);
     }
@@ -1236,7 +1263,7 @@ namespace Manta
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
         Grid<Real> newGammaCum(parent);
-        advectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
+        knAdvectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
         gammaCumulative.swap(newGammaCum);
 
         // main advection part
@@ -1406,7 +1433,7 @@ namespace Manta
             }
         }
 
-        setNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
+        knSetNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
         grid.swap(newGrid);
     }
 }

@@ -4,7 +4,7 @@
 # 
 from manta import *
 
-RESOLUTION = 50
+RESOLUTION = 100
 TITLE = "FLIP simple high CFL"
 FILENAME = f'../analysis/data/{TITLE.replace(" ", "_")}.json'
 CFL = 1
@@ -12,8 +12,9 @@ MAX_TIME = 600
 NUM_FRAMES_RENDERED = 6
 EXPORT = False
 
+LEVEL = 0
 doOpen = False
-doConserving = True
+doConserving = False
 
 # solver params
 dim = 2
@@ -26,7 +27,7 @@ if (dim==2):
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # Adaptive time stepping
-s.cfl         = 3000          # maximal velocity per cell and timestep, 3 is fairly strict
+s.cfl         = CFL          # maximal velocity per cell and timestep, 3 is fairly strict
 s.frameLength = 0.8                 # length of one frame (in "world time")
 s.timestep    = s.frameLength 
 s.timestepMin = 0.001 
@@ -90,9 +91,7 @@ phi_fluid.reinitMarching( flags=flags_n )
 
 level_set_particles = s.create(BasicParticleSystem)
 particle_radii = level_set_particles.create(PdataReal)
-
 sampleLevelsetBorderWithParticles( phi=phi_fluid, flags=flags_n, particles=level_set_particles, radii=particle_radii)
-testSeedParticles( phi=phi_fluid, flags=flags_n, g=test_real_grid, particles=level_set_particles)
 
 # note, there's no resamplig here, so we need _LOTS_ of particles...
 sampleFlagsWithParticles( flags=flags_n, parts=pp, discretization=particleNumber, randomness=0.2 )
@@ -104,8 +103,15 @@ if (GUI):
 	gui.setCamPos(0, 0, -1.3)
 	gui.nextRealGrid()
 	gui.nextRealGrid()
-	#gui.nextRealDisplayMode()
-	gui.pause()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
+	if doConserving:
+		gui.nextParts()
+	#gui.pause()
 
 pp.clearFile(FILENAME)
 
@@ -117,7 +123,8 @@ test_max = -1000000
 for t in range(MAX_TIME):
 	if s.frame < 1:
 		fillWithOnes( grid=vel_gamma )
-		fillFluidWithOnes( grid=test_real_grid, flags=flags_n )
+		#fillFluidWithOnes( grid=test_real_grid, flags=flags_n )
+		fillLevelsetWithOnes( grid=test_real_grid, flags=flags_n, phi=phi_fluid, level=LEVEL )
 		fillWithOnes( grid=test_real_grid_gamma )
 
 	maxVel = vel.getMax()
@@ -129,7 +136,7 @@ for t in range(MAX_TIME):
 	if not doConserving:
 		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
 		mapPartsToMAC(vel=vel, flags=flags_n, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 ) # maps velocity from particles to grid
-		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) # idk
+		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) # extrapolate vel values into non fluid regions
 		markFluidCells( parts=pp, flags=flags_n )
 		advectSemiLagrange( flags=flags_n, vel=vel, grid=test_real_grid, order=2 )
 
@@ -138,7 +145,9 @@ for t in range(MAX_TIME):
 		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
 
 		vel_extrapolated.copyFrom(vel)
-		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10 )
+		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+		#extrapolateMACSimple( flags=flags_n, vel=vel, distance=10 )
+
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
 		simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid )
 		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
@@ -150,17 +159,17 @@ for t in range(MAX_TIME):
 
 		reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
 
-		setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=0.0)
+		setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
 		# as long as level set does not work lasdkfjalsdkjflaskjdf
-		#advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
-		#markFluidCells( parts=pp, flags=flags_n_plus_one)
+		# advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
+		# markFluidCells( parts=pp, flags=flags_n_plus_one)
 		# end as long as level set does not work alskdjföalskdfjöalskj
 
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
 		
 		#advectSemiLagrange( flags=flags_n, vel=vel, grid=vel,   order=2 )
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma)
 
 		flags_n.copyFrom(flags_n_plus_one)
 	
@@ -187,7 +196,8 @@ for t in range(MAX_TIME):
 	stats = calculateMass(grid=test_real_grid).split(",")
 	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")
 
-	#gui.screenshot( 'flipt_%04d.png' % t );
+	#gui.screenshot( 'flipt_%04d.png' % t )
+
 	if (EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):
 		gui.screenshot( f'../analysis/images/{TITLE.replace(" ", "_")}_{str(t).zfill(4)}.png')
 

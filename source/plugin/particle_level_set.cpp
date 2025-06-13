@@ -16,35 +16,55 @@ namespace Manta
         return;                                      \
     }
 
+#define DISCRETIZATION 2
+#define POSITIVE_CUTOFF 0.f
+#define NEGATIVE_CUTOFF -3.f
+#define MAX_PARTICLES_PER_CELL 10
+#define MIN_PARTICLES_PER_CELL 3
+#define ESCAPE_CONDITION .1 // a particle counts as escaped, if it is further than ESCAPE_CONDITION * radius on the wrong side
+
     KERNEL(points)
     void knSetParticleRadii(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const Grid<Real> &phi)
     {
         skipDelted(particles);
-        radii[idx] = std::abs(phi.getInterpolatedHi(particles[idx].pos, 2));
+        radii[idx] = std::abs(Manta::clamp(phi.getInterpolatedHi(particles[idx].pos, 2), NEGATIVE_CUTOFF, POSITIVE_CUTOFF));
     }
 
     PYTHON()
-    void sampleLevelsetBorderWithParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii,
-                                           Real cutoff = 2., int discretization = 2, Real randomness = 0.5)
+    void sampleLevelsetBorderWithParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, Real randomness = 0.5)
     {
-        Real step = 1. / discretization;
+        Real step = 1. / DISCRETIZATION;
         FOR_IJK_BND(flags, 0)
         {
             if (flags.isObstacle(i, j, k))
             {
                 continue;
             }
-            if (std::abs(phi(i, j, k)) < cutoff)
+            if (0 < phi(i, j, k) && phi(i, j, k) < POSITIVE_CUTOFF)
             {
-                for (int di = 0; di < discretization; di++)
+                for (int di = 0; di < DISCRETIZATION; di++)
                 {
-                    for (int dj = 0; dj < discretization; dj++)
+                    for (int dj = 0; dj < DISCRETIZATION; dj++)
                     {
                         Real randi = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
                         Real randj = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
 
                         Vec3 pos = Vec3(i + (0.5 + di) * step + randi, j + (0.5 + dj) * step + randj, 0.5);
-                        particles.addBuffered(pos, phi(i, j, k) < 0 ? ParticleBase::PINSIDE : ParticleBase::POUTSIDE);
+                        particles.addBuffered(pos, phi(i, j, k) < ParticleBase::POUTSIDE);
+                    }
+                }
+            }
+            else if (NEGATIVE_CUTOFF < phi(i, j, k) && phi(i, j, k) <= 0)
+            {
+                for (int di = 0; di < DISCRETIZATION; di++)
+                {
+                    for (int dj = 0; dj < DISCRETIZATION; dj++)
+                    {
+                        Real randi = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
+                        Real randj = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
+
+                        Vec3 pos = Vec3(i + (0.5 + di) * step + randi, j + (0.5 + dj) * step + randj, 0.5);
+                        particles.addBuffered(pos, ParticleBase::PINSIDE);
                     }
                 }
             }
@@ -111,7 +131,6 @@ namespace Manta
     PYTHON()
     void correctErrorsWithParticles(Grid<Real> &phi, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const FlagGrid &flags)
     {
-        static Real escapeCondition = 1.;
         // Step 1: find escaped particles
         std::vector<IndexInt> positiveEscaped{}; // escaped particles with flag POUTSIDE, but are escapeConditio * radius inside
         std::vector<IndexInt> negativeEscaped{}; // escaped particles with flag PINSIDE, but are escapeConditio * radius outside
@@ -131,7 +150,7 @@ namespace Manta
                 continue; // on the right side
             }
 
-            if (std::abs(phiAtPos) > escapeCondition * radii[idx])
+            if (std::abs(phiAtPos) > ESCAPE_CONDITION * radii[idx])
             {
                 continue; // particle still not far enough on wrong side
             }
@@ -275,12 +294,8 @@ namespace Manta
 
     PYTHON()
     //! you always need to run reinitializeRadii after this
-    void reseedParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii,
-                         Real cutoff = 2., Real randomness = 0.5)
+    void reseedParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, Real randomness = 0.5)
     {
-        const static int minParticles = 2;
-        const static int maxParticles = 8;
-
         Grid<Real> counterGrid(phi.getParent());
 
         int deletedParticles = 0;
@@ -297,13 +312,18 @@ namespace Manta
             int j = std::floor(particles[idx].pos[1]);
             int k = std::floor(particles[idx].pos[2]);
 
-            if (std::abs(phi(i, j, k)) > cutoff || flags.isObstacle(i, j, k))
+            if (flags.isObstacle(i, j, k))
+            {
+                continue;
+            }
+
+            if (!(NEGATIVE_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_CUTOFF))
             {
                 particles.kill(idx);
                 ++deletedParticles;
             }
 
-            if (++counterGrid(i, j, k) > maxParticles)
+            if (++counterGrid(i, j, k) > MAX_PARTICLES_PER_CELL)
             {
                 particles.kill(idx);
                 ++deletedParticles;
@@ -317,11 +337,11 @@ namespace Manta
             {
                 continue;
             }
-            if (std::abs(phi(i, j, k)) > cutoff)
+            if (!(NEGATIVE_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_CUTOFF))
             {
                 continue;
             }
-            for (int _ = 0; _ < minParticles + 1 - counterGrid(i, j, k); ++_)
+            for (int _ = 0; _ < MIN_PARTICLES_PER_CELL - counterGrid(i, j, k); ++_)
             {
                 ++addedParticles;
                 Real randi = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * randomness;
