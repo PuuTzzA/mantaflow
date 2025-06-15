@@ -236,6 +236,7 @@ set(PP_HEADERS
 	source/mesh.h
 	source/particle.h
 	source/levelset.h
+	source/plugin/mass_and_momentum_conserving_advection.h
 	source/shapes.h
 	source/noisefield.h
 	source/vortexsheet.h

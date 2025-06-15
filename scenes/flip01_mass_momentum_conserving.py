@@ -14,7 +14,7 @@ EXPORT = False
 
 LEVEL = 0
 doOpen = False
-doConserving = False
+doConserving = True
 
 # solver params
 dim = 2
@@ -109,9 +109,11 @@ if (GUI):
 	gui.nextRealGrid()
 	gui.nextRealGrid()
 	gui.nextRealGrid()
+	gui.nextVec3Grid()
+	gui.nextVec3Grid()
 	if doConserving:
 		gui.nextParts()
-	#gui.pause()
+	gui.pause()
 
 pp.clearFile(FILENAME)
 
@@ -137,15 +139,18 @@ for t in range(MAX_TIME):
 		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
 		mapPartsToMAC(vel=vel, flags=flags_n, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 ) # maps velocity from particles to grid
 		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) # extrapolate vel values into non fluid regions
+		vel_extrapolated.copyFrom(vel)
 		markFluidCells( parts=pp, flags=flags_n )
 		advectSemiLagrange( flags=flags_n, vel=vel, grid=test_real_grid, order=2 )
 
 	else:
 		#pp.advectInMACGrid(vel=vel)
 		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
-
 		vel_extrapolated.copyFrom(vel)
-		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+
+		#extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+		extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
+
 		#extrapolateMACSimple( flags=flags_n, vel=vel, distance=10 )
 
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)

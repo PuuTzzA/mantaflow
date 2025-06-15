@@ -2,6 +2,7 @@
 #include "grid.h"
 #include "particle.h"
 #include "kernel.h"
+#include "mass_and_momentum_conserving_advection.h"
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
@@ -61,33 +62,6 @@ namespace Manta
         {
             knFluidFillHelper(*((Grid<Real> *)grid), *flags);
             std::cout << "filled fluid cells in Grid<Real> with ones" << std::endl;
-        }
-        else
-        {
-            throw std::runtime_error("fill fluid with ones not implemented for this grid type!");
-        }
-    }
-
-    KERNEL()
-    void knFluidLSFillHelper(Grid<Real> &grid, const FlagGrid &flags, const Grid<Real> &phi, Real level)
-    {
-        if (!flags.isObstacle(i, j, k) && phi(i, j, k) < level)
-        {
-            grid(i, j, k) = 1.;
-        }
-        else
-        {
-            grid(i, j, k) = 0.;
-        }
-    }
-
-    PYTHON()
-    void fillLevelsetWithOnes(GridBase *grid, const FlagGrid *flags, const Grid<Real> *phi, Real level)
-    {
-        if (grid->getType() & GridBase::TypeReal)
-        {
-            knFluidLSFillHelper(*((Grid<Real> *)grid), *flags, *phi, level);
-            std::cout << "filled fluid based on phi in Grid<Real> with ones" << std::endl;
         }
         else
         {
@@ -1084,21 +1058,6 @@ namespace Manta
         grid.swap(newGrid);
     }
 
-    KERNEL()
-    void knMAC2Grids(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
-    {
-        Vec3 data = vel(i, j, k);
-        velX(i, j, k) = data.x;
-        velY(i, j, k) = data.y;
-        velZ(i, j, k) = data.z;
-    }
-
-    KERNEL()
-    void knGrids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ, const FlagGrid &flags)
-    {
-        vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
-    }
-
     void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water)
     {
         Grid<Real> velX(parent);
@@ -1135,7 +1094,6 @@ namespace Manta
 
         knGrids2MAC(grid, velX, velY, velZ, flags);
         knGrids2MAC(gammaCumulative, gammaX, gammaY, gammaZ, flags);
-        return;
     }
 
     PYTHON()

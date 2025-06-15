@@ -2,6 +2,7 @@
 #include "grid.h"
 #include "particle.h"
 #include "kernel.h"
+#include "mass_and_momentum_conserving_advection.h"
 #include <limits>
 #include <unordered_map>
 #include <unordered_set>
@@ -375,5 +376,306 @@ namespace Manta
     void setFlagsFromParticleLevelset(const Grid<Real> &phi, FlagGrid &flags, Real level)
     {
         knSetFlagsFromParticleLevelset(phi, flags, level);
+    }
+
+    KERNEL()
+    void knFluidLSFillHelper(Grid<Real> &grid, const FlagGrid &flags, const Grid<Real> &phi, Real level)
+    {
+        if (!flags.isObstacle(i, j, k) && phi(i, j, k) < level)
+        {
+            grid(i, j, k) = 1.;
+        }
+        else
+        {
+            grid(i, j, k) = 0.;
+        }
+    }
+
+    PYTHON()
+    void fillLevelsetWithOnes(GridBase *grid, const FlagGrid *flags, const Grid<Real> *phi, Real level)
+    {
+        if (grid->getType() & GridBase::TypeReal)
+        {
+            knFluidLSFillHelper(*((Grid<Real> *)grid), *flags, *phi, level);
+            std::cout << "filled fluid based on phi in Grid<Real> with ones" << std::endl;
+        }
+        else
+        {
+            throw std::runtime_error("fill fluid with ones not implemented for this grid type!");
+        }
+    }
+
+    KERNEL()
+    void knFillSolvedFlags(const FlagGrid &flags, Grid<int> &solvedGrid, Grid<Real> &velComponent, MACGridComponent component)
+    {
+        const Real D_INF = std::numeric_limits<Real>::max();
+        bool isSolid;
+        bool isFluid;
+
+        // direction: 0=x, 1=y, 3=z
+        switch (component)
+        {
+        case MAC_X:
+            isSolid = flags.isObstacle(i - 1, j, k) || flags.isObstacle(i, j, k);
+            isFluid = flags.isFluid(i - 1, j, k) || flags.isFluid(i, j, k);
+            break;
+        case MAC_Y:
+            isSolid = flags.isObstacle(i, j - 1, k) || flags.isObstacle(i, j, k);
+            isFluid = flags.isFluid(i, j - 1, k) || flags.isFluid(i, j, k);
+            break;
+        case MAC_Z:
+            throw std::runtime_error("not implemented yet! (getPhiAtMACCell with MAC_Z)");
+        }
+
+        if (isSolid || isFluid)
+        {
+            solvedGrid(i, j, k) = true;
+            if (isSolid)
+            {
+                velComponent(i, j, k) = 0.;
+            }
+        }
+        else
+        {
+            solvedGrid(i, j, k) = false;
+            velComponent(i, j, k) = D_INF;
+        }
+    }
+
+    inline Real getPhiAtMACCell(IndexInt i, IndexInt j, IndexInt k, const Grid<Real> &phi, MACGridComponent component)
+    {
+        switch (component)
+        {
+        case MAC_X:
+            return 0.5 * (phi(i, j, k) + phi(i - 1, j, k));
+        case MAC_Y:
+            return 0.5 * (phi(i, j, k) + phi(i, j - 1, k));
+        case MAC_Z:
+            throw std::runtime_error("not implemented yet! (getPhiAtMACCell with MAC_Z)");
+        default:
+            throw std::runtime_error("should never happen");
+        }
+    }
+
+    KERNEL()
+    void knRemoveInfinities(Grid<Real> &grid, int _)
+    {
+        grid(i, j, k) = grid(i, j, k) == std::numeric_limits<Real>::max() ? 0. : grid(i, j, k);
+    }
+
+    void extrapolateComponentFSM(Grid<Real> &velComponent, const Grid<Real> &phi, Grid<int> &solvedMask, int sweepIterations, Vec3i gs, MACGridComponent component)
+    {
+        const Real D_INF = std::numeric_limits<Real>::max();
+
+        for (int iter = 0; iter < sweepIterations; iter++)
+        {
+            // Sweep 1 (i++, j++)
+            for (IndexInt j = 1; j < gs[1] - 1; ++j)
+            {
+                for (IndexInt i = 1; i < gs[0] - 1; ++i)
+                {
+                    IndexInt k = 0;
+                    if (solvedMask(i, j, k))
+                    {
+                        continue;
+                    }
+
+                    Real sumVal = 0.;
+                    Real sumW = 0.;
+
+                    Real phiHere = getPhiAtMACCell(i, j, k, phi, component);
+
+                    if (velComponent(i - 1, j, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i - 1, j, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i - 1, j, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (velComponent(i, j - 1, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i, j - 1, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i, j - 1, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (sumW > 1e-6)
+                    {
+                        velComponent(i, j, k) = std::min(sumVal / sumW, velComponent(i, j, k));
+                    }
+                }
+            }
+
+            // Sweep 2 (i--, j++)
+            for (IndexInt j = 1; j < gs[1] - 1; ++j)
+            {
+                for (IndexInt i = gs[0] - 2; i >= 1; --i)
+                {
+                    IndexInt k = 0;
+                    if (solvedMask(i, j, k))
+                    {
+                        continue;
+                    }
+
+                    Real sumVal = 0.;
+                    Real sumW = 0.;
+
+                    Real phiHere = getPhiAtMACCell(i, j, k, phi, component);
+
+                    if (velComponent(i + 1, j, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i + 1, j, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i + 1, j, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (velComponent(i, j - 1, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i, j - 1, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i, j - 1, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (sumW > 1e-6)
+                    {
+                        velComponent(i, j, k) = std::min(sumVal / sumW, velComponent(i, j, k));
+                    }
+                }
+            }
+
+            // Sweep 3 (i++, j--)
+            for (IndexInt j = gs[1] - 2; j >= 1; --j)
+            {
+                for (IndexInt i = 1; i < gs[0] - 1; ++i)
+                {
+                    IndexInt k = 0;
+                    if (solvedMask(i, j, k))
+                    {
+                        continue;
+                    }
+
+                    Real sumVal = 0.;
+                    Real sumW = 0.;
+
+                    Real phiHere = getPhiAtMACCell(i, j, k, phi, component);
+
+                    if (velComponent(i - 1, j, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i - 1, j, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i - 1, j, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (velComponent(i, j + 1, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i, j + 1, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i, j + 1, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (sumW > 1e-6)
+                    {
+                        velComponent(i, j, k) = std::min(sumVal / sumW, velComponent(i, j, k));
+                    }
+                }
+            }
+
+            // Sweep 4 (i--, j--)
+            for (IndexInt j = gs[1] - 2; j >= 1; --j)
+            {
+                for (IndexInt i = gs[0] - 2; i >= 1; --i)
+                {
+                    IndexInt k = 0;
+                    if (solvedMask(i, j, k))
+                    {
+                        continue;
+                    }
+
+                    Real sumVal = 0.;
+                    Real sumW = 0.;
+
+                    Real phiHere = getPhiAtMACCell(i, j, k, phi, component);
+
+                    if (velComponent(i + 1, j, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i + 1, j, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i + 1, j, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (velComponent(i, j + 1, k) < D_INF)
+                    {
+                        Real phiNeighbor = getPhiAtMACCell(i, j + 1, k, phi, component);
+                        Real w = std::max(0.f, phiHere - phiNeighbor);
+                        if (w > 1e-6)
+                        {
+                            sumVal += w * velComponent(i, j + 1, k);
+                            sumW += w;
+                        }
+                    }
+
+                    if (sumW > 1e-6)
+                    {
+                        velComponent(i, j, k) = std::min(sumVal / sumW, velComponent(i, j, k));
+                    }
+                }
+            }
+        }
+
+        knRemoveInfinities(velComponent, 0);
+    }
+
+    PYTHON()
+    void extrapolateVelFSM(const Grid<Real> &phi, const FlagGrid &flags, MACGrid &vel, int steps)
+    {
+        FluidSolver *parent = phi.getParent();
+        Grid<Real> velX(parent);
+        Grid<Real> velY(parent);
+        Grid<Real> velZ(parent);
+
+        knMAC2Grids(vel, velX, velY, velZ);
+
+        Vec3i gs = parent->getGridSize();
+        Real dx = 1.;
+
+        Grid<int> solvedFlags(parent);
+
+        // X-component
+        knFillSolvedFlags(flags, solvedFlags, velX, MAC_X);
+        extrapolateComponentFSM(velX, phi, solvedFlags, steps, gs, MAC_X);
+
+        // Y-component
+        knFillSolvedFlags(flags, solvedFlags, velY, MAC_Y);
+        extrapolateComponentFSM(velY, phi, solvedFlags, steps, gs, MAC_Y);
+
+        knGrids2MAC(vel, velX, velY, velZ, flags);
     }
 }
