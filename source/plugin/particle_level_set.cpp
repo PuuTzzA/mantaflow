@@ -280,7 +280,7 @@ namespace Manta
     {
         Grid<Real> phiOld(phi.getParent());
         Real dt_pseudo = 0.5;
-        for (int __ = 0; __ < 10; __++)
+        for (int __ = 0; __ < 100; __++)
         {
             phiOld.copyFrom(phi);
             knReinitializeLevelset(phi, phiOld, dt_pseudo, flags);
@@ -406,7 +406,7 @@ namespace Manta
     }
 
     KERNEL()
-    void knFillSolvedFlags(const FlagGrid &flags, Grid<int> &solvedGrid, Grid<Real> &velComponent, MACGridComponent component)
+    void knFillLocked(const FlagGrid &flags, Grid<int> &locked, Grid<Real> &velComponent, MACGridComponent component)
     {
         const Real D_INF = std::numeric_limits<Real>::max();
         bool isSolid;
@@ -429,7 +429,7 @@ namespace Manta
 
         if (isSolid || isFluid)
         {
-            solvedGrid(i, j, k) = true;
+            locked(i, j, k) = true;
             if (isSolid)
             {
                 velComponent(i, j, k) = 0.;
@@ -437,7 +437,7 @@ namespace Manta
         }
         else
         {
-            solvedGrid(i, j, k) = false;
+            locked(i, j, k) = false;
             velComponent(i, j, k) = D_INF;
         }
     }
@@ -460,10 +460,14 @@ namespace Manta
     KERNEL()
     void knRemoveInfinities(Grid<Real> &grid, int _)
     {
+        /* if (i == 1 || j == 1){
+            grid(i , j, k) = 10;
+            return;
+        } */
         grid(i, j, k) = grid(i, j, k) == std::numeric_limits<Real>::max() ? 0. : grid(i, j, k);
     }
 
-    void extrapolateComponentFSM(Grid<Real> &velComponent, const Grid<Real> &phi, Grid<int> &solvedMask, int sweepIterations, Vec3i gs, MACGridComponent component)
+    void extrapolateComponentFSM(Grid<Real> &velComponent, const Grid<Real> &phi, Grid<int> &locked, int sweepIterations, Vec3i gs, MACGridComponent component)
     {
         const Real D_INF = std::numeric_limits<Real>::max();
 
@@ -475,7 +479,7 @@ namespace Manta
                 for (IndexInt i = 1; i < gs[0] - 1; ++i)
                 {
                     IndexInt k = 0;
-                    if (solvedMask(i, j, k))
+                    if (locked(i, j, k))
                     {
                         continue;
                     }
@@ -507,6 +511,8 @@ namespace Manta
                         }
                     }
 
+                    //std::cout << "sum: " << sumW << std::endl;
+
                     if (sumW > 1e-6)
                     {
                         velComponent(i, j, k) = std::min(sumVal / sumW, velComponent(i, j, k));
@@ -520,7 +526,7 @@ namespace Manta
                 for (IndexInt i = gs[0] - 2; i >= 1; --i)
                 {
                     IndexInt k = 0;
-                    if (solvedMask(i, j, k))
+                    if (locked(i, j, k))
                     {
                         continue;
                     }
@@ -565,7 +571,7 @@ namespace Manta
                 for (IndexInt i = 1; i < gs[0] - 1; ++i)
                 {
                     IndexInt k = 0;
-                    if (solvedMask(i, j, k))
+                    if (locked(i, j, k))
                     {
                         continue;
                     }
@@ -610,7 +616,7 @@ namespace Manta
                 for (IndexInt i = gs[0] - 2; i >= 1; --i)
                 {
                     IndexInt k = 0;
-                    if (solvedMask(i, j, k))
+                    if (locked(i, j, k))
                     {
                         continue;
                     }
@@ -666,15 +672,15 @@ namespace Manta
         Vec3i gs = parent->getGridSize();
         Real dx = 1.;
 
-        Grid<int> solvedFlags(parent);
+        Grid<int> locked(parent);
 
         // X-component
-        knFillSolvedFlags(flags, solvedFlags, velX, MAC_X);
-        extrapolateComponentFSM(velX, phi, solvedFlags, steps, gs, MAC_X);
+        knFillLocked(flags, locked, velX, MAC_X);
+        extrapolateComponentFSM(velX, phi, locked, steps, gs, MAC_X);
 
         // Y-component
-        knFillSolvedFlags(flags, solvedFlags, velY, MAC_Y);
-        extrapolateComponentFSM(velY, phi, solvedFlags, steps, gs, MAC_Y);
+        knFillLocked(flags, locked, velY, MAC_Y);
+        extrapolateComponentFSM(velY, phi, locked, steps, gs, MAC_Y);
 
         knGrids2MAC(vel, velX, velY, velZ, flags);
     }

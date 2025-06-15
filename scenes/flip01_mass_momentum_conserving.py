@@ -147,6 +147,7 @@ for t in range(MAX_TIME):
 		#pp.advectInMACGrid(vel=vel)
 		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
 		vel_extrapolated.copyFrom(vel)
+		reinitializeLevelset( phi=phi_fluid, flags=flags_n )
 
 		#extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
 		extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
