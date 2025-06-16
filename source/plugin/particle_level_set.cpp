@@ -18,17 +18,26 @@ namespace Manta
     }
 
 #define DISCRETIZATION 2
-#define POSITIVE_CUTOFF 0.f
+#define POSITIVE_CUTOFF .5f
 #define NEGATIVE_CUTOFF -3.f
 #define MAX_PARTICLES_PER_CELL 10
 #define MIN_PARTICLES_PER_CELL 3
-#define ESCAPE_CONDITION .1 // a particle counts as escaped, if it is further than ESCAPE_CONDITION * radius on the wrong side
+#define ESCAPE_CONDITION 1 // a particle counts as escaped, if it is further than ESCAPE_CONDITION * radius on the wrong side
 
     KERNEL(points)
     void knSetParticleRadii(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const Grid<Real> &phi)
     {
         skipDelted(particles);
-        radii[idx] = std::abs(Manta::clamp(phi.getInterpolatedHi(particles[idx].pos, 2), NEGATIVE_CUTOFF, POSITIVE_CUTOFF));
+        radii[idx] = std::abs(phi.getInterpolatedHi(particles[idx].pos, 2));
+
+        if (particles[idx].flag & ParticleBase::PINSIDE)
+        {
+            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(NEGATIVE_CUTOFF));
+        }
+        else if (particles[idx].flag & ParticleBase::POUTSIDE)
+        {
+            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(POSITIVE_CUTOFF));
+        }
     }
 
     PYTHON()
@@ -51,7 +60,7 @@ namespace Manta
                         Real randj = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
 
                         Vec3 pos = Vec3(i + (0.5 + di) * step + randi, j + (0.5 + dj) * step + randj, 0.5);
-                        particles.addBuffered(pos, phi(i, j, k) < ParticleBase::POUTSIDE);
+                        particles.addBuffered(pos, ParticleBase::POUTSIDE);
                     }
                 }
             }
@@ -74,25 +83,103 @@ namespace Manta
         knSetParticleRadii(particles, radii, phi);
     }
 
-    KERNEL(points)
-    void testXX(BasicParticleSystem &particles, Grid<Real> &g)
+    KERNEL()
+    void testXX(BasicParticleSystem &particles, Grid<Real> &g, Grid<Real> &phi)
     {
-        skipDelted(particles);
-        Vec3 pos = particles[idx].pos;
-        g(std::floor(pos.x), std::floor(pos.y), 0) = particles[idx].flag == 0 ? 0. : 1.;
-        // g(std::floor(pos.x), std::floor(pos.y), 0) = 0.;
+        g(i, j, k) = 0;
+        // phi(i, j, k) = phi(i, j, k) == 0.f ? 0. : 1.;
+        return;
+    }
+    inline Real particleSphere(int flag, Real radius, Vec3 particlePosition, Vec3 x);
+
+    KERNEL()
+    void testXXY(BasicParticleSystem &particles, Grid<Real> &g, Grid<Real> &phi, std::vector<IndexInt> vector, ParticleDataImpl<Real> &radii)
+    {
+        g(i, j, k) = std::numeric_limits<Real>::max();
+
+        for (auto idx : vector)
+        {
+            g(i, j, k) = std::min(phi(i, j, k), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + .5, j + .5, k + .5)));
+        }
+        // phi(i, j, k) = phi(i, j, k) == 0.f ? 0. : 1.;
+        return;
     }
 
     PYTHON()
-    void testSeedParticles(const LevelsetGrid &phi, const FlagGrid &flags, Grid<Real> &g, BasicParticleSystem &particles, Real cutoff = 3., Real randomness = 0.05)
+    void testSeedParticles(Grid<Real> &phi, const FlagGrid &flags, Grid<Real> &g, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, Real cutoff = 3., Real randomness = 0.05)
     {
-        // testXX(particles, g);
+        testXX(particles, g, (Grid<Real> &)phi);
+
+        std::vector<IndexInt> escapees{};
 
         for (IndexInt idx = 0, max = particles.size(); idx < max; idx++)
         {
             Vec3 pos = particles[idx].pos;
-            g(std::floor(pos.x), std::floor(pos.y), 0) = particles[idx].flag & ParticleBase::POUTSIDE ? 0.5 : 1.;
+            Real phiAtPos = ((Grid<Real> &)phi).getInterpolatedHi(pos, 2);
+
+            if (particles[idx].flag & ParticleBase::PDELETE)
+            {
+                continue; // delted
+            }
+
+            int i = std::floor(pos.x);
+            int j = std::floor(pos.y);
+            int k = 0;
+
+            /* if (particles[idx].flag & (phiAtPos < 0 ? ParticleBase::PINSIDE : ParticleBase::POUTSIDE))
+            {
+                continue; // on the right side
+            } */
+
+            bool isInside = (phiAtPos <= 0);
+            if ((isInside && (particles[idx].flag & ParticleBase::PINSIDE)) ||
+                (!isInside && (particles[idx].flag & ParticleBase::POUTSIDE)))
+            {
+                continue; // on the right side
+            }
+
+            if (std::abs(phiAtPos) < ESCAPE_CONDITION * radii[idx])
+            {
+                particles[idx].flag &= ~ParticleBase::PESCAPED;
+                continue; // particle still not far enough on wrong side
+            }
+
+            particles[idx].flag |= ParticleBase::PESCAPED;
+            if (particles[idx].flag & ParticleBase::PINSIDE)
+            {
+                // Particles that should be inside but are outside
+                // g(i, j, k) = 1;
+
+                std::cout << radii[idx] << " radius" << std::endl;
+
+                /*                 if (((Grid<Real> &)phi)(i, j, k) == 0)
+                                {
+                                    std::cout << "ijk: " << i << ", " << j << ", " << k << " phi is 0" << std::endl;
+                                    g(i, j, k) = 1;
+                                } */
+                if (particleSphere(particles[idx].flag, radii[idx], pos, Vec3(i + .5, j + .5, k + .5)) < phi(i, j, k))
+                {
+                    // CODE A
+                    // g(i, j, k) = std::min(phi(i, j, k), particleSphere(particles[idx].flag, radii[idx], pos, Vec3(i + .5, j + .5, k + .5)));
+
+                    // CODE B, Part 1
+                    escapees.push_back(idx);
+                }
+            }
         }
+
+        // CODE B, Part 2
+        FOR_IJK(g)
+        {
+            g(i, j, k) = std::numeric_limits<Real>::max();
+
+            for (auto idx : escapees)
+            {
+                g(i, j, k) = std::min(std::min(g(i, j, k), phi(i, j, k)), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + .5, j + .5, k + .5)));
+            }
+        }
+
+        // testXXY(particles, g, phi, escapees, radii);
     }
 
     inline Real particleSphere(int flag, Real radius, Vec3 particlePosition, Vec3 x)
@@ -102,19 +189,23 @@ namespace Manta
     }
 
     KERNEL()
-    void knCorrectOmegas(Grid<Real> &originalPhi, Grid<Real> &omega, std::vector<IndexInt> escapedParticles, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, bool useMin)
+    void knCorrectOmegas(Grid<Real> &originalPhi, Grid<Real> &omega, std::vector<IndexInt> &escapedParticles, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, bool useMin)
     {
-        omega(i, j, k) = useMin ? std::numeric_limits<Real>::infinity() : -std::numeric_limits<Real>::infinity();
+        omega(i, j, k) = useMin ? std::numeric_limits<Real>::max() : -std::numeric_limits<Real>::max();
 
         for (auto idx : escapedParticles)
         {
+            if (i == 10 && j == 10 && k == 0)
+            {
+                std::cout << "DIO CANE: " << idx << std::endl;
+            }
             if (useMin)
             {
-                omega(i, j, k) = std::min(originalPhi(i, j, k), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + 0.5, j + 0.5, k + 0.5)));
+                omega(i, j, k) = std::min(std::min(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + 0.5, j + 0.5, k + 0.5)));
             }
             else
             {
-                omega(i, j, k) = std::max(originalPhi(i, j, k), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + 0.5, j + 0.5, k + 0.5)));
+                omega(i, j, k) = std::max(std::max(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + 0.5, j + 0.5, k + 0.5)));
             }
         }
     }
@@ -146,13 +237,21 @@ namespace Manta
                 continue; // delted
             }
 
-            if (particles[idx].flag & (phiAtPos < 0 ? ParticleBase::PINSIDE : ParticleBase::POUTSIDE))
+            /* if (particles[idx].flag & (phiAtPos < 0 ? ParticleBase::PINSIDE : ParticleBase::POUTSIDE))
+            {
+                continue; // on the right side
+            } */
+
+            bool isInside = (phiAtPos <= 0);
+            if ((isInside && (particles[idx].flag & ParticleBase::PINSIDE)) ||
+                (!isInside && (particles[idx].flag & ParticleBase::POUTSIDE)))
             {
                 continue; // on the right side
             }
 
-            if (std::abs(phiAtPos) > ESCAPE_CONDITION * radii[idx])
+            if (std::abs(phiAtPos) < ESCAPE_CONDITION * radii[idx])
             {
+                particles[idx].flag &= ~ParticleBase::PESCAPED;
                 continue; // particle still not far enough on wrong side
             }
 
@@ -172,38 +271,19 @@ namespace Manta
         std::cout << "POSITIVE ESCAPED: " << positiveEscaped.size() << std::endl;
         std::cout << "NEGATIVE ESCAPED: " << negativeEscaped.size() << std::endl;
 
-        /*         for (auto p : negativeEscaped)
-                {
-                    std::cout << "pos: " << (particles[p].pos) << "; radius: " << radii[p] << "; stuff: " << static_cast<bool>(particles[p].flag & ParticleBase::PINSIDE) << std::endl;
-                } */
-
         // Step 2: correct omega+ and omega-
+        if (positiveEscaped.size() == 0 && negativeEscaped.size() == 0)
+        {
+            return;
+        }
+
         Grid<Real> omegaPlus(phi.getParent());
         Grid<Real> omegaMinus(phi.getParent());
 
-        // positiveEscaped.clear();
-
-        if (positiveEscaped.size() > 0)
-        {
-            knCorrectOmegas(phi, omegaPlus, positiveEscaped, particles, radii, false);
-        }
-        if (negativeEscaped.size() > 0)
-        {
-            knCorrectOmegas(phi, omegaMinus, negativeEscaped, particles, radii, true);
-        }
-
-        if (positiveEscaped.size() > 0 && negativeEscaped.size() == 0)
-        {
-            knCombineOmegas(omegaPlus, phi, phi, flags);
-        }
-        else if (negativeEscaped.size() > 0 && positiveEscaped.size() == 0)
-        {
-            knCombineOmegas(phi, omegaMinus, phi, flags);
-        }
-        else if (positiveEscaped.size() > 0 && negativeEscaped.size() > 0)
-        {
-            knCombineOmegas(omegaPlus, omegaMinus, phi, flags);
-        }
+        knCorrectOmegas(phi, omegaPlus, positiveEscaped, particles, radii, false);
+        knCorrectOmegas(phi, omegaMinus, negativeEscaped, particles, radii, true);
+        knCombineOmegas(omegaPlus, omegaMinus, phi, flags);
+        return;
     }
 
     Real calcGradMagnitude(Grid<Real> &phi, int i, int j, int k, Real sng, const FlagGrid &flags)
@@ -280,7 +360,7 @@ namespace Manta
     {
         Grid<Real> phiOld(phi.getParent());
         Real dt_pseudo = 0.5;
-        for (int __ = 0; __ < 100; __++)
+        for (int __ = 0; __ < 10; __++)
         {
             phiOld.copyFrom(phi);
             knReinitializeLevelset(phi, phiOld, dt_pseudo, flags);
@@ -295,7 +375,7 @@ namespace Manta
 
     PYTHON()
     //! you always need to run reinitializeRadii after this
-    void reseedParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, Real randomness = 0.5)
+    void reseedParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, Real randomness = 0.5)
     {
         Grid<Real> counterGrid(phi.getParent());
 
@@ -307,7 +387,9 @@ namespace Manta
         {
             if (particles[idx].flag & ParticleBase::PESCAPED)
             {
-                continue; // don't delete escaped particles
+                //continue; // don't delete escaped particles
+                particles.kill(idx);
+                continue;
             }
             int i = std::floor(particles[idx].pos[0]);
             int j = std::floor(particles[idx].pos[1]);
@@ -511,7 +593,7 @@ namespace Manta
                         }
                     }
 
-                    //std::cout << "sum: " << sumW << std::endl;
+                    // std::cout << "sum: " << sumW << std::endl;
 
                     if (sumW > 1e-6)
                     {

@@ -92,6 +92,9 @@ phi_fluid.reinitMarching( flags=flags_n )
 level_set_particles = s.create(BasicParticleSystem)
 particle_radii = level_set_particles.create(PdataReal)
 sampleLevelsetBorderWithParticles( phi=phi_fluid, flags=flags_n, particles=level_set_particles, radii=particle_radii)
+reinitializeLevelset( phi=phi_fluid, flags=flags_n )
+
+#testSeedParticles(phi=phi_fluid, flags=flags_n, g=test_real_grid, particles=level_set_particles, radii=particle_radii )
 
 # note, there's no resamplig here, so we need _LOTS_ of particles...
 sampleFlagsWithParticles( flags=flags_n, parts=pp, discretization=particleNumber, randomness=0.2 )
@@ -101,6 +104,9 @@ if (GUI):
 	gui.show()
 	gui.windowSize(800, 800)
 	gui.setCamPos(0, 0, -1.3)
+	gui.nextRealGrid()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
 	gui.nextRealGrid()
 	gui.nextRealGrid()
 	gui.nextRealGrid()
@@ -146,13 +152,10 @@ for t in range(MAX_TIME):
 	else:
 		#pp.advectInMACGrid(vel=vel)
 		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
+		
 		vel_extrapolated.copyFrom(vel)
-		reinitializeLevelset( phi=phi_fluid, flags=flags_n )
-
 		#extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
 		extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
-
-		#extrapolateMACSimple( flags=flags_n, vel=vel, distance=10 )
 
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
 		simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid )
@@ -161,23 +164,28 @@ for t in range(MAX_TIME):
 		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
 
 		if (t % 10 == 0):
-			reseedParticles(phi=phi_fluid, flags=flags_n, particles=level_set_particles, radii=particle_radii)
+			reseedParticles(phi=phi_fluid, flags=flags_n, particles=level_set_particles )
 
 		reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
 
 		setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
 		# as long as level set does not work lasdkfjalsdkjflaskjdf
-		# advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
-		# markFluidCells( parts=pp, flags=flags_n_plus_one)
+		#advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
+		#markFluidCells( parts=pp, flags=flags_n_plus_one)
 		# end as long as level set does not work alskdjföalskdfjöalskj
 
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
 		
-		#advectSemiLagrange( flags=flags_n, vel=vel, grid=vel,   order=2 )
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma)
+		advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=vel,   order=2 )
+		#massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma)
 
+		#vel.copyFrom(vel_extrapolated)
 		flags_n.copyFrom(flags_n_plus_one)
+		
+		#reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
+		#correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
+		#testSeedParticles(phi=phi_fluid, flags=flags_n, g=test_real_grid, particles=level_set_particles, radii=particle_radii )
 	
 	if doOpen:
 		resetOutflow( flags=flags_n)
