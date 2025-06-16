@@ -154,8 +154,8 @@ for t in range(MAX_TIME):
 		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
 		
 		vel_extrapolated.copyFrom(vel)
-		#extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
-		extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
+		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+		#extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
 
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
 		simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid )
@@ -178,7 +178,7 @@ for t in range(MAX_TIME):
 		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
 		
 		advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=vel,   order=2 )
-		#massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		#massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel_extrapolated, gammaCumulative=vel_gamma)
 
 		#vel.copyFrom(vel_extrapolated)
 		flags_n.copyFrom(flags_n_plus_one)
