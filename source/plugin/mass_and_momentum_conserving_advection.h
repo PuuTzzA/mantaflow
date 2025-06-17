@@ -17,7 +17,8 @@ namespace Manta
     {
         MAC_X,
         MAC_Y,
-        MAC_Z
+        MAC_Z,
+        NONE
     };
 
     //! Semi-Lagrange interpolation kernel

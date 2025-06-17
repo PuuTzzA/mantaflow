@@ -195,10 +195,6 @@ namespace Manta
 
         for (auto idx : escapedParticles)
         {
-            if (i == 10 && j == 10 && k == 0)
-            {
-                std::cout << "DIO CANE: " << idx << std::endl;
-            }
             if (useMin)
             {
                 omega(i, j, k) = std::min(std::min(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + 0.5, j + 0.5, k + 0.5)));
