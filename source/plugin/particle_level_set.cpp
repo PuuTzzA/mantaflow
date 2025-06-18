@@ -211,6 +211,7 @@ namespace Manta
     {
         if (flags.isObstacle(i, j, k))
         {
+            phi(i, j, k) = 1;
             return;
         }
         phi(i, j, k) = std::abs(omegaPlus(i, j, k)) <= std::abs(omegaMinus(i, j, k)) ? omegaPlus(i, j, k) : omegaMinus(i, j, k);

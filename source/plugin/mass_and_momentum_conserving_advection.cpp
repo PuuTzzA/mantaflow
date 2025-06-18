@@ -231,7 +231,7 @@ namespace Manta
         return lastKnownFluidPos;
     }
 
-    Vec3 customTraceWaterForward(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i &gs, MACGridComponent component)
+    Vec3 customTraceWaterForwardOld(Vec3 pos, const MACGrid &vel, const Grid<Real> &phi, Real dt, const FlagGrid &flags, Vec3i &gs, MACGridComponent component)
     {
         if (flags.isObstacle(pos))
         {
@@ -284,6 +284,198 @@ namespace Manta
             }
         }
         return lastKnownFluidPos;
+    }
+
+    Vec3 getLevelSetGradient(const Grid<Real> &phi, const Vec3 &pos)
+    {
+        // Standard central differencing for the gradient.
+        // Assumes dx=1. If not, divide by dx.
+        Real dx = 1;
+
+        Real Gx = (phi.getInterpolated(pos + Vec3(dx, 0, 0)) - phi.getInterpolated(pos - Vec3(dx, 0, 0))) / (2.0 * dx);
+        Real Gy = (phi.getInterpolated(pos + Vec3(0, dx, 0)) - phi.getInterpolated(pos - Vec3(0, dx, 0))) / (2.0 * dx);
+        Real Gz = (phi.getInterpolated(pos + Vec3(0, 0, dx)) - phi.getInterpolated(pos - Vec3(0, 0, dx))) / (2.0 * dx);
+
+        return Vec3(Gx, Gy, Gz);
+    }
+
+    Vec3 customTraceWaterForward(Vec3 pos, const MACGrid &vel, const Grid<Real> &phi, Real dt, const FlagGrid &flags, Vec3i &gs, MACGridComponent component)
+    {
+        if (flags.isObstacle(pos))
+        {
+            std::cout << "STARTED IN OBSTACLE DIO CAN" << std::endl;
+        }
+
+        Vec3 nextPos = RK4(pos, dt, vel);
+
+        nextPos.x = Manta::clamp(nextPos.x, 0.f, static_cast<Real>(gs.x));
+        nextPos.y = Manta::clamp(nextPos.y, 0.f, static_cast<Real>(gs.y));
+        nextPos.z = Manta::clamp(nextPos.z, 0.f, static_cast<Real>(gs.z));
+
+        Real phiVal = phi.getInterpolatedHi(nextPos, 2);
+
+        // Check if we are outside. We only need to project if we are.
+        if (phi.getInterpolatedHi(nextPos, 2) > 0)
+        {
+            Vec3 current_pos = nextPos;
+            const int max_iter = 5; // 3-5 iterations is usually enough
+
+            for (int i = 0; i < max_iter; ++i)
+            {
+                Real phi_val = phi.getInterpolated(current_pos);
+                Vec3 gradient = getLevelSetGradient(phi, current_pos);
+
+                Real grad_mag_sq = normSquare(gradient);
+                if (grad_mag_sq < 1e-8)
+                {
+                    // Gradient is unstable, can't continue the projection.
+                    // Fallback: Use the original position before the trace.
+                    current_pos = pos;
+                    break;
+                }
+
+                // Newton's method step to find the zero-crossing
+                current_pos -= gradient * (phi_val / grad_mag_sq);
+            }
+
+            // Now `current_pos` is very close to the phi=0 surface.
+            // We still need to nudge it inwards.
+            Vec3 final_gradient = getLevelSetGradient(phi, current_pos);
+            if (normSquare(final_gradient) > 1e-8)
+            {
+                normalize(final_gradient);
+                Real safety_nudge = 0.1;
+                nextPos = current_pos - safety_nudge * final_gradient;
+            }
+            else
+            {
+                // If even here the gradient is bad, fallback to the pre-trace position.
+                nextPos = pos;
+            }
+        }
+
+        return nextPos;
+
+        // if (isFluid(nextPos.x, nextPos.y, nextPos.z, flags, component))
+        if (isFluid(nextPos.x, nextPos.y, nextPos.z, flags, component))
+        {
+            return nextPos;
+        }
+        return pos;
+
+        /*         if (flags.isObstacle(nextPos))
+                {
+                    std::cout << "next pos in obstacle" << std::endl;
+                } */
+
+        Vec3 segmentStart = pos;
+        Vec3 segmentEnd = nextPos;
+        Vec3 lastKnownFluidPos = pos;
+
+        Vec3 direction = segmentEnd - segmentStart;
+        Real totalDistance = norm(direction);
+
+        if (totalDistance < 1e-9)
+        {
+            return pos;
+        }
+
+        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
+        for (int i = 1; i <= numSearchSteps; ++i)
+        {
+            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
+            Vec3 currentTestPoint = segmentStart + t * direction;
+
+            if (isFluid(currentTestPoint.x, currentTestPoint.y, currentTestPoint.z, flags, component))
+            // if (flags.isFluid(currentTestPoint))
+            {
+                // std::cout << "changed last known fluid pos" << std::endl;
+                lastKnownFluidPos = currentTestPoint;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return lastKnownFluidPos;
+    }
+
+    // Helper function to get the grid cell size, crucial for robust projection.
+    Real getDx(const Grid<Real> &grid)
+    {
+        return grid.getParent()->getDx();
+    }
+
+    Vec3 customTraceWaterForward_V4(Vec3 pos, const MACGrid &vel, const Grid<Real> &phi, Real dt, Vec3i gs)
+    {
+        Vec3 nextPos = RK4(pos, dt, vel);
+
+        // Clamp to grid boundaries first to avoid out-of-bounds access.
+        // The -1.001f is a common trick to prevent landing exactly on the boundary.
+        nextPos.x = Manta::clamp(nextPos.x, 0.f, (Real)gs.x - 1.001f);
+        nextPos.y = Manta::clamp(nextPos.y, 0.f, (Real)gs.y - 1.001f);
+        nextPos.z = Manta::clamp(nextPos.z, 0.f, (Real)gs.z - 1.001f);
+
+        // Check if we are outside the new fluid domain (phi > 0 means outside)
+        if (phi.getInterpolated(nextPos) > 0)
+        {
+            Vec3 current_pos = nextPos;
+            const int max_iter = 5;
+            bool projection_succeeded = true;
+
+            for (int i = 0; i < max_iter; ++i)
+            {
+                Real phi_val = phi.getInterpolated(current_pos);
+                if (phi_val <= 0)
+                { // We've successfully projected inside
+                    break;
+                }
+
+                Vec3 gradient = getLevelSetGradient(phi, current_pos);
+                Real grad_mag_sq = normSquare(gradient);
+
+                if (grad_mag_sq < 1e-9)
+                {
+                    // Gradient is unstable, abort the iterative process.
+                    projection_succeeded = false;
+                    break;
+                }
+
+                // --- DAMPENED NEWTON'S STEP ---
+                Vec3 correction = gradient * (phi_val / grad_mag_sq);
+
+                // Clamp the magnitude of the correction to prevent huge jumps.
+                // A max step of 1.0 grid cell is a reasonable limit.
+                if (normSquare(correction) > 1.0)
+                {
+                    normalize(correction); // Now length is 1.0
+                }
+                current_pos -= correction;
+            }
+
+            if (projection_succeeded && phi.getInterpolated(current_pos) <= 0)
+            {
+                // Projection succeeded, and we are inside.
+                nextPos = current_pos;
+            }
+            else
+            {
+                // If projection failed or still outside, we have a problem.
+                // Returning the original position is the source of your bug.
+                // A better, but not perfect, fallback is to find the closest point
+                // on the line segment between pos and nextPos that is inside phi.
+                // For now, let's just mark it as invalid to handle it in the main loop.
+                // A special value like (-1,-1,-1) can signal failure.
+                return Vec3(-1.0);
+            }
+        }
+
+        // Final clamp for safety before returning.
+        nextPos.x = Manta::clamp(nextPos.x, 0.f, (Real)gs.x - 1.001f);
+        nextPos.y = Manta::clamp(nextPos.y, 0.f, (Real)gs.y - 1.001f);
+        nextPos.z = Manta::clamp(nextPos.z, 0.f, (Real)gs.z - 1.001f);
+
+        return nextPos;
     }
 
     std::vector<std::tuple<Vec3i, Real>> getInterpolationstencilAndWeights(const FlagGrid &flags, Vec3 x, Vec3i &gs, Vec3 &offset)
@@ -807,7 +999,7 @@ namespace Manta
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectWater(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, MACGridComponent component = NONE)
+    void fnMassMomentumConservingAdvectWaterOld(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> &phi, MACGridComponent component = NONE)
     {
         typedef typename GridType::BASETYPE T;
         const Real EPSILON = 1e-5;
@@ -887,41 +1079,37 @@ namespace Manta
 
                 if (beta[cellI] < 1 - EPSILON)
                 {
-                    Vec3 posForward = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-                    posForward = customTraceWaterForward(posForward, vel, dt, flags_n_plus_one, gridSize, component);
+                    Vec3 startPosForward = Vec3(i + offset[0], j + offset[1], k + offset[2]);
+                    // Use the corrected forward tracer
+                    Vec3 posForward = customTraceWaterForward_V4(startPosForward, vel, phi, dt, gridSize);
 
-                    Real amountToDistribute = 1. - beta[cellI];
-
-                    Vec3 x = posForward - offset;
-
-                    int i__ = std::floor(x[0]);
-                    int j__ = std::floor(x[1]);
-                    int k__ = std::floor(x[2]);
-
-                    IndexInt cellJ = i__ * gridSize[1] + j__;
-
-                    if (amountToDistribute > 0.9)
-                    {
-                        std::cout << amountToDistribute << " ... amount" << std::endl;
+                    // Check if the forward trace failed
+                    if (posForward.x < 0.0)
+                    { // Using the (-1,-1,-1) failure signal
+                        // FALLBACK 1: Trace failed. To conserve mass/momentum,
+                        // add the remaining amount back to the original cell.
+                        weights[cellI][cellI] += (1. - beta[cellI]);
+                        reverseWeights[cellI].insert(cellI); // Ensure reverse map is updated
+                        continue;                            // Move to the next cell
                     }
 
-                    // weights[cellI][cellJ] +=  amountToDistribute;
-
+                    Real amountToDistribute = 1. - beta[cellI];
                     auto neighboursAndWeights = getInterpolationstencilAndWeightsWater(flags_n_plus_one, posForward, gridSize, offset, component);
 
-                    /* if (neighboursAndWeights.size() < 4)
+                    if (neighboursAndWeights.empty())
                     {
-                        continue;
-                        std::cout << neighboursAndWeights.size() << " size: :::::" << std::endl;
-                    } */
+                        // FALLBACK 2: Stencil is empty, even with a valid trace.
+                        // This means the projected point is in an "island" of air cells.
+                        // Again, to conserve, add the remaining amount back to the source.
+                        weights[cellI][cellI] += amountToDistribute;
+                        reverseWeights[cellI].insert(cellI); // Ensure reverse map is updated
+                        continue;                            // Move to the next cell
+                    }
 
+                    // Original logic for distributing momentum
                     for (const auto &[n, w] : neighboursAndWeights)
                     {
-                        if (w > 1)
-                            std::cout << "big w detected: w = " << w << ", with num neighbours: " << neighboursAndWeights.size() << std::endl;
-
                         IndexInt cellJ = n[0] * gridSize[1] + n[1];
-
                         weights[cellI][cellJ] += w * amountToDistribute;
                         reverseWeights[cellJ].insert(cellI);
                     }
@@ -929,7 +1117,7 @@ namespace Manta
             }
         }
 
-        for (int __ = 0; __ < 4; __++)
+        for (int __ = 0; __ < 0; __++)
         {
             // Step 3: Clamp gamma to the cumulative gamma
             recalculateGamma(gamma, weights);
@@ -939,7 +1127,7 @@ namespace Manta
                 {
                     int k = 0;
 
-                    if (!isFluid(i, j, k, flags_n_plus_one, component) || !isFluid(i, j, k, flags_n, component))
+                    if (!isFluid(i, j, k, flags_n_plus_one, component))
                     {
                         continue;
                     }
@@ -973,7 +1161,7 @@ namespace Manta
                 int j = cellI % gridSize[1];
                 int k = 0;
 
-                if (!isFluid(i, j, k, flags_n_plus_one, component) || !isFluid(i, j, k, flags_n, component))
+                if (!isFluid(i, j, k, flags_n, component))
                 {
                     continue;
                 }
@@ -1032,7 +1220,7 @@ namespace Manta
                     Real gammaAvg = (gamma[cellI_1] - gamma[cellI]) / 2.;
                     T phiToMove = newGrid(i + 1, j, k) * (gammaAvg / gamma[cellI_1]);
 
-                    if (std::isfinite(phiToMove) || std::isnan(phiToMove))
+                    if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
                     {
                         continue;
                     }
@@ -1063,7 +1251,7 @@ namespace Manta
                     Real gammaAvg = (gamma[cellI_1] - gamma[cellI]) / 2.;
                     T phiToMove = newGrid(i, j + 1, k) * (gammaAvg / gamma[cellI_1]);
 
-                    if (std::isfinite(phiToMove) || std::isnan(phiToMove))
+                    if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
                     {
                         continue;
                     }
@@ -1081,7 +1269,272 @@ namespace Manta
         grid.swap(newGrid);
     }
 
-    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water)
+    // agealdfjöaslkfdjölaskdjfölaksjdf ölasjkd flkasjldfökjas
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+
+    // Helper function to compute bilinear interpolation weights
+    // f: fractional position within the base cell [0,1]^3
+    // ii, jj: integer offsets (0 or 1) for the corner
+    static inline Real getBilinearWeight(const Vec3 &f, int ii, int jj)
+    {
+        Real w = 1.0;
+        w *= (ii == 0) ? (1.0 - f.x) : f.x;
+        w *= (jj == 0) ? (1.0 - f.y) : f.y;
+        return w;
+    }
+
+    template <class GridType>
+    void fnMassMomentumConservingAdvectWater(FluidSolver *parent,
+                                             const FlagGrid &flags_n,
+                                             const FlagGrid &flags_n_plus_one,
+                                             const MACGrid &vel,
+                                             GridType &grid,
+                                             Grid<Real> &gammaCumulative,
+                                             Vec3 offset,
+                                             const Grid<Real> &phi, // not strictly used, flags are sufficient
+                                             MACGridComponent component)
+    {
+        // =================================================================================================
+        // 1. PREPARATION
+        // =================================================================================================
+        const Real dt = parent->getDt();
+        const Vec3i gridSize = parent->getGridSize();
+        const int bnd = 1; // Boundary width to ignore in loops
+
+        // Temporary grids for the new advected quantity, and for tracking weights
+        GridType grid_new(parent, 0.0);
+        Grid<Real> beta(parent, 0.0);
+        Grid<Real> gamma_advected(parent);
+
+        // =================================================================================================
+        // 2. ADVECTION of CUMULATIVE GAMMA (y)
+        // Advect the cumulative gamma field from the previous step using standard semi-Lagrangian advection.
+        // This provides the initial state for the gamma field at t_{n+1}.
+        // =================================================================================================
+        FOR_IJK(grid)
+        {
+            const Vec3i p(i, j, k);
+            if (flags_n_plus_one.isFluid(p))
+            {
+                Vec3 pos = toVec3(p) + offset;
+                Vec3 pos_start = vel.getInterpolated(pos) * -dt + pos;
+                gamma_advected(p) = gammaCumulative.getInterpolated(pos_start);
+            }
+            else
+            {
+                gamma_advected(p) = 1.0; // Default for non-fluid cells
+            }
+        }
+
+        // =================================================================================================
+        // 3. BACKWARD PASS (Main Advection)
+        // Advect 'grid' from t_n to t_{n+1}. Source points are filtered to be inside the fluid domain (flags_n).
+        // Interpolation weights are renormalized to ensure we only gather from valid fluid cells.
+        // We compute 'beta', the sum of outgoing weights from each source cell.
+        // =================================================================================================
+        FOR_IJK(grid)
+        {
+            const Vec3i p_dest(i, j, k);
+            if (!flags_n_plus_one.isFluid(p_dest))
+                continue;
+
+            Vec3 pos_dest = toVec3(p_dest) + offset;
+            Vec3 pos_start = vel.getInterpolated(pos_dest) * -dt + pos_dest;
+
+            Vec3i s_base = toVec3i(pos_start - offset);
+            Vec3 f = (pos_start - offset) - toVec3(s_base);
+
+            // Collect source cells and their weights that are within the fluid domain
+            Real total_weight = 0;
+            Vec3i sources_s[4];
+            Real sources_w[4];
+            int num_valid_sources = 0;
+
+            for (int jj = 0; jj <= 1; ++jj)
+            {
+                for (int ii = 0; ii <= 1; ++ii)
+                {
+                    Vec3i s_curr = s_base + Vec3i(ii, jj, 0);
+                    if (grid.isInBounds(s_curr, bnd) && flags_n.isFluid(s_curr))
+                    {
+                        sources_s[num_valid_sources] = s_curr;
+                        sources_w[num_valid_sources] = getBilinearWeight(f, ii, jj);
+                        total_weight += sources_w[num_valid_sources];
+                        num_valid_sources++;
+                    }
+                }
+            }
+
+            if (total_weight < 1e-7)
+            {
+                // Fallback for isolated cells: use standard (less accurate) advection
+                grid_new(p_dest) = grid.getInterpolated(pos_start);
+                continue;
+            }
+
+            // Apply normalized weights to compute the new grid value and update beta
+            for (int k_idx = 0; k_idx < num_valid_sources; ++k_idx)
+            {
+                const Real w_norm = sources_w[k_idx] / total_weight;
+                const Vec3i s_curr = sources_s[k_idx];
+                grid_new(p_dest) += grid(s_curr) * w_norm;
+                beta(s_curr) += w_norm;
+            }
+        }
+
+        // =================================================================================================
+        // 4. FORWARD PASS (Conservation Correction)
+        // For source cells where beta < 1, some of their quantity was not advected.
+        // We advect this residual amount forward in time and add it to the result.
+        // This ensures mass/momentum conservation (all of 'grid' is moved).
+        // =================================================================================================
+        GridType R(parent, 0.0);
+        Grid<Real> R_gamma(parent, 0.0);
+        FOR_IJK(grid)
+        {
+            const Vec3i p_src(i, j, k);
+            if (flags_n.isFluid(p_src) && beta(p_src) < 0.9999)
+            {
+                const Real missing_frac = 1.0 - beta(p_src);
+                if (missing_frac > 0)
+                {
+                    R(p_src) = grid(p_src) * missing_frac;
+                    R_gamma(p_src) = gammaCumulative(p_src) * missing_frac;
+                }
+            }
+        }
+
+        FOR_IJK(grid)
+        {
+            const Vec3i p_src(i, j, k);
+            if (R_gamma(p_src) == 0.0)
+                continue; // no residual to advect
+
+            Vec3 pos_src = toVec3(p_src) + offset;
+            Vec3 pos_end = vel.getInterpolated(pos_src) * dt + pos_src;
+
+            // Distribute residual R and R_gamma to valid fluid destination cells
+            Vec3i d_base = toVec3i(pos_end - offset);
+            Vec3 f = (pos_end - offset) - toVec3(d_base);
+
+            Real total_weight = 0;
+            Vec3i dests_d[4];
+            Real dests_w[4];
+            int num_valid_dests = 0;
+
+            for (int jj = 0; jj <= 1; ++jj)
+            {
+                for (int ii = 0; ii <= 1; ++ii)
+                {
+                    Vec3i d_curr = d_base + Vec3i(ii, jj, 0);
+                    if (grid.isInBounds(d_curr, bnd) && flags_n_plus_one.isFluid(d_curr))
+                    {
+                        dests_d[num_valid_dests] = d_curr;
+                        dests_w[num_valid_dests] = getBilinearWeight(f, ii, jj);
+                        total_weight += dests_w[num_valid_dests];
+                        num_valid_dests++;
+                    }
+                }
+            }
+
+            if (total_weight < 1e-7)
+                continue; // No valid fluid destination
+
+            for (int k_idx = 0; k_idx < num_valid_dests; ++k_idx)
+            {
+                const Real w_norm = dests_w[k_idx] / total_weight;
+                const Vec3i d_curr = dests_d[k_idx];
+                grid_new(d_curr) += R(p_src) * w_norm;
+                gamma_advected(d_curr) += R_gamma(p_src) * w_norm;
+            }
+        }
+
+        // =================================================================================================
+        // 5. DIFFUSION PASS (Incompressibility Correction)
+        // Iteratively smooth the 'gamma_advected' field towards a constant value (1.0).
+        // For each diffusion step on gamma, a corresponding amount of the quantity 'grid_new'
+        // is moved between cells to maintain consistency. This enforces incompressibility.
+        // =================================================================================================
+        const int num_diff_iter = 5; // Typically 1-7 iterations are sufficient
+        for (int iter = 0; iter < num_diff_iter; ++iter)
+        {
+            // X-sweep
+            for (int j = bnd; j < gridSize.y - bnd; ++j)
+            {
+                for (int i = bnd; i < gridSize.x - 1 - bnd; ++i)
+                {
+                    if (flags_n_plus_one.isFluid(i, j, 0) && flags_n_plus_one.isFluid(i + 1, j, 0))
+                    {
+                        Real &g1 = gamma_advected(i, j, 0);
+                        Real &g2 = gamma_advected(i + 1, j, 0);
+
+                        if (g2 < 1e-7)
+                            continue;
+
+                        const Real avg = (g1 + g2) * 0.5;
+                        const auto delta_q = grid_new(i + 1, j, 0) * ((g2 - g1) * 0.5 / g2);
+
+                        grid_new(i, j, 0) += delta_q;
+                        grid_new(i + 1, j, 0) -= delta_q;
+
+                        g1 = avg;
+                        g2 = avg;
+                    }
+                }
+            }
+            // Y-sweep
+            for (int i = bnd; i < gridSize.x - bnd; ++i)
+            {
+                for (int j = bnd; j < gridSize.y - 1 - bnd; ++j)
+                {
+                    if (flags_n_plus_one.isFluid(i, j, 0) && flags_n_plus_one.isFluid(i, j + 1, 0))
+                    {
+                        Real &g1 = gamma_advected(i, j, 0);
+                        Real &g2 = gamma_advected(i, j + 1, 0);
+
+                        if (g2 < 1e-7)
+                            continue;
+
+                        const Real avg = (g1 + g2) * 0.5;
+                        const auto delta_q = grid_new(i, j + 1, 0) * ((g2 - g1) * 0.5 / g2);
+
+                        grid_new(i, j, 0) += delta_q;
+                        grid_new(i, j + 1, 0) -= delta_q;
+
+                        g1 = avg;
+                        g2 = avg;
+                    }
+                }
+            }
+        }
+
+        // =================================================================================================
+        // 6. FINALIZE
+        // Swap the temporary grids with the output grids.
+        // =================================================================================================
+        grid.swap(grid_new);
+        gammaCumulative.swap(gamma_advected);
+    }
+
+    // Explicit instantiations if needed for linking
+    // template void fnMassMomentumConservingAdvectWater<MACGrid>(...);
+    // template void fnMassMomentumConservingAdvectWater<Grid<Real>>(...);
+
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+    // gemini code
+
+    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> &phi)
     {
         Grid<Real> velX(parent);
         Grid<Real> velY(parent);
@@ -1110,9 +1563,9 @@ namespace Manta
         }
         else
         {
-            fnMassMomentumConservingAdvectWater<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, MAC_X);
-            fnMassMomentumConservingAdvectWater<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, MAC_Y);
-            fnMassMomentumConservingAdvectWater<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, MAC_Z);
+            fnMassMomentumConservingAdvectWater<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X);
+            fnMassMomentumConservingAdvectWater<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y);
+            fnMassMomentumConservingAdvectWater<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z);
         }
 
         knGrids2MAC(grid, velX, velY, velZ, flags);
@@ -1128,7 +1581,7 @@ namespace Manta
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false);
+            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false, *((Grid<Real> *)grid));
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
@@ -1139,15 +1592,15 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative)
+    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> &phi)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectWater<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), NONE);
+            fnMassMomentumConservingAdvectWater<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true);
+            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {

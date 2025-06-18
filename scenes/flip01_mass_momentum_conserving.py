@@ -50,7 +50,7 @@ pp       = s.create(BasicParticleSystem)
 pVel     = pp.create(PdataVec3) 
 
 # scene setup
-bWidth=1
+bWidth=2
 flags_n.initDomain( boundaryWidth=bWidth )
 flags_n.fillGrid()
 flags_n_plus_one.initDomain( boundaryWidth=bWidth)
@@ -119,7 +119,7 @@ if (GUI):
 	gui.nextVec3Grid()
 	if doConserving:
 		gui.nextParts()
-	gui.pause()
+	#gui.pause()
 
 pp.clearFile(FILENAME)
 
@@ -175,10 +175,10 @@ for t in range(MAX_TIME):
 		#markFluidCells( parts=pp, flags=flags_n_plus_one)
 		# end as long as level set does not work alskdjföalskdfjöalskj
 
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=test_real_grid, gammaCumulative=test_real_grid_gamma)
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=test_real_grid, gammaCumulative=test_real_grid_gamma, phi=phi_fluid)
 		
 		#advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=vel,   order=2 )
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma)
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid)
 
 		#vel.copyFrom(vel_extrapolated)
 		flags_n.copyFrom(flags_n_plus_one)
