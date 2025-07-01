@@ -1269,6 +1269,67 @@ namespace Manta
         grid.swap(newGrid);
     }
 
+    // Completely new Try. gang gang
+    inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
+    {
+        switch (component)
+        {
+        case MAC_X:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+        case MAC_Y:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+        case MAC_Z:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+        default:
+            return flags.isFluid(i, j, k);
+        }
+    }
+
+    inline Vec3 rungeKutta4(Vec3 pos, Real dt, const MACGrid &vel)
+    {
+        Vec3 k1 = vel.getInterpolatedHi(pos, 2);
+        Vec3 k2 = vel.getInterpolatedHi(pos + dt / 2. * k1, 2);
+        Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2. * k2, 2);
+        Vec3 k4 = vel.getInterpolatedHi(pos + dt * k3, 2);
+
+        return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
+    }
+
+    std::vector<std::tuple<Vec3i, Real>> getInterpolationStencilWithWeights(Vec3 pos, const FlagGrid &flags)
+    {
+
+    }
+
+    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, MACGridComponent component)
+    {
+        pos = rungeKutta4(pos, dt, vel);
+    }
+
+    KERNEL()
+    template <class T>
+    void knAdvectTraditional(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component)
+    {
+        if (isValidFluid(i, j, k, flags, component))
+        {
+
+            auto neighboursAndWeights =
+        }
+    }
+
+    template <class GridType>
+    void fnMassMomentumConservingAdvectWaterOld(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> &phi, MACGridComponent component = NONE)
+    {
+        typedef typename GridType::BASETYPE T;
+        const Real EPSILON = 1e-5;
+        Real dt = parent->getDt();
+        Vec3i gridSize = parent->getGridSize();
+
+        // Step 0: Advect Gamma with the same tratitional sceme
+        Grid<Real> newGammaCum(parent);
+    }
+
+    // End of completely new Try
+
     // agealdfjöaslkfdjölaskdjfölaksjdf ölasjkd flkasjldfökjas
     // gemini code
     // gemini code
