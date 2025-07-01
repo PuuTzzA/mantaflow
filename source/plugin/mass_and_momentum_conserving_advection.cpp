@@ -1270,6 +1270,11 @@ namespace Manta
     }
 
     // Completely new Try. gang gang
+    // Completely new Try. gang gang
+    // Completely new Try. gang gang
+    // Completely new Try. gang gang
+    // Completely new Try. gang gang
+    // Completely new Try. gang gang
     inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
     {
         switch (component)
@@ -1295,14 +1300,85 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
-    std::vector<std::tuple<Vec3i, Real>> getInterpolationStencilWithWeights(Vec3 pos, const FlagGrid &flags)
+    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags)
     {
-
     }
 
     std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, MACGridComponent component)
     {
-        pos = rungeKutta4(pos, dt, vel);
+        Vec3 newPos = rungeKutta4(pos, dt, vel);
+
+        std::vector<std::tuple<Vec3i, Real>> resultVec{};
+        resultVec.reserve(4);
+
+        if (getInterpolationStencilWithWeights(resultVec, newPos, flags))
+        {
+            return resultVec;
+        }
+
+        // Special trace back for MAC grid componets
+        Vec3 offset;
+        switch (component)
+        {
+        case MAC_X:
+            offset = Vec3(0.5, 0.0, 0.0);
+            break;
+        case MAC_Y:
+            offset = Vec3(0.0, 0.5, 0.0);
+            break;
+        case MAC_Z:
+            offset = Vec3(0.0, 0.0, 0.5);
+            break;
+        default:
+            break;
+        }
+
+        if (component != NONE)
+        {
+            newPos = rungeKutta4(pos - offset, dt, vel);
+
+            if (getInterpolationStencilWithWeights(resultVec, newPos, flags))
+            {
+                return resultVec;
+            }
+
+            newPos = rungeKutta4(pos + offset, dt, vel);
+
+            if (getInterpolationStencilWithWeights(resultVec, newPos, flags))
+            {
+                return resultVec;
+            }
+        }
+
+        // Fallback, try finding the closest surface point
+        std::vector<std::tuple<Vec3i, Real>> testResultVec{};
+        testResultVec.reserve(4);
+
+        Vec3 current = pos;
+        Vec3 direction = newPos - pos;
+        Real totalDistance = norm(direction);
+
+        if (totalDistance < 1e-9)
+        {
+            return {};
+        }
+
+        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
+        for (int i = 1; i <= numSearchSteps; ++i)
+        {
+            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
+            current = pos + t * direction;
+
+            if (getInterpolationStencilWithWeights(testResultVec, current, flags))
+            {
+                resultVec = testResultVec;
+            }
+            else
+            {
+                return resultVec;
+            }
+        }
+        return {};
     }
 
     KERNEL()
@@ -1311,13 +1387,12 @@ namespace Manta
     {
         if (isValidFluid(i, j, k, flags, component))
         {
-
             auto neighboursAndWeights =
         }
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectWaterOld(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> &phi, MACGridComponent component = NONE)
+    void fnMassMomentumConservingAdvectWater(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> &phi, MACGridComponent component = NONE)
     {
         typedef typename GridType::BASETYPE T;
         const Real EPSILON = 1e-5;
@@ -1328,6 +1403,14 @@ namespace Manta
         Grid<Real> newGammaCum(parent);
     }
 
+    // End of completely new Try
+    // End of completely new Try
+    // End of completely new Try
+    // End of completely new Try
+    // End of completely new Try
+    // End of completely new Try
+    // End of completely new Try
+    // End of completely new Try
     // End of completely new Try
 
     // agealdfjöaslkfdjölaskdjfölaksjdf ölasjkd flkasjldfökjas
@@ -1351,15 +1434,15 @@ namespace Manta
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectWater(FluidSolver *parent,
-                                             const FlagGrid &flags_n,
-                                             const FlagGrid &flags_n_plus_one,
-                                             const MACGrid &vel,
-                                             GridType &grid,
-                                             Grid<Real> &gammaCumulative,
-                                             Vec3 offset,
-                                             const Grid<Real> &phi, // not strictly used, flags are sufficient
-                                             MACGridComponent component)
+    void fnMassMomentumConservingAdvectWaterGemini(FluidSolver *parent,
+                                                   const FlagGrid &flags_n,
+                                                   const FlagGrid &flags_n_plus_one,
+                                                   const MACGrid &vel,
+                                                   GridType &grid,
+                                                   Grid<Real> &gammaCumulative,
+                                                   Vec3 offset,
+                                                   const Grid<Real> &phi, // not strictly used, flags are sufficient
+                                                   MACGridComponent component)
     {
         // =================================================================================================
         // 1. PREPARATION
