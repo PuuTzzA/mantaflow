@@ -1300,34 +1300,142 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
-    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags)
+    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
+        result.clear();
+
+        pos -= offset;
+
+        int i = std::floor(pos[0]);
+        int j = std::floor(pos[1]);
+        int k = std::floor(pos[2]);
+
+        Real fx = pos[0] - i;
+        Real fy = pos[1] - j;
+        Real fz = pos[2] - k;
+
+        Real w000, w100, w010, w110;
+        Real w001, w101, w011, w111;
+
+        w000 = w100 = w010 = w110 = 0.;
+        w001 = w101 = w011 = w111 = 0.;
+
+        if (isValidFluid(i, j, k, flags, component))
+        {
+            w000 = (1 - fx) * (1 - fy) * (1 - fz);
+        }
+        if (isValidFluid(i + 1, j, k, flags, component))
+        {
+            w100 = fx * (1 - fy) * (1 - fz);
+        }
+        if (isValidFluid(i, j + 1, k, flags, component))
+        {
+            w010 = (1 - fx) * fy * (1 - fz);
+        }
+        if (isValidFluid(i + 1, j + 1, k, flags, component))
+        {
+            w110 = fx * fy * (1 - fz);
+        }
+        if (flags.getParent()->getGridSize().z > 1)
+        {
+            if (isValidFluid(i, j, k + 1, flags, component))
+            {
+                w001 = (1 - fx) * (1 - fy) * fz;
+            }
+            if (isValidFluid(i + 1, j, k + 1, flags, component))
+            {
+                w101 = fx * (1 - fy) * fz;
+            }
+            if (isValidFluid(i, j + 1, k + 1, flags, component))
+            {
+                w011 = (1 - fx) * fy * fz;
+            }
+            if (isValidFluid(i + 1, j + 1, k + 1, flags, component))
+            {
+                w111 = fx * fy * fz;
+            }
+        }
+
+        Real tot = w000 + w010 + w100 + w110;
+        if (flags.getParent()->getGridSize().z > 1)
+        {
+            tot += w001 + w011 + w101 + w111;
+        }
+
+        if (tot < 1e-5)
+        {
+            return false;
+        }
+
+        w000 /= tot;
+        w100 /= tot;
+        w010 /= tot;
+        w110 /= tot;
+        if (flags.getParent()->getGridSize().z > 1)
+        {
+            w001 /= tot;
+            w101 /= tot;
+            w011 /= tot;
+            w111 /= tot;
+        }
+
+        const Real EPSILON = 1e-5;
+
+        if (w000 > EPSILON)
+        {
+            result.push_back({Vec3i{i, j, 0}, w000});
+        }
+        if (w100 > EPSILON)
+        {
+            result.push_back({Vec3i{i + 1, j, 0}, w100});
+        }
+        if (w010 > EPSILON)
+        {
+            result.push_back({Vec3i{i, j + 1, 0}, w010});
+        }
+        if (w110 > EPSILON)
+        {
+            result.push_back({Vec3i{i + 1, j + 1, 0}, w110});
+        }
+        if (flags.getParent()->getGridSize().z > 1)
+        {
+            if (w001 > EPSILON)
+                result.push_back({Vec3i{i, j, k + 1}, w001});
+            if (w101 > EPSILON)
+                result.push_back({Vec3i{i + 1, j, k + 1}, w101});
+            if (w011 > EPSILON)
+                result.push_back({Vec3i{i, j + 1, k + 1}, w011});
+            if (w111 > EPSILON)
+                result.push_back({Vec3i{i + 1, j + 1, k + 1}, w111});
+        }
+
+        return true;
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, MACGridComponent component)
+    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
-        Vec3 newPos = rungeKutta4(pos, dt, vel);
+        Vec3 newPos = rungeKutta4(pos, -dt, vel);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        if (getInterpolationStencilWithWeights(resultVec, newPos, flags))
+        if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
         {
             return resultVec;
         }
 
         // Special trace back for MAC grid componets
-        Vec3 offset;
+        Vec3 neighbourOffset;
         switch (component)
         {
         case MAC_X:
-            offset = Vec3(0.5, 0.0, 0.0);
+            neighbourOffset = Vec3(0.5, 0.0, 0.0);
             break;
         case MAC_Y:
-            offset = Vec3(0.0, 0.5, 0.0);
+            neighbourOffset = Vec3(0.0, 0.5, 0.0);
             break;
         case MAC_Z:
-            offset = Vec3(0.0, 0.0, 0.5);
+            neighbourOffset = Vec3(0.0, 0.0, 0.5);
             break;
         default:
             break;
@@ -1335,16 +1443,16 @@ namespace Manta
 
         if (component != NONE)
         {
-            newPos = rungeKutta4(pos - offset, dt, vel);
+            newPos = rungeKutta4(pos - neighbourOffset, dt, vel);
 
-            if (getInterpolationStencilWithWeights(resultVec, newPos, flags))
+            if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
             {
                 return resultVec;
             }
 
-            newPos = rungeKutta4(pos + offset, dt, vel);
+            newPos = rungeKutta4(pos + neighbourOffset, dt, vel);
 
-            if (getInterpolationStencilWithWeights(resultVec, newPos, flags))
+            if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
             {
                 return resultVec;
             }
@@ -1364,12 +1472,55 @@ namespace Manta
         }
 
         int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
-        for (int i = 1; i <= numSearchSteps; ++i)
+        for (int i = 0; i <= numSearchSteps; ++i)
         {
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            if (getInterpolationStencilWithWeights(testResultVec, current, flags))
+            if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component))
+            {
+                resultVec = testResultVec;
+            }
+            else
+            {
+                return resultVec;
+            }
+        }
+        return {};
+    }
+
+    std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    {
+        Vec3 newPos = rungeKutta4(pos, dt, vel);
+
+        std::vector<std::tuple<Vec3i, Real>> resultVec{};
+        resultVec.reserve(4);
+
+        if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
+        {
+            return resultVec;
+        }
+
+        // Fallback, try finding the closest surface point
+        std::vector<std::tuple<Vec3i, Real>> testResultVec{};
+        testResultVec.reserve(4);
+
+        Vec3 current = pos;
+        Vec3 direction = newPos - pos;
+        Real totalDistance = norm(direction);
+
+        if (totalDistance < 1e-9)
+        {
+            return {};
+        }
+
+        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
+        for (int i = 0; i <= numSearchSteps; ++i)
+        {
+            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
+            current = pos + t * direction;
+
+            if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component))
             {
                 resultVec = testResultVec;
             }
@@ -1387,7 +1538,52 @@ namespace Manta
     {
         if (isValidFluid(i, j, k, flags, component))
         {
-            auto neighboursAndWeights =
+            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component);
+
+            for (const auto &[n, w] : neighboursAndWeights)
+            {
+                newGrid(i, j, k) += w * oldGrid(n);
+            }
+        }
+    }
+
+    inline IndexInt vecToIdx(Vec3i vec, Vec3i gridSize)
+    {
+        return vec.x * gridSize.y * vec.y;
+    }
+
+    inline Vec3i idxToVec(IndexInt idx, Vec3i gridSize)
+    {
+        return Vec3i(idx / gridSize.y, idx % gridSize.y, 0);
+    }
+
+    inline void insertIntoWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
+    {
+        IndexInt indexCellI = vecToIdx(cellI, gridSize);
+        IndexInt indexCellJ = vecToIdx(cellJ, gridSize);
+
+        map[indexCellI][indexCellJ] = value;
+        rmap[indexCellJ].insert(indexCellI);
+    }
+
+    inline void addToWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
+    {
+        IndexInt indexCellI = cellI.x * gridSize.y + cellI.y;
+        IndexInt indexCellJ = cellJ.x * gridSize.y + cellJ.y;
+
+        map[indexCellI][indexCellJ] += value;
+        rmap[indexCellJ].insert(indexCellI);
+    }
+
+    void recalculateGamma(Grid<Real> &gamma, const Sparse2DMap<Real> &weights, Vec3i gridSize)
+    {
+        Grid<Real> newGrid(gamma.getParent());
+        for (const auto &[cellI, innerMap] : weights)
+        {
+            for (const auto &[cellJ, value] : innerMap)
+            {
+                newGrid(idxToVec(cellJ, gridSize)) += value;
+            }
         }
     }
 
@@ -1401,6 +1597,55 @@ namespace Manta
 
         // Step 0: Advect Gamma with the same tratitional sceme
         Grid<Real> newGammaCum(parent);
+        knAdvectTraditional(flags_n_plus_one, vel, grid, newGammaCum, offset, dt, component);
+        // knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
+        grid.swap(newGammaCum);
+        return;
+
+        // Step 1: Backwards step
+        Sparse2DMap<Real> weights;
+        Reverse2dMap reverseWeights;
+        Grid<Real> beta(parent);
+        Grid<Real> gamma(parent);
+
+        FOR_IJK(grid)
+        {
+            if (!isValidFluid(i, j, k, flags_n_plus_one, component))
+            {
+                continue;
+            }
+
+            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component);
+
+            for (const auto &[n, w] : neighboursAndWeights)
+            {
+                insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), gridSize, w);
+                beta(i, j, k) += w;
+            }
+        }
+
+        // Step 2: Forwards Step
+        FOR_IJK(grid)
+        {
+            if (!isValidFluid(i, j, k, flags_n, component))
+            {
+                continue;
+            }
+
+            if (beta(i, j, k) < 1 - EPSILON)
+            {
+                Real amountToDistribute = 1 - beta(i, j, k);
+
+                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n, offset, component);
+
+                for (const auto &[n, w] : neighboursAndWeights)
+                {
+                    addToWeights(weights, reverseWeights, Vec3i(i, j, k), n, gridSize, w * amountToDistribute);
+                }
+            }
+        }
+
+        // Step 3: clamp gamma
     }
 
     // End of completely new Try

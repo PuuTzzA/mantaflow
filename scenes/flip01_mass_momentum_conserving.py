@@ -182,6 +182,8 @@ for t in range(MAX_TIME):
 
 		#vel.copyFrom(vel_extrapolated)
 		flags_n.copyFrom(flags_n_plus_one)
+
+		#setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n, level=.1 )
 		
 		#reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
 		#correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
