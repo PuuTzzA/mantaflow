@@ -1568,11 +1568,19 @@ namespace Manta
 
     inline void addToWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
     {
-        IndexInt indexCellI = cellI.x * gridSize.y + cellI.y;
-        IndexInt indexCellJ = cellJ.x * gridSize.y + cellJ.y;
+        IndexInt indexCellI = vecToIdx(cellI, gridSize);
+        IndexInt indexCellJ = vecToIdx(cellJ, gridSize);
 
         map[indexCellI][indexCellJ] += value;
         rmap[indexCellJ].insert(indexCellI);
+    }
+
+    inline void scaleWeightBy(Sparse2DMap<Real> &map, Vec3i cellI, Vec3i cellJ, Real factor, Vec3i gridSize)
+    {
+        IndexInt indexCellI = vecToIdx(cellI, gridSize);
+        IndexInt indexCellJ = vecToIdx(cellJ, gridSize);
+
+        map[indexCellI][indexCellJ] *= factor;
     }
 
     void recalculateGamma(Grid<Real> &gamma, const Sparse2DMap<Real> &weights, Vec3i gridSize)
@@ -1585,6 +1593,20 @@ namespace Manta
                 newGrid(idxToVec(cellJ, gridSize)) += value;
             }
         }
+        gamma.swap(newGrid);
+    }
+
+    void recalculateBeta(Grid<Real> &beta, const Sparse2DMap<Real> &weights, Vec3i gridSize)
+    {
+        Grid<Real> newGrid(beta.getParent());
+        for (const auto &[cellI, innerMap] : weights)
+        {
+            for (const auto &[cellJ, value] : innerMap)
+            {
+                newGrid(idxToVec(cellI, gridSize)) += value;
+            }
+        }
+        beta.swap(newGrid);
     }
 
     template <class GridType>
@@ -1597,17 +1619,17 @@ namespace Manta
 
         // Step 0: Advect Gamma with the same tratitional sceme
         Grid<Real> newGammaCum(parent);
-        knAdvectTraditional(flags_n_plus_one, vel, grid, newGammaCum, offset, dt, component);
+        knAdvectTraditional(flags_n_plus_one, vel, gammaCumulative, newGammaCum, offset, dt, component);
         // knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
-        grid.swap(newGammaCum);
-        return;
+        gammaCumulative.swap(newGammaCum);
 
-        // Step 1: Backwards step
         Sparse2DMap<Real> weights;
         Reverse2dMap reverseWeights;
         Grid<Real> beta(parent);
         Grid<Real> gamma(parent);
+        Grid<Real> newGrid(parent);
 
+        // Step 1: Backwards step
         FOR_IJK(grid)
         {
             if (!isValidFluid(i, j, k, flags_n_plus_one, component))
@@ -1645,7 +1667,62 @@ namespace Manta
             }
         }
 
-        // Step 3: clamp gamma
+        for (int __ = 0; __ < 10; __++)
+        {
+
+            // Step 3: clamp gamma
+            recalculateGamma(gamma, weights, gridSize);
+            FOR_IJK(grid)
+            {
+                if (!isValidFluid(i, j, k, flags_n_plus_one, component))
+                {
+                    continue;
+                }
+                if (gamma(i, j, k) < EPSILON)
+                {
+                    continue; // avoid division by 0
+                }
+                Real factor = gammaCumulative(i, j, k) / gamma(i, j, k);
+                factor = 1 / gamma(i, j, k);
+
+                for (IndexInt cellI : reverseWeights[vecToIdx(Vec3i(i, j, k), gridSize)])
+                {
+                    scaleWeightBy(weights, idxToVec(cellI, gridSize), Vec3i(i, j, k), factor, gridSize);
+                }
+            }
+
+            // Step 4: clamp beta
+            recalculateBeta(beta, weights, gridSize);
+            FOR_IJK(grid)
+            {
+                if (!isValidFluid(i, j, k, flags_n, component))
+                {
+                    continue;
+                }
+                if (beta(i, j, k) < EPSILON)
+                {
+                    continue;
+                }
+                Real factor = 1 / beta(i, j, k);
+                for (auto &[_, value] : weights[vecToIdx(Vec3i(i, j, k), gridSize)])
+                {
+                    value *= factor;
+                }
+            }
+        
+        }
+
+        // Step 5: intermediate Result
+        for (const auto &[cellI, innerMap] : weights)
+        {
+            for (const auto &[cellJ, weight] : innerMap)
+            {
+                newGrid(idxToVec(cellJ, gridSize)) += weight * grid(idxToVec(cellI, gridSize));
+            }
+        }
+
+        grid.swap(newGrid);
+        gammaCumulative.swap(gamma);
     }
 
     // End of completely new Try
