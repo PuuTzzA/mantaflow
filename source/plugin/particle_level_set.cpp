@@ -484,6 +484,8 @@ namespace Manta
         }
     }
 
+    // Fast Sweeping March extrapolation
+
     KERNEL()
     void knFillLocked(const FlagGrid &flags, Grid<int> &locked, Grid<Real> &velComponent, MACGridComponent component)
     {
@@ -497,12 +499,10 @@ namespace Manta
         case MAC_X:
             isSolid = flags.isObstacle(i - 1, j, k) || flags.isObstacle(i, j, k);
             isFluid = flags.isFluid(i - 1, j, k) && flags.isFluid(i, j, k);
-            isFluid = velComponent(i, j, k) != 0;
             break;
         case MAC_Y:
             isSolid = flags.isObstacle(i, j - 1, k) || flags.isObstacle(i, j, k);
             isFluid = flags.isFluid(i, j - 1, k) && flags.isFluid(i, j, k);
-            isFluid = velComponent(i, j, k) != 0;
             break;
         case MAC_Z:
             throw std::runtime_error("not implemented yet! (getPhiAtMACCell with MAC_Z)");

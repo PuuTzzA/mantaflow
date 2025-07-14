@@ -153,7 +153,7 @@ namespace Manta
         }
         return lastKnownFluidPos;
     }
- 
+
     Real getDx(const Grid<Real> &grid)
     {
         return grid.getParent()->getDx();
@@ -654,19 +654,19 @@ namespace Manta
 
         if (w000 > EPSILON)
         {
-            result.push_back({Vec3i{i, j, 0}, w000});
+            result.push_back({Vec3i{i, j, k}, w000});
         }
         if (w100 > EPSILON)
         {
-            result.push_back({Vec3i{i + 1, j, 0}, w100});
+            result.push_back({Vec3i{i + 1, j, k}, w100});
         }
         if (w010 > EPSILON)
         {
-            result.push_back({Vec3i{i, j + 1, 0}, w010});
+            result.push_back({Vec3i{i, j + 1, k}, w010});
         }
         if (w110 > EPSILON)
         {
-            result.push_back({Vec3i{i + 1, j + 1, 0}, w110});
+            result.push_back({Vec3i{i + 1, j + 1, k}, w110});
         }
         if (flags.getParent()->getGridSize().z > 1)
         {
@@ -685,7 +685,7 @@ namespace Manta
 
     std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
-        Vec3 newPos = rungeKutta4(pos, -dt, vel);
+        Vec3 newPos = rungeKutta4(pos + offset, -dt, vel);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
@@ -714,14 +714,14 @@ namespace Manta
 
         if (component != NONE)
         {
-            newPos = rungeKutta4(pos - neighbourOffset, dt, vel);
+            newPos = rungeKutta4(pos - neighbourOffset, -dt, vel);
 
             if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
             {
                 return resultVec;
             }
 
-            newPos = rungeKutta4(pos + neighbourOffset, dt, vel);
+            newPos = rungeKutta4(pos + neighbourOffset, -dt, vel);
 
             if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
             {
@@ -762,7 +762,7 @@ namespace Manta
 
     std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
-        Vec3 newPos = rungeKutta4(pos, dt, vel);
+        Vec3 newPos = rungeKutta4(pos + offset, dt, vel);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
@@ -803,6 +803,24 @@ namespace Manta
         return {};
     }
 
+    /*     Vec3 findClosestPointOnLevelset(Vec3 pos, const Grid<Real> &phi)
+        {
+            Vec3 currentPos = pos;
+            // Iterate a few times to project the point onto the surface. 5 is usually enough.
+            for (int i = 0; i < 5; ++i)
+            {
+                Real phiVal = phi.getInterpolated(currentPos);
+                // Vec3 grad = phi.getGradient(currentPos);
+                if (normSquare(grad) < 1e-9)
+                {
+                    break; // Gradient is zero, can't move further
+                }
+                normalize(grad);
+                currentPos -= grad * phiVal; // Move along gradient normal by the SDF distance
+            }
+            return currentPos;
+        } */
+
     KERNEL()
     template <class T>
     void knAdvectTraditional(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component)
@@ -815,6 +833,10 @@ namespace Manta
             {
                 newGrid(i, j, k) += w * oldGrid(n);
             }
+        }
+        else
+        {
+            newGrid(i, j, k) = 1.;
         }
     }
 
@@ -891,7 +913,7 @@ namespace Manta
         // Step 0: Advect Gamma with the same tratitional sceme
         Grid<Real> newGammaCum(parent);
         knAdvectTraditional(flags_n_plus_one, vel, gammaCumulative, newGammaCum, offset, dt, component);
-        // knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
+        //knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
         gammaCumulative.swap(newGammaCum);
 
         Sparse2DMap<Real> weights;
@@ -929,7 +951,7 @@ namespace Manta
             {
                 Real amountToDistribute = 1 - beta(i, j, k);
 
-                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n, offset, component);
+                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component);
 
                 if (neighboursAndWeights.empty())
                 {
@@ -958,7 +980,7 @@ namespace Manta
                 continue; // avoid division by 0
             }
             Real factor = gammaCumulative(i, j, k) / gamma(i, j, k);
-            factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
+            //factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
 
             for (IndexInt cellI : reverseWeights[vecToIdx(Vec3i(i, j, k), gridSize)])
             {
@@ -1015,7 +1037,7 @@ namespace Manta
                     Real denominator = 2. * gamma(idx_moved);
                     if (abs(denominator) < EPSILON)
                     {
-                        continue; // Skip this pair, no diffusion is possible
+                        continue; 
                     }
                     Real phiToMove = newGrid(idx_moved) * (gamma(idx_moved) - gamma(i, j, k)) / denominator;
 

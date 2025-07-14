@@ -1,4 +1,3 @@
-#
 # Very simple flip without level set
 # and without any particle resampling
 # 
@@ -34,16 +33,16 @@ s.timestepMin = 0.001
 s.timestepMax = 20000
 
 # prepare grids and particles
-flags_n    = s.create(FlagGrid)
+flags_n          = s.create(FlagGrid)
 flags_n_plus_one = s.create(FlagGrid)
-test_real_grid = s.create(RealGrid)
+test_real_grid   = s.create(RealGrid)
 test_real_grid_gamma = s.create(RealGrid)
-vel      = s.create(MACGrid)
-vel_gamma = s.create(MACGrid)
+vel              = s.create(MACGrid)
+vel_gamma        = s.create(MACGrid)
 vel_extrapolated = s.create(MACGrid)
-velOld   = s.create(MACGrid)
-pressure = s.create(RealGrid)
-tmpVec3  = s.create(VecGrid)
+velOld           = s.create(MACGrid)
+pressure         = s.create(RealGrid)
+tmpVec3          = s.create(VecGrid)
 
 pp       = s.create(BasicParticleSystem) 
 # add velocity data to particles
@@ -70,23 +69,16 @@ setObstacleFlags(flags=flags_n_plus_one, phiObs=phiObs)
 flags_n.fillGrid()
 flags_n_plus_one.fillGrid()
 
-#obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
-
-if doOpen:
-	setOpenBound( flags_n, bWidth,'yY',FlagOutflow|FlagEmpty )
-	setOpenBound( flags_n_plus_one, bWidth, 'yY', FlagOutflow|FlagEmpty )
-
 # enable one of the following
 fluidbox = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(0.25, 0.5, 1)) # breaking dam
 #fluidbox = Box( parent=s, p0=gs*vec3(0.4,0.72,0.4), p1=gs*vec3(0.6,0.92,0.6)) # centered falling block
 phiInit = fluidbox.computeLevelset()
 flags_n.updateFromLevelset(phiInit)
 flags_n_plus_one.updateFromLevelset(phiInit )
-# phiInit is not needed from now on!
 
 # level set method 
 phi_fluid = fluidbox.computeLevelset()
-phi_fluid.initFromFlags( flags=flags_n )
+# phi_fluid.initFromFlags( flags=flags_n ) # This is redundant due to updateFromLevelset above
 phi_fluid.reinitMarching( flags=flags_n )
 
 level_set_particles = s.create(BasicParticleSystem)
@@ -94,15 +86,12 @@ particle_radii = level_set_particles.create(PdataReal)
 sampleLevelsetBorderWithParticles( phi=phi_fluid, flags=flags_n, particles=level_set_particles, radii=particle_radii)
 reinitializeLevelset( phi=phi_fluid, flags=flags_n )
 
-#testSeedParticles(phi=phi_fluid, flags=flags_n, g=test_real_grid, particles=level_set_particles, radii=particle_radii )
-
-# note, there's no resamplig here, so we need _LOTS_ of particles...
+# note, there's no resampling here, so we need _LOTS_ of particles...
 sampleFlagsWithParticles( flags=flags_n, parts=pp, discretization=particleNumber, randomness=0.2 )
 
 if (GUI):
 	gui = Gui()
 	gui.show()
-	gui.windowSize(800, 800)
 	gui.setCamPos(0, 0, -1.3)
 	gui.nextRealGrid()
 	gui.nextRealGrid()
@@ -131,7 +120,6 @@ test_max = -1000000
 for t in range(MAX_TIME):
 	if s.frame < 1:
 		fillWithOnes( grid=vel_gamma )
-		#fillFluidWithOnes( grid=test_real_grid, flags=flags_n )
 		fillLevelsetWithOnes( grid=test_real_grid, flags=flags_n, phi=phi_fluid, level=LEVEL )
 		fillWithOnes( grid=test_real_grid_gamma )
 
@@ -140,21 +128,26 @@ for t in range(MAX_TIME):
 
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
-	# FLIP 
 	if not doConserving:
-		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
-		mapPartsToMAC(vel=vel, flags=flags_n, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 ) # maps velocity from particles to grid
-		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 ) # extrapolate vel values into non fluid regions
-		vel_extrapolated.copyFrom(vel)
+		# --- Standard FLIP simulation loop for comparison ---
+		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False )
+		mapPartsToMAC(vel=vel, flags=flags_n, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 )
+		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 )
 		markFluidCells( parts=pp, flags=flags_n )
+		# Standard advection for the test grid
 		advectSemiLagrange( flags=flags_n, vel=vel, grid=test_real_grid, order=2 )
+		
+		addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
+		setWallBcs(flags=flags_n, vel=vel)
+		solvePressure(flags=flags_n, vel=vel, pressure=pressure)
+		setWallBcs(flags=flags_n, vel=vel)
+		extrapolateMACSimple( flags=flags_n, vel=vel )
+		flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 )
 
 	else:
-		#pp.advectInMACGrid(vel=vel)
-		#pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False ) # advect with velocities stored in vel
-		
+		# Level Set
 		vel_extrapolated.copyFrom(vel)
-		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=5, intoObs=True )
 		#extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
 
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
@@ -170,51 +163,29 @@ for t in range(MAX_TIME):
 
 		setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
-		# as long as level set does not work lasdkfjalsdkjflaskjdf
-		#advectParticlesForward( particles=pp, vel=vel_extrapolated, flags=flags_n)
-		#markFluidCells( parts=pp, flags=flags_n_plus_one)
-		# end as long as level set does not work alskdjföalskdfjöalskj
-
+		# Advect grid quantities using the custom conserving advection scheme.
+		# This is the core of the comparison.
 		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=test_real_grid, gammaCumulative=test_real_grid_gamma, phi=phi_fluid)
-		
-		#advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=vel,   order=2 )
 		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid)
 
-		#vel.copyFrom(vel_extrapolated)
+		# The fluid domain has now officially moved. Update flags_n for the pressure solve.
 		flags_n.copyFrom(flags_n_plus_one)
-
-		#setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n, level=.1 )
 		
-		#reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
-		#correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
-		#testSeedParticles(phi=phi_fluid, flags=flags_n, g=test_real_grid, particles=level_set_particles, radii=particle_radii )
-	
+		# Apply grid-based forces (gravity)
+		addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
+
+		# Solve for pressure to make the velocity field divergence-free
+		setWallBcs(flags=flags_n, vel=vel)    
+		solvePressure(flags=flags_n, vel=vel, pressure=pressure)
+		setWallBcs(flags=flags_n, vel=vel)
+
 	if doOpen:
 		resetOutflow( flags=flags_n)
-
-
-	addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
-
-	if EXPORT:
-		pp.getCurrentData(FILENAME, TITLE, CFL, RESOLUTION, flags=flags_n, vel=vel, lastFrame=t == (MAX_TIME - 1))
-
-	# pressure solve
-	setWallBcs(flags=flags_n, vel=vel)    
-	solvePressure(flags=flags_n, vel=vel, pressure=pressure)
-	setWallBcs(flags=flags_n, vel=vel)
-
-	if not doConserving:
-		# we dont have any levelset, ie no extrapolation, so make sure the velocities are valid
-		extrapolateMACSimple( flags=flags_n, vel=vel )
-		# FLIP velocity update
-		flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 ) # add difference to per particle velocity
-	
+		
 	stats = calculateMass(grid=test_real_grid).split(",")
 	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")
 
-	#gui.screenshot( 'flipt_%04d.png' % t )
-
-	if (EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):
+	if (GUI and EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):
 		gui.screenshot( f'../analysis/images/{TITLE.replace(" ", "_")}_{str(t).zfill(4)}.png')
 
 	if s.frame == 0:
@@ -225,4 +196,3 @@ for t in range(MAX_TIME):
 	s.step()
 
 mantaMsg(f"Summary of Total Mass:\nStart: {test_start}, Min: {test_min}, Max: {test_max}")
-
