@@ -147,7 +147,7 @@ for t in range(MAX_TIME):
 	else:
 		# Level Set
 		vel_extrapolated.copyFrom(vel)
-		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=5, intoObs=True )
 		#extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
 
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)

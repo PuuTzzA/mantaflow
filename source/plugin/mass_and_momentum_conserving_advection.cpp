@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <array>
+#include <numeric>
+#include <algorithm>
 
 namespace Manta
 {
@@ -69,11 +71,11 @@ namespace Manta
         }
     }
 
-    // MASS_MOMENTU_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
-    // MASS_MOMENTU_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
-    // MASS_MOMENTU_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
-    // MASS_MOMENTU_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
-    // MASS_MOMENTU_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
 
     bool isValid(int i, int j, int k, const FlagGrid &flags, Vec3i &gs)
     {
@@ -715,19 +717,34 @@ namespace Manta
 
         if (component != NONE)
         {
-            newPos = rungeKutta4(pos - neighbourOffset, -dt, vel);
+            std::vector<std::tuple<Vec3i, Real>> resultVec1{};
+            std::vector<std::tuple<Vec3i, Real>> resultVec2{};
 
-            if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
+            Vec3 start1 = pos - neighbourOffset;
+            Vec3 start2 = pos + neighbourOffset;
+
+            if (isValidFluid(std::floor(start1.x), std::floor(start1.y), std::floor(start1.z), flags, NONE))
             {
-                return resultVec;
+                newPos = rungeKutta4(start1, -dt, vel);
+                getInterpolationStencilWithWeights(resultVec1, newPos + neighbourOffset, flags, offset, component);
             }
 
-            newPos = rungeKutta4(pos + neighbourOffset, -dt, vel);
-
-            if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
+            if (isValidFluid(std::floor(start2.x), std::floor(start2.y), std::floor(start2.z), flags, NONE))
             {
-                return resultVec;
+                newPos = rungeKutta4(start2, -dt, vel);
+                getInterpolationStencilWithWeights(resultVec2, newPos - neighbourOffset, flags, offset, component);
             }
+
+            resultVec.clear();
+            resultVec.reserve(resultVec1.size() + resultVec2.size());
+            resultVec.insert(resultVec.end(), resultVec1.begin(), resultVec1.end());
+            resultVec.insert(resultVec.end(), resultVec2.begin(), resultVec2.end());
+
+            Real sum = (resultVec1.size() > 0 ? 1. : 0.) + (resultVec2.size() > 0 ? 1. : 0.);
+            std::transform(resultVec.begin(), resultVec.end(), resultVec.begin(), [sum](const std::tuple<Vec3i, Real> t)
+                           { return std::make_tuple(std::get<0>(t), std::get<1>(t) / sum); });
+
+            return resultVec;
         }
 
         // Fallback, try finding the closest surface point
@@ -805,23 +822,30 @@ namespace Manta
         return {};
     }
 
-    /*     Vec3 findClosestPointOnLevelset(Vec3 pos, const Grid<Real> &phi)
+    std::vector<std::tuple<Vec3i, Real>> getClosestSurfacePoint(Vec3 originalPos, const Grid<Real> &phi, Vec3 offset, const FlagGrid &flags, MACGridComponent component)
+    {
+        Vec3 startingPoint = originalPos + offset;
+        Vec3 closestSurfacePoint = startingPoint;
+
+        const int projectionSteps = 5;
+        for (int step = 0; step < projectionSteps; ++step)
         {
-            Vec3 currentPos = pos;
-            // Iterate a few times to project the point onto the surface. 5 is usually enough.
-            for (int i = 0; i < 5; ++i)
+            Real phiVal = phi.getInterpolatedHi(closestSurfacePoint, 2);
+            Vec3 grad = getGradient(phi, closestSurfacePoint.x, closestSurfacePoint.y, closestSurfacePoint.z);
+
+            if (normSquare(grad) < 1e-12)
             {
-                Real phiVal = phi.getInterpolated(currentPos);
-                // Vec3 grad = phi.getGradient(currentPos);
-                if (normSquare(grad) < 1e-9)
-                {
-                    break; // Gradient is zero, can't move further
-                }
-                normalize(grad);
-                currentPos -= grad * phiVal; // Move along gradient normal by the SDF distance
+                break;
             }
-            return currentPos;
-        } */
+            normalize(grad);
+
+            closestSurfacePoint -= grad * phiVal;
+        }
+        std::vector<std::tuple<Vec3i, Real>> surfaceNeighboursAndWeights;
+        getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags, offset, component);
+
+        return surfaceNeighboursAndWeights;
+    }
 
     KERNEL()
     template <class T>
@@ -936,10 +960,22 @@ namespace Manta
 
             auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component);
 
-            for (const auto &[n, w] : neighboursAndWeights)
+            if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
             {
-                insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), gridSize, w);
-                beta(i, j, k) += w;
+                /* auto surfaceNeighboursAndWeights = getClosestSurfacePoint(Vec3(i, j, k), phi, offset, flags_n, component);
+                for (const auto &[n, w] : surfaceNeighboursAndWeights)
+                {
+                    insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), gridSize, w);
+                    beta(i, j, k) += w;
+                } */
+            }
+            else
+            {
+                for (const auto &[n, w] : neighboursAndWeights)
+                {
+                    insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), gridSize, w);
+                    beta(i, j, k) += w;
+                }
             }
         }
 
@@ -959,28 +995,8 @@ namespace Manta
 
                 if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
                 {
-                    Vec3 startingPoint = Vec3(i, j, k) + offset;
-                    Vec3 closestSurfacePoint = startingPoint;
-
-                    const int projectionSteps = 5;
-                    for (int step = 0; step < projectionSteps; ++step)
-                    {
-                        Real phiVal = phi.getInterpolatedHi(closestSurfacePoint, 2);
-                        Vec3 grad = getGradient(phi, closestSurfacePoint.x, closestSurfacePoint.y, closestSurfacePoint.z);
-
-                        if (normSquare(grad) < 1e-12)
-                        {
-                            break;
-                        }
-                        normalize(grad);
-
-                        closestSurfacePoint -= grad * phiVal;
-                    }
-
-                    std::vector<std::tuple<Vec3i, Real>> surfaceNeighboursAndWeights;
-                    getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags_n_plus_one, offset, component);
-
-                    if (surfaceNeighboursAndWeights.empty())
+                    auto surfaceNeighboursAndWeights = getClosestSurfacePoint(Vec3(i, j, k), phi, offset, flags_n_plus_one, component);
+                    if (surfaceNeighboursAndWeights.empty()) // Now really just dump it into the same cell
                     {
                         addToWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, amountToDistribute);
                     }
@@ -1092,11 +1108,11 @@ namespace Manta
         gammaCumulative.swap(gamma);
     }
 
-    // PYTHON PYTHON PYHTON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
-    // PYTHON PYTHON PYHTON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
-    // PYTHON PYTHON PYHTON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
-    // PYTHON PYTHON PYHTON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
-    // PYTHON PYTHON PYHTON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
 
     void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> &phi)
     {
