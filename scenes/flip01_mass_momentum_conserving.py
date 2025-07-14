@@ -151,7 +151,8 @@ for t in range(MAX_TIME):
 		#extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=5 )
 
 		advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
-		simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid )
+		#simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid )
+		advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
 		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
 		reinitializeLevelset( phi=phi_fluid, flags=flags_n )
 		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )

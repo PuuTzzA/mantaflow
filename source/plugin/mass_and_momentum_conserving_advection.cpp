@@ -685,7 +685,8 @@ namespace Manta
 
     std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
-        Vec3 newPos = rungeKutta4(pos + offset, -dt, vel);
+        pos += offset;
+        Vec3 newPos = rungeKutta4(pos, -dt, vel);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
@@ -762,7 +763,8 @@ namespace Manta
 
     std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
-        Vec3 newPos = rungeKutta4(pos + offset, dt, vel);
+        pos += offset;
+        Vec3 newPos = rungeKutta4(pos, dt, vel);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
@@ -827,6 +829,7 @@ namespace Manta
     {
         if (isValidFluid(i, j, k, flags, component))
         {
+            newGrid(i, j, k) = 0;
             auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component);
 
             for (const auto &[n, w] : neighboursAndWeights)
@@ -956,6 +959,7 @@ namespace Manta
                 if (neighboursAndWeights.empty())
                 {
                     addToWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, amountToDistribute);
+                    // TODO add to closest surface cell instead of to oneself
                 }
                 else
                 {
