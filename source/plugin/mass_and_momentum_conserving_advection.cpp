@@ -841,6 +841,7 @@ namespace Manta
         {
             newGrid(i, j, k) = 1.;
         }
+        newGrid(i, j, k) = 1.;
     }
 
     inline IndexInt vecToIdx(Vec3i vec, Vec3i gridSize)
@@ -916,7 +917,7 @@ namespace Manta
         // Step 0: Advect Gamma with the same tratitional sceme
         Grid<Real> newGammaCum(parent);
         knAdvectTraditional(flags_n_plus_one, vel, gammaCumulative, newGammaCum, offset, dt, component);
-        //knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
+        // knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
         gammaCumulative.swap(newGammaCum);
 
         Sparse2DMap<Real> weights;
@@ -956,10 +957,40 @@ namespace Manta
 
                 auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component);
 
-                if (neighboursAndWeights.empty())
+                if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
                 {
-                    addToWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, amountToDistribute);
-                    // TODO add to closest surface cell instead of to oneself
+                    Vec3 startingPoint = Vec3(i, j, k) + offset;
+                    Vec3 closestSurfacePoint = startingPoint;
+
+                    const int projectionSteps = 5;
+                    for (int step = 0; step < projectionSteps; ++step)
+                    {
+                        Real phiVal = phi.getInterpolatedHi(closestSurfacePoint, 2);
+                        Vec3 grad = getGradient(phi, closestSurfacePoint.x, closestSurfacePoint.y, closestSurfacePoint.z);
+
+                        if (normSquare(grad) < 1e-12)
+                        {
+                            break;
+                        }
+                        normalize(grad);
+
+                        closestSurfacePoint -= grad * phiVal;
+                    }
+
+                    std::vector<std::tuple<Vec3i, Real>> surfaceNeighboursAndWeights;
+                    getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags_n_plus_one, offset, component);
+
+                    if (surfaceNeighboursAndWeights.empty())
+                    {
+                        addToWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, amountToDistribute);
+                    }
+                    else
+                    {
+                        for (const auto &[n, w] : surfaceNeighboursAndWeights)
+                        {
+                            addToWeights(weights, reverseWeights, Vec3i(i, j, k), n, gridSize, w * amountToDistribute);
+                        }
+                    }
                 }
                 else
                 {
@@ -984,7 +1015,7 @@ namespace Manta
                 continue; // avoid division by 0
             }
             Real factor = gammaCumulative(i, j, k) / gamma(i, j, k);
-            //factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
+            // factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
 
             for (IndexInt cellI : reverseWeights[vecToIdx(Vec3i(i, j, k), gridSize)])
             {
@@ -1041,7 +1072,7 @@ namespace Manta
                     Real denominator = 2. * gamma(idx_moved);
                     if (abs(denominator) < EPSILON)
                     {
-                        continue; 
+                        continue;
                     }
                     Real phiToMove = newGrid(idx_moved) * (gamma(idx_moved) - gamma(i, j, k)) / denominator;
 
