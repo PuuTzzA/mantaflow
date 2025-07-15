@@ -1190,27 +1190,6 @@ namespace Manta
             errMsg("AdvectSemiLagrange: Grid Type is not supported (only Real, MAC)");
     }
 
-    PYTHON()
-    std::string calculateMass(const Grid<Real> *grid)
-    {
-        Vec3i gridSize = grid->getParent()->getGridSize();
-        int bnd = 1;
-        Real sum = 0;
-        Real min = std::numeric_limits<Real>::infinity();
-        Real max = -std::numeric_limits<Real>::infinity();
-        for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
-        {
-            for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
-            {
-                Real val = grid->operator()(i, j, 0);
-                sum += val;
-                min = std::min(min, val);
-                max = std::max(max, val);
-            }
-        }
-        return std::to_string(sum) + "," + std::to_string(min) + "," + std::to_string(max);
-    }
-
     KERNEL(points)
     void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i gs)
     {

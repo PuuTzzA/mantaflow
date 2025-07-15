@@ -2,32 +2,36 @@
 # and without any particle resampling
 # 
 from manta import *
+from data_collection import *
+import json
 
-RESOLUTION = 100
-TITLE = "FLIP simple high CFL"
-FILENAME = f'../analysis/data/{TITLE.replace(" ", "_")}.json'
-CFL = 1
-MAX_TIME = 600
-NUM_FRAMES_RENDERED = 6
-EXPORT = False
+params = {}
+with open("../scenes/test_cases/params_low_cfl.json") as f:
+	params = json.load(f)
+
+data_collector = Data_collectior(title="test1", params=params, export_data=True, export_images=True)
+data_collector.init()
+
 
 LEVEL = 0
 doOpen = False
-doConserving = True
+doConserving = False
 
 # solver params
-dim = 2
+dim = params["dimension"]
 particleNumber = 2
-res = RESOLUTION
-gs = vec3(res,res,res)
+res = 100
+gs = vec3(params["resolutionX"], params["resolutionY"],params["resolutionZ"])
+gs = vec3(res, res, res)
 if (dim==2):
 	gs.z=1
 	particleNumber = 3 # use more particles in 2d
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # Adaptive time stepping
-s.cfl         = CFL          # maximal velocity per cell and timestep, 3 is fairly strict
-s.frameLength = 0.8                 # length of one frame (in "world time")
+s.cfl         = params["CFL"]          				# maximal velocity per cell and timestep, 3 is fairly strict
+s.frameLength = 1 / float(params["fps"])			# length of one frame (in "world time")
+s.frameLength = 0.8        
 s.timestep    = s.frameLength 
 s.timestepMin = 0.001 
 s.timestepMax = 20000
@@ -37,6 +41,7 @@ flags_n          = s.create(FlagGrid)
 flags_n_plus_one = s.create(FlagGrid)
 test_real_grid   = s.create(RealGrid)
 test_real_grid_gamma = s.create(RealGrid)
+curl 			 = s.create(RealGrid)
 vel              = s.create(MACGrid)
 vel_gamma        = s.create(MACGrid)
 vel_extrapolated = s.create(MACGrid)
@@ -104,20 +109,20 @@ if (GUI):
 	gui.nextRealGrid()
 	gui.nextRealGrid()
 	gui.nextRealGrid()
+	gui.nextRealGrid()
+	gui.nextRealGrid()
 	gui.nextVec3Grid()
 	gui.nextVec3Grid()
 	if doConserving:
 		gui.nextParts()
 	#gui.pause()
 
-pp.clearFile(FILENAME)
-
 test_start = 0
 test_min = 1000000
 test_max = -1000000
 
 #main loop
-for t in range(MAX_TIME):
+while (s.timeTotal < params["max_time"]):
 	if s.frame < 1:
 		fillWithOnes( grid=vel_gamma )
 		fillLevelsetWithOnes( grid=test_real_grid, flags=flags_n, phi=phi_fluid, level=LEVEL )
@@ -129,6 +134,10 @@ for t in range(MAX_TIME):
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	if not doConserving:
+		## lelel set (just for visualization)
+		markPhiFromFlagGrid(phi_fluid, flags_n)
+		reinitializeLevelset( phi=phi_fluid, flags=flags_n )
+
 		# --- Standard FLIP simulation loop for comparison ---
 		pp.advectInGrid(flags=flags_n, vel=vel, integrationMode=IntRK4, deleteInObstacle=False )
 		mapPartsToMAC(vel=vel, flags=flags_n, velOld=velOld, parts=pp, partVel=pVel, weight=tmpVec3 )
@@ -157,7 +166,7 @@ for t in range(MAX_TIME):
 		reinitializeLevelset( phi=phi_fluid, flags=flags_n )
 		correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
 
-		if (t % 10 == 0):
+		if (s.frame % 10 == 0):
 			reseedParticles(phi=phi_fluid, flags=flags_n, particles=level_set_particles )
 
 		reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
@@ -183,17 +192,9 @@ for t in range(MAX_TIME):
 	if doOpen:
 		resetOutflow( flags=flags_n)
 		
-	stats = calculateMass(grid=test_real_grid).split(",")
-	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")
+	calculateCurl(vel=vel, curl=curl)
 
-	if (GUI and EXPORT and t % (MAX_TIME / NUM_FRAMES_RENDERED) == 0):
-		gui.screenshot( f'../analysis/images/{TITLE.replace(" ", "_")}_{str(t).zfill(4)}.png')
-
-	if s.frame == 0:
-		test_start = stats[0]
-	test_min = min(test_min, float(stats[0]))
-	test_max = max(test_max, float(stats[0]))
-
+	data_collector.step(solver=s, tracked_grids=[[test_real_grid, "test_real_grid"], [curl, "curl"]], flags=flags_n, gui=gui)
 	s.step()
 
-mantaMsg(f"Summary of Total Mass:\nStart: {test_start}, Min: {test_min}, Max: {test_max}")
+data_collector.finish()

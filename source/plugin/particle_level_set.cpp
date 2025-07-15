@@ -384,7 +384,7 @@ namespace Manta
         {
             if (particles[idx].flag & ParticleBase::PESCAPED)
             {
-                //continue; // don't delete escaped particles
+                // continue; // don't delete escaped particles
                 particles.kill(idx);
                 continue;
             }
@@ -482,6 +482,18 @@ namespace Manta
         {
             throw std::runtime_error("fill fluid with ones not implemented for this grid type!");
         }
+    }
+
+    KERNEL()
+    void knMarkPhiFromFlagGrid(Grid<Real> &phi, const FlagGrid &flags)
+    {
+        phi(i, j, k) = flags.isFluid(i, j, k) ? -1. : (flags.isObstacle(i, j, k) ? 0. : 1.);
+    }
+
+    PYTHON()
+    void markPhiFromFlagGrid(Grid<Real> &phi, const FlagGrid &flags)
+    {
+        knMarkPhiFromFlagGrid(phi, flags);
     }
 
     // Fast Sweeping March extrapolation

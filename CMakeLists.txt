@@ -205,6 +205,7 @@ set(PP_SOURCES
 	source/plugin/advection.cpp
 	source/plugin/mass_and_momentum_conserving_advection.cpp
 	source/plugin/particle_level_set.cpp
+	source/plugin/data_collection.cpp
 	source/plugin/extforces.cpp
 	source/plugin/apic.cpp
 	source/plugin/flip.cpp
