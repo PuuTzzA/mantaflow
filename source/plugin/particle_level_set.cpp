@@ -19,7 +19,7 @@ namespace Manta
 
 #define DISCRETIZATION 4
 #define POSITIVE_CUTOFF .5f
-#define NEGATIVE_CUTOFF -3.f
+#define NEGATIVE_CUTOFF -4.f
 #define MAX_PARTICLES_PER_CELL 25
 #define MIN_PARTICLES_PER_CELL 8
 #define ESCAPE_CONDITION 1 // a particle counts as escaped, if it is further than ESCAPE_CONDITION * radius on the wrong side

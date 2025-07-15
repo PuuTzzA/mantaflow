@@ -22,7 +22,8 @@ class Data_collectior:
         self.export_images = export_images
 
     def init(self):
-        shutil.rmtree(self.stats_dir, ignore_errors=True)
+        if self.export_data or self.export_images:
+            shutil.rmtree(self.stats_dir, ignore_errors=True)
         self.stats_dir.mkdir(parents=True, exist_ok=True)
         
         self.data = {}
