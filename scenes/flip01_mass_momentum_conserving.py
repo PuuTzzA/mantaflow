@@ -12,7 +12,6 @@ with open("../scenes/test_cases/params_low_cfl.json") as f:
 data_collector = Data_collectior(title="test1", params=params, export_data=True, export_images=True)
 data_collector.init()
 
-
 LEVEL = 0
 doOpen = False
 doConserving = False
@@ -198,3 +197,4 @@ while (s.timeTotal < params["max_time"]):
 	s.step()
 
 data_collector.finish()
+data_collector.printStats()
