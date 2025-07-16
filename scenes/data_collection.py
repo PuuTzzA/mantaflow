@@ -6,7 +6,7 @@ import shutil
 import json
 
 class Data_collectior:
-    def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False):
+    def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, trackable_grid_names=[], tracked_grids_indeces=[]):
         self.title = title
         self.base_dir = Path(base_dir).expanduser().resolve()
         self.stats_dir = self.base_dir / f"{self.title}_stats"
@@ -20,6 +20,8 @@ class Data_collectior:
         
         self.export_data = export_data
         self.export_images = export_images
+        self.trackable_grid_names=trackable_grid_names
+        self.tracked_grids_indeces = tracked_grids_indeces
 
     def init(self):
         if self.export_data or self.export_images:
@@ -39,7 +41,8 @@ class Data_collectior:
         self.last_frame = -1
         
         if (self.export_images):
-           (self.stats_dir / "frames").mkdir(parents=True, exist_ok=True)
+           for index in self.tracked_grids_indeces:
+            (self.stats_dir / f"{self.trackable_grid_names[index]}_frames").mkdir(parents=True, exist_ok=True)
 
     def step(self, solver, tracked_grids, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
         if (self.last_frame == solver.frame):
@@ -56,7 +59,14 @@ class Data_collectior:
         if self.export_images and gui is not None:
             gui.windowSize(windowSize[0], windowSize[1])
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
-            gui.screenshot(str(self.stats_dir / "frames" / f"frame_{str(solver.frame).zfill(4)}.png"))
+
+            for i in range(len(self.trackable_grid_names)):
+                if i in self.tracked_grids_indeces:
+                    name = self.trackable_grid_names[i]
+                    gui.screenshot(str(self.stats_dir / f"{name}_frames" / f"{name}_{str(solver.frame).zfill(4)}.png"))
+                
+                gui.nextRealGrid()
+                gui.update()
 
     def computeStats(self):
         frames = self.data["frame_data"]
@@ -113,31 +123,37 @@ class Data_collectior:
                 json.dump(self.data, f, indent=4)
 
         if self.export_images:
-            frames_dir   = self.stats_dir / "frames"
-            pattern      = "frame_%04d.png"        # frame_0001.png, frame_0002.png …
-            fps          = self.fps                # playback frame‑rate
-            crf          = 28                      # 0 (lossless) … 63 (worst). 28~30 ≈ YouTube HD
-            bitrate      = "0"                     # Leave "0" for constrained‑quality mode
-            output_file  = self.stats_dir / "simulation.webm"
+            for index in self.tracked_grids_indeces:
+                name = self.trackable_grid_names[index]
 
-            cmd = [
-                "ffmpeg",
-                "-y",                               # overwrite existing output
-                "-framerate", str(fps),             # input fps
-                "-i", str(frames_dir / pattern),    # numbered‑file pattern
-                "-c:v", "libvpx-vp9",               # VP9 video codec
-                "-crf", str(crf),                   # quality target
-                "-b:v", bitrate,                    # needed even when "0"
-                "-pix_fmt", "yuv420p",              # 8‑bit 4:2:0 (widest support)
-                # Add an Opus audio track if desired (remove these two lines otherwise):
-                # "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
-                # "-c:a", "libopus", "-b:a", "128k",
-                output_file.as_posix(),
-            ]
 
-            print("Running:", " ".join(cmd))
-            subprocess.run(cmd, check=True)
+                frames_dir   = self.stats_dir / f"{name}_frames"
+                pattern      = f"{name}_%04d.png"       # frame_0001.png, frame_0002.png …
+                fps          = 30                       # playback frame‑rate
+                crf          = 28                       # 0 (lossless) … 63 (worst). 28~30 ≈ YouTube HD
+                bitrate      = "0"                      # Leave "0" for constrained‑quality mode
+                output_file  = self.stats_dir / f"{name}.webm"
 
+                cmd = [
+                    "ffmpeg",
+                    "-y",                               # overwrite existing output
+                    "-framerate", str(fps),             # input fps
+                    "-i", str(frames_dir / pattern),    # numbered‑file pattern
+                    "-c:v", "libvpx-vp9",               # VP9 video codec
+                    "-crf", str(crf),                   # quality target
+                    "-b:v", bitrate,                    # needed even when "0"
+                    "-pix_fmt", "yuv420p",              # 8‑bit 4:2:0 (widest support)
+                    # Add an Opus audio track if desired (remove these two lines otherwise):
+                    # "-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000",
+                    # "-c:a", "libopus", "-b:a", "128k",
+                    output_file.as_posix(),
+                ]
+
+                try:
+                    print("Running:", " ".join(cmd))
+                    subprocess.run(cmd, check=True)
+                except Exception as e:
+                    print(f"could not export {name} to video becase {repr(e)}")
 
     def format_results(self, results, float_fmt="{:.6g}"):
         """

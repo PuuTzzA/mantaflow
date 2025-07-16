@@ -6,13 +6,14 @@ params = {}
 with open("../scenes/test_cases/params_high_clf.json") as f:
 	params = json.load(f)
 
-data_collector = Data_collectior(title="High_CLF_Mass_Momentum_Conserving", params=params, export_data=False, export_images=False)
+data_collector = Data_collectior(title="test_multiple_images", params=params, export_data=False, export_images=False,
+								 trackable_grid_names=["phi_fluid", "_", "onesInFluid", "_", "curl", "pressure"], tracked_grids_indeces=[0, 2, 4, 5])
 data_collector.init()
 
 LEVEL = 0
 doOpen = False
-doConserving = True
-doParticleLevelSetThomas = True
+doConserving = False
+doParticleLevelSetThomas = False
 layout = 1 # 0=dam break, 1=falling drop
 
 # solver params
@@ -118,28 +119,20 @@ if (GUI):
 	gui = Gui()
 	gui.show()
 	gui.setCamPos(0, 0, -1.3)
+	
 	gui.nextRealGrid()
 	gui.nextRealGrid()
 	gui.nextRealGrid()
 	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextRealGrid()
-	gui.nextVec3Grid()
-	gui.nextVec3Grid()
+	#gui.nextVec3Grid()
+
 	if layout == 1:
-		gui.nextRealGrid()
-		gui.nextRealGrid()
-		gui.nextRealGrid()
-		gui.nextRealGrid()
-	if doConserving:
+		pass
+
+	if doConserving and doParticleLevelSetThomas:
 		gui.nextParts()
+		gui.nextParts()
+
 	gui.pause()
 
 firstFrame = True
@@ -165,19 +158,20 @@ while (s.timeTotal < params["max_time"]):
 		extrapolateMACFromWeight( vel=vel , distance=2, weight=tmpVec3 )
 		markFluidCells( parts=pp, flags=flags_n )
 		# Standard advection for the test grid
-		advectSemiLagrange( flags=flags_n, vel=vel, grid=innen1außen0, order=2 )
+		vel_extrapolated.copyFrom(vel)
+		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=3, intoObs=True )
+		advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=innen1außen0, order=2 )
 		
 		addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
 		setWallBcs(flags=flags_n, vel=vel)
 		solvePressure(flags=flags_n, vel=vel, pressure=pressure)
 		setWallBcs(flags=flags_n, vel=vel)
 		extrapolateMACSimple( flags=flags_n, vel=vel )
+		extrapolateMACSimple( flags=flags_n, vel=vel )
 		flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 )
 
 	else:
 		if not doParticleLevelSetThomas:
-			flags_n.copyFrom(flags_n_plus_one)
-			vel_extrapolated.copyFrom(vel)
 			extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=5, intoObs=True )
 
 			pp.advectInGrid(flags=flags_n, vel=vel_extrapolated, integrationMode=IntRK4, deleteInObstacle=False, ptype=pT, exclude=FlagEmpty)
