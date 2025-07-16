@@ -6,10 +6,13 @@ from data_collection import *
 import json
 
 params = {}
-with open("../scenes/test_cases/params_high_clf.json") as f:
+with open("../scenes/test_cases/params_gas_low_cfl.json") as f:
 	params = json.load(f)
 
-data_collector = Data_collectior(title="High_CFL_Gas", params=params, export_data=False, export_images=False)
+data_collector = Data_collectior(title="Gas_Low_CFL", params=params, export_data=True, export_images=True,
+						trackable_grid_names=["density", "_", "_", "_", "_", "_", "fixed_volume", "curl", "_", "_", "_", "_", "_", "_"], 
+						tracked_grids_indeces=[0, 6, 7])
+
 data_collector.init()
 
 # solver params
@@ -29,12 +32,12 @@ doObstacle = True
 doConserving = True
 
 # set time step range
-s.frameLength = 10   # length of one frame (in "world time")
-s.timestepMin = 0.2   # time step range
-s.timestepMax = 10.0
-s.cfl         = 10   # maximal velocity per cell
+s.cfl         = params["maxCFL"]          				
+s.frameLength = params["dt"]     
+s.timestep    = s.frameLength 
+s.timestepMin = 0.001 
+s.timestepMax = 20000
 
-s.timestep    = (s.timestepMax+s.timestepMin)*0.5
 timings = Timings()
 
 # prepare grids
@@ -100,12 +103,6 @@ if doOpen:
 if (GUI):
 	gui = Gui()
 	gui.show(True)
-	#gui.nextRealGrid()
-	#gui.nextRealGrid()
-	#gui.nextRealGrid()
-	#gui.nextRealGrid()
-	#gui.nextRealGrid()
-	#gui.nextRealGrid()
 	#gui.pause()
 
 # source: cube in center of domain (x, y), standing on bottom of the domain
@@ -184,7 +181,7 @@ while (s.timeTotal < params["max_time"]):
 	#timings.display()
 
 	calculateCurl(vel=vel, curl=curl)
-	data_collector.step(solver=s, tracked_grids=[[innen0außen1, "test_real_grid"], [curl, "curl"]], flags=flags, vel=vel, gui=gui)
+	data_collector.step(solver=s, tracked_grids=[[innen0außen1, "fixed_volume"], [curl, "curl"]], flags=flags, vel=vel, gui=gui)
 
 	s.step()
 

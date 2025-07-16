@@ -6,8 +6,8 @@ params = {}
 with open("../scenes/test_cases/params_high_clf.json") as f:
 	params = json.load(f)
 
-data_collector = Data_collectior(title="test_multiple_images", params=params, export_data=False, export_images=False,
-								 trackable_grid_names=["phi_fluid", "_", "onesInFluid", "_", "curl", "pressure"], tracked_grids_indeces=[0, 2, 4, 5])
+data_collector = Data_collectior(title="test_multiple_images", params=params, export_data=True, export_images=False,
+								 trackable_grid_names=["phi_fluid", "_", "fixed_volume", "_", "curl", "pressure"], tracked_grids_indeces=[0, 2, 4, 5])
 data_collector.init()
 
 LEVEL = 0
@@ -24,7 +24,7 @@ if (dim==2):
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # Adaptive time stepping
-s.cfl         = params["maxCFL"]          				
+s.cfl         = params["maxCFL"] 
 s.frameLength = params["dt"]     
 s.timestep    = s.frameLength 
 s.timestepMin = 0.001 

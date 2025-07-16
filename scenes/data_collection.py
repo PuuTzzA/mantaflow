@@ -4,6 +4,9 @@ from pathlib import Path
 import subprocess
 import shutil
 import json
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 
 class Data_collectior:
     def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, trackable_grid_names=[], tracked_grids_indeces=[]):
@@ -38,22 +41,18 @@ class Data_collectior:
         self.data["frame_data"] = {}
 
         self.tracked_grids = set()
-        self.last_frame = -1
+        self.current_frame = 0
         
         if (self.export_images):
            for index in self.tracked_grids_indeces:
             (self.stats_dir / f"{self.trackable_grid_names[index]}_frames").mkdir(parents=True, exist_ok=True)
 
     def step(self, solver, tracked_grids, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
-        if (self.last_frame == solver.frame):
-            return
-
-        self.last_frame = solver.frame
-        self.data["frame_data"][str(solver.frame).zfill(4)] = {}
-        self.data["frame_data"][str(solver.frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
+        self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
+        self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
 
         for [grid, name] in tracked_grids:
-            self.data["frame_data"][str(solver.frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
+            self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
             self.tracked_grids.add(name)
 
         if self.export_images and gui is not None:
@@ -63,10 +62,12 @@ class Data_collectior:
             for i in range(len(self.trackable_grid_names)):
                 if i in self.tracked_grids_indeces:
                     name = self.trackable_grid_names[i]
-                    gui.screenshot(str(self.stats_dir / f"{name}_frames" / f"{name}_{str(solver.frame).zfill(4)}.png"))
+                    gui.screenshot(str(self.stats_dir / f"{name}_frames" / f"{name}_{str(self.current_frame).zfill(4)}.png"))
                 
                 gui.nextRealGrid()
                 gui.update()
+        
+        self.current_frame += 1
 
     def computeStats(self):
         frames = self.data["frame_data"]
@@ -75,21 +76,31 @@ class Data_collectior:
             return
 
         self.data["results"] = {}
+        cfl_frames = []
 
-        min_cfl = float("inf")
-        max_cfl = -float("inf")
         for f_key, grids in frames.items():
             try:
                 current_cfl = grids["cfl"]
             except (KeyError):
                 continue
-            min_cfl = min(min_cfl, current_cfl)
-            max_cfl = max(max_cfl, current_cfl)
+            cfl_frames.append(current_cfl)
         
-        self.data["results"]["cfl"] = {}
-        self.data["results"]["cfl"]["minCfl"] = min_cfl
-        self.data["results"]["cfl"]["maxCfl"] = max_cfl
+        cfl_frames = np.array(cfl_frames)
 
+        cfl_minimum = np.min(cfl_frames)
+        cfl_maximum = np.max(cfl_frames)
+        cfl_mean = np.mean(cfl_frames)
+        cfl_std_dev = np.std(cfl_frames)
+        cfl_median = np.median(cfl_frames)
+
+        self.data["results"]["cfl"] = {}
+        self.data["results"]["cfl"]["minCfl"] = cfl_minimum
+        self.data["results"]["cfl"]["maxCfl"] = cfl_maximum
+        self.data["results"]["cfl"]["average"] = cfl_mean
+        self.data["results"]["cfl"]["std_dev"] = cfl_std_dev
+        self.data["results"]["cfl"]["median"] = cfl_median
+
+        fixed_volume_frames = []
         for grid_name in sorted(self.tracked_grids):
             min_sum   = float("inf")
             max_sum   = -float("inf")
@@ -106,7 +117,10 @@ class Data_collectior:
 
                 found_any = True
                 min_sum = min(min_sum, s)
-                max_sum = max(max_sum, s)   
+                max_sum = max(max_sum, s)  
+
+                if grid_name == "fixed_volume":
+                    fixed_volume_frames.append(s)
 
             if not found_any:
                 continue
@@ -114,6 +128,59 @@ class Data_collectior:
             self.data["results"][grid_name] = {}
             self.data["results"][grid_name]["minSum"] = min_sum
             self.data["results"][grid_name]["maxSum"] = max_sum
+
+        if (self.export_data):
+            # Convert to numpy arrays
+            cfl_frames = np.array(cfl_frames)
+            cfl_minimum = np.min(cfl_frames)
+            cfl_maximum = np.max(cfl_frames)
+            cfl_mean = np.mean(cfl_frames)
+            cfl_std_dev = np.std(cfl_frames)
+            cfl_median = np.median(cfl_frames)
+
+            has_fixed_volume = len(fixed_volume_frames) > 0
+            if has_fixed_volume:
+                fixed_volume_frames = np.array(fixed_volume_frames)
+                fixed_volume_minimum = np.min(fixed_volume_frames)
+                fixed_volume_maximum = np.max(fixed_volume_frames)
+                fixed_volume_mean = np.mean(fixed_volume_frames)
+                fixed_volume_std_dev = np.std(fixed_volume_frames)
+                fixed_volume_median = np.median(fixed_volume_frames)
+
+            # Create subplots with shared x-axis
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+            # --- Plot CFL ---
+            ax1.plot(cfl_frames, marker='o', linestyle='-', color='blue', label='CFL')
+            ax1.axhline(cfl_mean, color='aqua', linestyle='--', linewidth=1.2, label=f'Mean: {cfl_mean:.2f}')
+            ax1.axhline(cfl_median, color='lime', linestyle='--', linewidth=1.2, label=f'Median: {cfl_median:.2f}')
+            ax1.axhline(cfl_minimum, color='aquamarine', linestyle=':', linewidth=1.2, label=f'Min: {cfl_minimum:.2f}')
+            ax1.axhline(cfl_maximum, color='slategrey', linestyle=':', linewidth=1.2, label=f'Max: {cfl_maximum:.2f}')
+            ax1.set_ylabel("CFL")
+            ax1.set_title(f"CFL Over Time (fixed timestep: {self.dt})")
+            ax1.legend(loc='best')
+            ax1.grid(True)
+
+            # --- Plot Fixed Volume ---
+            if has_fixed_volume:
+                ax2.plot(fixed_volume_frames, marker='s', linestyle='-', color='red', label='Fixed Volume')
+                ax2.axhline(fixed_volume_mean, color='gold', linestyle='--', linewidth=1.2, label=f'Mean: {fixed_volume_mean:.2f}')
+                ax2.axhline(fixed_volume_median, color='orchid', linestyle='--', linewidth=1.2, label=f'Median: {fixed_volume_median:.2f}')
+                ax2.axhline(fixed_volume_maximum, color='coral', linestyle=':', linewidth=1.2, label=f'Min: {fixed_volume_minimum:.2f}')
+                ax2.axhline(fixed_volume_maximum, color='beige', linestyle=':', linewidth=1.2, label=f'Max: {fixed_volume_maximum:.2f}')
+                ax2.set_ylabel("Fixed Volume")
+                ax2.set_title("Fixed Volume Over Time")
+                ax2.legend(loc='best')
+                ax2.grid(True)
+                    # Disable scientific notation and offset
+                ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+                ax2.ticklabel_format(style='plain', axis='y')
+
+
+            # Common X label
+            plt.xlabel("Frame")
+            plt.tight_layout()
+            plt.savefig(self.stats_dir / "CFL_and_Volume.png", dpi=300)
 
     def finish(self):
         self.computeStats()
