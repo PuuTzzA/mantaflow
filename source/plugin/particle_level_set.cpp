@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <array>
 #include <cstdlib>
+#include <random>
 
 namespace Manta
 {
@@ -17,11 +18,13 @@ namespace Manta
         return;                                      \
     }
 
-#define DISCRETIZATION 4
-#define POSITIVE_CUTOFF .5f
-#define NEGATIVE_CUTOFF -4.f
-#define MAX_PARTICLES_PER_CELL 25
-#define MIN_PARTICLES_PER_CELL 8
+#define DISCRETIZATION 10
+#define POSITIVE_SEED_CUTOFF .1f
+#define NEGATIVE_SEED_CUTOFF -3.f
+#define POSITIVE_MAX_RADIUS .1f
+#define NEGATIVE_MAX_RADIUS 3.f
+#define MAX_PARTICLES_PER_CELL (DISCRETIZATION * DISCRETIZATION) * 1.5
+#define MIN_PARTICLES_PER_CELL DISCRETIZATION * 2
 #define ESCAPE_CONDITION 1 // a particle counts as escaped, if it is further than ESCAPE_CONDITION * radius on the wrong side
 
     KERNEL(points)
@@ -32,12 +35,90 @@ namespace Manta
 
         if (particles[idx].flag & ParticleBase::PINSIDE)
         {
-            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(NEGATIVE_CUTOFF));
+            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(NEGATIVE_MAX_RADIUS));
         }
         else if (particles[idx].flag & ParticleBase::POUTSIDE)
         {
-            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(POSITIVE_CUTOFF));
+            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(POSITIVE_MAX_RADIUS));
         }
+    }
+
+    KERNEL(points)
+    void knSetTargetPhi(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii)
+    {
+        skipDelted(particles);
+
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::normal_distribution<> d(0.0, .4); // d(mean, standart deviation)
+
+        radii[idx] = std::abs(d(gen));
+
+        if (particles[idx].flag & ParticleBase::PINSIDE)
+        {
+            radii[idx] *= std::abs(NEGATIVE_SEED_CUTOFF);
+            radii[idx] = -1. * Manta::clamp(radii[idx], 0.f, std::abs(NEGATIVE_SEED_CUTOFF));
+        }
+        else if (particles[idx].flag & ParticleBase::POUTSIDE)
+        {
+            radii[idx] *= std::abs(POSITIVE_SEED_CUTOFF);
+            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(POSITIVE_SEED_CUTOFF));
+        }
+    }
+
+    Vec3 calcNormal2D(const Grid<Real> &phi, int i, int j, int k, const FlagGrid &flags, Real eps = (Real)1e-12)
+    {
+        // TODO verstehen, von ChatGPT
+        const Real dx = 1.0; // Gitterabstand (anpassen falls nötig)
+
+        Real dPhiDx_m = 0.0, dPhiDx_p = 0.0;
+        Real dPhiDy_m = 0.0, dPhiDy_p = 0.0;
+
+        if (!flags.isObstacle(i - 1, j, k))
+            dPhiDx_m = (phi(i, j, k) - phi(i - 1, j, k)) / dx;
+
+        if (!flags.isObstacle(i + 1, j, k))
+            dPhiDx_p = (phi(i + 1, j, k) - phi(i, j, k)) / dx;
+
+        if (!flags.isObstacle(i, j - 1, k))
+            dPhiDy_m = (phi(i, j, k) - phi(i, j - 1, k)) / dx;
+
+        if (!flags.isObstacle(i, j + 1, k))
+            dPhiDy_p = (phi(i, j + 1, k) - phi(i, j, k)) / dx;
+
+        // ---------- Ableitung wählen: zentral wenn möglich, sonst einseitig --
+        Real dPhiDx = 0.0, dPhiDy = 0.0;
+
+        if (!flags.isObstacle(i - 1, j, k) && !flags.isObstacle(i + 1, j, k))
+            dPhiDx = (phi(i + 1, j, k) - phi(i - 1, j, k)) * 0.5 / dx;
+        else if (!flags.isObstacle(i + 1, j, k))
+            dPhiDx = dPhiDx_p;
+        else if (!flags.isObstacle(i - 1, j, k))
+            dPhiDx = dPhiDx_m;
+
+        if (!flags.isObstacle(i, j - 1, k) && !flags.isObstacle(i, j + 1, k))
+            dPhiDy = (phi(i, j + 1, k) - phi(i, j - 1, k)) * 0.5 / dx;
+        else if (!flags.isObstacle(i, j + 1, k))
+            dPhiDy = dPhiDy_p;
+        else if (!flags.isObstacle(i, j - 1, k))
+            dPhiDy = dPhiDy_m;
+
+        // ---------- Normieren ------------------------------------------------
+        const Real len = std::sqrt(dPhiDx * dPhiDx + dPhiDy * dPhiDy) + eps;
+        return Vec3(dPhiDx / len, dPhiDy / len, 0);
+    }
+
+    KERNEL(points)
+    void knAttractionStep(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const Grid<Real> &phi, const FlagGrid &flags)
+    {
+        skipDelted(particles);
+
+        Vec3 pos = particles.getPos(idx);
+
+        Real lambda = 1;
+        Vec3 newPos = pos + lambda * (radii[idx] - phi.getInterpolatedHi(pos, 2)) * calcNormal2D(phi, std::floor(pos.x), std::floor(pos.y), std::floor(pos.z), flags);
+
+        particles.setPos(idx, newPos);
     }
 
     PYTHON()
@@ -50,7 +131,7 @@ namespace Manta
             {
                 continue;
             }
-            if (0 < phi(i, j, k) && phi(i, j, k) < POSITIVE_CUTOFF)
+            if (0 < phi(i, j, k) && phi(i, j, k) < POSITIVE_SEED_CUTOFF)
             {
                 for (int di = 0; di < DISCRETIZATION; di++)
                 {
@@ -64,7 +145,7 @@ namespace Manta
                     }
                 }
             }
-            else if (NEGATIVE_CUTOFF < phi(i, j, k) && phi(i, j, k) <= 0)
+            else if (NEGATIVE_SEED_CUTOFF < phi(i, j, k) && phi(i, j, k) <= 0)
             {
                 for (int di = 0; di < DISCRETIZATION; di++)
                 {
@@ -80,6 +161,14 @@ namespace Manta
             }
         }
         particles.insertBufferedParticles();
+
+        knSetTargetPhi(particles, radii); // store phi_target in radii for now, later the actual radii
+
+        for (int __ = 0; __ < 10; __++)
+        {
+            knAttractionStep(particles, radii, phi, flags);
+        }
+
         knSetParticleRadii(particles, radii, phi);
     }
 
@@ -150,7 +239,7 @@ namespace Manta
                 // Particles that should be inside but are outside
                 // g(i, j, k) = 1;
 
-                std::cout << radii[idx] << " radius" << std::endl;
+                // std::cout << radii[idx] << " radius" << std::endl;
 
                 /*                 if (((Grid<Real> &)phi)(i, j, k) == 0)
                                 {
@@ -265,8 +354,8 @@ namespace Manta
             }
         }
 
-        std::cout << "POSITIVE ESCAPED: " << positiveEscaped.size() << std::endl;
-        std::cout << "NEGATIVE ESCAPED: " << negativeEscaped.size() << std::endl;
+        // std::cout << "POSITIVE ESCAPED: " << positiveEscaped.size() << std::endl;
+        // std::cout << "NEGATIVE ESCAPED: " << negativeEscaped.size() << std::endl;
 
         // Step 2: correct omega+ and omega-
         if (positiveEscaped.size() == 0 && negativeEscaped.size() == 0)
@@ -384,7 +473,7 @@ namespace Manta
         {
             if (particles[idx].flag & ParticleBase::PESCAPED)
             {
-                // continue; // don't delete escaped particles
+                continue; // don't delete escaped particles
                 particles.kill(idx);
                 continue;
             }
@@ -397,7 +486,7 @@ namespace Manta
                 continue;
             }
 
-            if (!(NEGATIVE_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_CUTOFF))
+            if (!(NEGATIVE_SEED_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_SEED_CUTOFF))
             {
                 particles.kill(idx);
                 ++deletedParticles;
@@ -417,7 +506,7 @@ namespace Manta
             {
                 continue;
             }
-            if (!(NEGATIVE_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_CUTOFF))
+            if (!(NEGATIVE_SEED_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_SEED_CUTOFF))
             {
                 continue;
             }
@@ -433,8 +522,8 @@ namespace Manta
         }
         particles.insertBufferedParticles();
 
-        std::cout << "Deleted " << deletedParticles << " particles." << std::endl;
-        std::cout << "Created " << addedParticles << " particles." << std::endl;
+        // std::cout << "Deleted " << deletedParticles << " particles." << std::endl;
+        // std::cout << "Created " << addedParticles << " particles." << std::endl;
     }
 
     KERNEL()

@@ -14,9 +14,9 @@ class Data_collectior:
         if params is not None:
             self.dim = params["dimension"]
             self.res = [params["resolutionX"], params["resolutionY"], params["resolutionZ"]]
-            self.cfl = params["CFL"]
+            self.maxCfl = params["maxCFL"]
             self.max_time = params["max_time"]
-            self.fps = params["fps"]
+            self.dt = params["dt"]
         
         self.export_data = export_data
         self.export_images = export_images
@@ -30,18 +30,24 @@ class Data_collectior:
         self.data["title"] = self.title
         self.data["dim"] = self.dim
         self.data["res"] = self.res
-        self.data["cfl"] = self.cfl
+        self.data["maxCfl"] = self.maxCfl
         self.data["max_time"] = self.max_time
-        self.data["fps"] = self.fps
+        self.data["dt"] = self.dt
         self.data["frame_data"] = {}
 
         self.tracked_grids = set()
+        self.last_frame = -1
         
         if (self.export_images):
            (self.stats_dir / "frames").mkdir(parents=True, exist_ok=True)
 
-    def step(self, solver, tracked_grids, flags, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
+    def step(self, solver, tracked_grids, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
+        if (self.last_frame == solver.frame):
+            return
+
+        self.last_frame = solver.frame
         self.data["frame_data"][str(solver.frame).zfill(4)] = {}
+        self.data["frame_data"][str(solver.frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
 
         for [grid, name] in tracked_grids:
             self.data["frame_data"][str(solver.frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
@@ -52,7 +58,56 @@ class Data_collectior:
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
             gui.screenshot(str(self.stats_dir / "frames" / f"frame_{str(solver.frame).zfill(4)}.png"))
 
+    def computeStats(self):
+        frames = self.data["frame_data"]
+        if not frames:
+            print("No frame data collected")
+            return
+
+        self.data["results"] = {}
+
+        min_cfl = float("inf")
+        max_cfl = -float("inf")
+        for f_key, grids in frames.items():
+            try:
+                current_cfl = grids["cfl"]
+            except (KeyError):
+                continue
+            min_cfl = min(min_cfl, current_cfl)
+            max_cfl = max(max_cfl, current_cfl)
+        
+        self.data["results"]["cfl"] = {}
+        self.data["results"]["cfl"]["minCfl"] = min_cfl
+        self.data["results"]["cfl"]["maxCfl"] = max_cfl
+
+        for grid_name in sorted(self.tracked_grids):
+            min_sum   = float("inf")
+            max_sum   = -float("inf")
+            found_any = False
+
+            for f_key, grids in frames.items():
+                grid_stats = grids.get(grid_name)
+                if not grid_stats:
+                    continue   # grid wasn’t recorded this frame
+                try:
+                    s = float(grid_stats["sum"])
+                except (KeyError, TypeError, ValueError):
+                    continue   # malformed entry; skip
+
+                found_any = True
+                min_sum = min(min_sum, s)
+                max_sum = max(max_sum, s)   
+
+            if not found_any:
+                continue
+
+            self.data["results"][grid_name] = {}
+            self.data["results"][grid_name]["minSum"] = min_sum
+            self.data["results"][grid_name]["maxSum"] = max_sum
+
     def finish(self):
+        self.computeStats()
+        
         if self.export_data:
             with open(self.stats_dir / "data.json", "w") as f:
                 json.dump(self.data, f, indent=4)
@@ -83,43 +138,33 @@ class Data_collectior:
             print("Running:", " ".join(cmd))
             subprocess.run(cmd, check=True)
 
+
+    def format_results(self, results, float_fmt="{:.6g}"):
+        """
+        results  : dict wie data["results"]
+        float_fmt: Format‑String für Gleitkommazahlen (default 6 signifikante Stellen)
+
+        Gibt einen formatierten String zurück, der sich einfach ausdrucken lässt.
+        """
+        # Zeilen sammeln ──> [(name, metric, value_as_str), …]
+        rows = []
+        for name, stats in results.items():
+            for metric, val in stats.items():
+                val_str = float_fmt.format(val) if isinstance(val, (float, int)) else str(val)
+                rows.append((name, metric, val_str))
+
+        # Breite jeder Spalte ermitteln
+        headers = ("Name", "Metric", "Value")
+        col_w = [max(len(str(h)), *(len(r[i]) for r in rows)) for i, h in enumerate(headers)]
+
+        # Hilfsfunktion für eine Zeile
+        def make_row(items):
+            return " | ".join(str(item).ljust(col_w[i]) for i, item in enumerate(items))
+
+        # Tabelle zusammenbauen
+        sep = "-+-".join("-" * w for w in col_w)
+        lines = [make_row(headers), sep] + [make_row(r) for r in rows]
+        return "\n".join(lines)
+
     def printStats(self):
-        frames = self.data["frame_data"]
-        if not frames:
-            print("No frame data collected")
-            return
-
-        first_frame_key = min(frames.keys())
-        name_width = max(len(name) for name in self.tracked_grids) if self.tracked_grids else 0
-
-        for grid_name in sorted(self.tracked_grids):
-            start_sum = self.data["frame_data"][first_frame_key][grid_name]["sum"]
-            min_sum   = float("inf")
-            max_sum   = -float("inf")
-            found_any = False
-
-            for f_key, grids in frames.items():
-                grid_stats = grids.get(grid_name)
-                if not grid_stats:
-                    continue   # grid wasn’t recorded this frame
-                try:
-                    s = float(grid_stats["sum"])
-                except (KeyError, TypeError, ValueError):
-                    continue   # malformed entry; skip
-
-                found_any = True
-                # starting value = value in the earliest frame (ideally "0000")
-                if f_key == first_frame_key:
-                    start_sum = s
-                # track min / max over all frames
-                min_sum = min(min_sum, s)
-                max_sum = max(max_sum, s)
-
-            if not found_any:
-                print(f"[{grid_name:<{name_width}}] sum: N/A (no values found)")
-                continue
-
-            # If the earliest frame lacked this grid, start_sum may still be None
-            start_display = f"{start_sum:,.2f}" if start_sum is not None else "N/A"
-            print(f"[{grid_name:<{name_width}}] sum: start = {start_display}, "
-                  f"min = {min_sum:,.2f}, max = {max_sum:,.2f}")
+        print(self.format_results(self.data["results"]))

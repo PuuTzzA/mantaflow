@@ -2,11 +2,20 @@
 # Simulation of a flame with smoke (and with adaptive time-stepping)
 #
 from manta import *
+from data_collection import * 
+import json
+
+params = {}
+with open("../scenes/test_cases/params_high_clf.json") as f:
+	params = json.load(f)
+
+data_collector = Data_collectior(title="High_CFL_Gas", params=params, export_data=False, export_images=False)
+data_collector.init()
 
 # solver params
-dim = 2
-res = 30 
-gs = vec3(res, 1.5 * res, res)
+dim = params["dimension"]
+gs = vec3(params["resolutionX"], params["resolutionY"], params["resolutionZ"])
+res = params["resolutionX"]
 if dim==2:
 	gs.z=1
 s = Solver(name='main', gridSize = gs, dim=dim)
@@ -20,10 +29,11 @@ doObstacle = True
 doConserving = True
 
 # set time step range
-s.frameLength = 1.2   # length of one frame (in "world time")
+s.frameLength = 10   # length of one frame (in "world time")
 s.timestepMin = 0.2   # time step range
-s.timestepMax = 2.0
-s.cfl         = 3   # maximal velocity per cell
+s.timestepMax = 10.0
+s.cfl         = 10   # maximal velocity per cell
+
 s.timestep    = (s.timestepMax+s.timestepMin)*0.5
 timings = Timings()
 
@@ -37,6 +47,7 @@ heat = s.create(RealGrid)
 flame = s.create(RealGrid)
 pressure = s.create(RealGrid)
 innen0außen1 = s.create(RealGrid)
+curl = s.create(RealGrid)
 
 density_gamma = s.create(RealGrid)
 react_gamma = s.create(RealGrid)
@@ -106,13 +117,16 @@ test_start = 0
 test_min = 1000000
 test_max = -1000000
 
+firstFrame = True
 # main loop
-while s.frame < frames:
+while (s.timeTotal < params["max_time"]):
 	maxvel = vel.getMax()
 	s.adaptTimestep( maxvel )
-	mantaMsg('\nFrame %i, time-step size %f' % (s.frame, s.timestep))
 
-	if s.frame < 1:
+	print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}")
+	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
+
+	if firstFrame:
 		densityInflow( flags=flags, density=innen0außen1, noise=noise, shape=sourceBox, scale=1, sigma=0.5 )
 		fillWithOnes( grid=density_gamma )
 		fillWithOnes( grid=heat_gamma )
@@ -120,6 +134,7 @@ while s.frame < frames:
 		fillWithOnes( grid=react_gamma )
 		fillWithOnes( grid=innen0außen1_gamma )
 		fillWithOnes( grid=vel_gamma )
+		firstFrame = False
 	
 	if s.timeTotal<200:
 		densityInflow( flags=flags, density=density, noise=noise, shape=sourceBox, scale=1, sigma=0.5 )
@@ -166,15 +181,12 @@ while s.frame < frames:
 
 	updateFlame( react=react, flame=flame )
 
-	timings.display()
-	stats = calculateMass(grid=innen0außen1).split(",")
-	mantaMsg(f"Total \"mass\" inside grid: {stats[0]}, min: {stats[1]}, max: {stats[2]}")
+	#timings.display()
 
-	if s.frame == 0:
-		test_start = stats[0]
-	test_min = min(test_min, float(stats[0]))
-	test_max = max(test_max, float(stats[0]))
+	calculateCurl(vel=vel, curl=curl)
+	data_collector.step(solver=s, tracked_grids=[[innen0außen1, "test_real_grid"], [curl, "curl"]], flags=flags, vel=vel, gui=gui)
 
 	s.step()
 
-mantaMsg(f"Summary of Total Mass:\nStart: {test_start}, Min: {test_min}, Max: {test_max}")
+data_collector.finish()
+data_collector.printStats()

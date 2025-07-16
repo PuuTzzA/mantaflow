@@ -5,14 +5,14 @@
 from manta import *
 
 # solver params
-dim = 3
+dim = 2
 res = 64
 #res = 128 
 gs = Vec3(res,res,res)
 if (dim==2):
 	gs.z=1
 s = Solver(name='main', gridSize = gs, dim=dim)
-s.timestep  = 0.15 
+s.timestep  = 1
 
 # scene file params
 ghostFluid  = True

@@ -82,6 +82,11 @@ namespace Manta
         return (!flags.isObstacle(i, j, k)) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1 && k >= 0 && k <= gs[2] - 1;
     }
 
+    bool isValid(Vec3 pos, const FlagGrid &flags, Vec3i &gs)
+    {
+        return isValid(std::floor(pos.x), std::floor(pos.y), std::floor(pos.z), flags, gs);
+    }
+
     inline bool isFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
     {
         switch (component)
@@ -116,12 +121,12 @@ namespace Manta
     {
         if (flags.isObstacle(pos))
         {
-            throw std::runtime_error("trace starting from obstacle!");
+            // throw std::runtime_error("trace starting from obstacle!");
         }
 
         Vec3 nextPos = RK4(pos, dt, vel);
 
-        if (!flags.isObstacle(nextPos))
+        if (isValid(nextPos, flags, gs))
         {
             return nextPos;
         }
@@ -144,7 +149,7 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             Vec3 currentTestPoint = segmentStart + t * direction;
 
-            if (!flags.isObstacle(currentTestPoint))
+            if (isValid(currentTestPoint, flags, gs))
             {
                 lastKnownFluidPos = currentTestPoint;
             }
