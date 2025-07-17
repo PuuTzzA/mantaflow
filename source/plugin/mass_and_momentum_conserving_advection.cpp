@@ -16,6 +16,31 @@ namespace Manta
     using Sparse2DMap = std::unordered_map<IndexInt, std::unordered_map<IndexInt, T>>;
     using Reverse2dMap = std::unordered_map<IndexInt, std::unordered_set<IndexInt>>;
 
+    inline IndexInt vecToIdx(Vec3i vec, Vec3i gridSize)
+    {
+        return vec.x * gridSize.y + vec.y;
+    }
+
+    inline Vec3i idxToVec(IndexInt idx, Vec3i gridSize)
+    {
+        return Vec3i(idx / gridSize.y, idx % gridSize.y, 0);
+    }
+
+    inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
+    {
+        switch (component)
+        {
+        case MAC_X:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+        case MAC_Y:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+        case MAC_Z:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+        default:
+            return flags.isFluid(i, j, k);
+        }
+    }
+
     //! Semi-Lagrange interpolation kernel
     KERNEL()
     void knFillHelper(Grid<Real> &dst)
@@ -333,14 +358,14 @@ namespace Manta
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvect(FluidSolver *parent, const FlagGrid &flags, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset)
+    void fnMassMomentumConservingAdvect(FluidSolver *parent, const FlagGrid &flags, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, MACGridComponent component)
     {
         typedef typename GridType::BASETYPE T;
         const Real EPSILON = 1e-5;
 
         // For testing of the "normal" advection step that is used in this function
         /* Grid<T> testGrid(parent);
-        advectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags);
+        knAdvectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags);
         grid.swap(testGrid);
         return; */
 
@@ -364,89 +389,75 @@ namespace Manta
         int bnd = 0;
 
         // Step 1: backwards step
-        for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
+        FOR_IJK(grid)
         {
-            for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
+            if (!isValidFluid(i, j, k, flags, component))
             {
-                int k = 0;
+                continue;
+            }
 
-                if (flags.isObstacle(i, j, k) || flags.isOutflow(i, j, k))
-                {
-                    continue;
-                }
+            IndexInt cellJ = i * gridSize[1] + j;
 
-                IndexInt cellJ = i * gridSize[1] + j;
+            Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
+            newPos = customTrace(newPos, vel, -dt, flags, gridSize);
 
-                Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-                newPos = customTrace(newPos, vel, -dt, flags, gridSize);
-
-                auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
-                for (const auto &[n, w] : neighboursAndWeights)
-                {
-                    IndexInt cellI = n[0] * gridSize[1] + n[1];
-                    weights[cellI][cellJ] = w;
-                    reverseWeights[cellJ].insert(cellI);
-                    beta[cellI] += w;
-                }
+            auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
+            for (const auto &[n, w] : neighboursAndWeights)
+            {
+                IndexInt cellI = n[0] * gridSize[1] + n[1];
+                weights[cellI][cellJ] = w;
+                reverseWeights[cellJ].insert(cellI);
+                beta[cellI] += w;
             }
         }
 
         // Step 2: forward step for all beta < 1
-        for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
+        FOR_IJK(grid)
         {
-            for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
+            if (!isValidFluid(i, j, k, flags, component))
             {
-                int k = 0;
-                if (flags.isObstacle(i, j, k) || flags.isOutflow(i, j, k))
+                continue;
+            }
+
+            IndexInt cellI = i * gridSize[1] + j;
+
+            if (beta[cellI] < 1 - EPSILON)
+            {
+                Vec3 posForward = Vec3(i + offset[0], j + offset[1], k + offset[2]);
+                posForward = customTrace(posForward, vel, dt, flags, gridSize);
+
+                Real amountToDistribute = 1. - beta[cellI];
+
+                auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, posForward, gridSize, offset);
+                for (const auto &[n, w] : neighboursAndWeights)
                 {
-                    continue;
-                }
+                    IndexInt cellJ = n[0] * gridSize[1] + n[1];
 
-                IndexInt cellI = i * gridSize[1] + j;
-
-                if (beta[cellI] < 1 - EPSILON)
-                {
-                    Vec3 posForward = Vec3(i + offset[0], j + offset[1], k + offset[2]);
-                    posForward = customTrace(posForward, vel, dt, flags, gridSize);
-
-                    Real amountToDistribute = 1. - beta[cellI];
-
-                    auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, posForward, gridSize, offset);
-                    for (const auto &[n, w] : neighboursAndWeights)
-                    {
-                        IndexInt cellJ = n[0] * gridSize[1] + n[1];
-
-                        weights[cellI][cellJ] += w * amountToDistribute;
-                        reverseWeights[cellJ].insert(cellI);
-                    }
+                    weights[cellI][cellJ] += w * amountToDistribute;
+                    reverseWeights[cellJ].insert(cellI);
                 }
             }
         }
 
         // Step 3: Clamp gamma to the cumulative gamma
         recalculateGamma(gamma, weights);
-        for (IndexInt i = bnd; i < gridSize[0] - bnd; i++)
+        FOR_IJK(grid)
         {
-            for (IndexInt j = bnd; j < gridSize[1] - bnd; j++)
+            if (!isValidFluid(i, j, k, flags, component))
             {
-                int k = 0;
+                continue;
+            }
 
-                if (flags.isObstacle(i, j, k) || flags.isOutflow(i, j, k))
-                {
-                    continue;
-                }
+            IndexInt cellJ = i * gridSize[1] + j;
 
-                IndexInt cellJ = i * gridSize[1] + j;
+            if (gamma[cellJ] < EPSILON)
+                continue; // avoid division by 0
 
-                if (gamma[cellJ] < EPSILON)
-                    continue; // avoid division by 0
+            Real factor = gammaCumulative(i, j, k) / gamma[cellJ];
 
-                Real factor = gammaCumulative(i, j, k) / gamma[cellJ];
-
-                for (IndexInt cellI : reverseWeights[cellJ])
-                {
-                    weights[cellI][cellJ] *= factor;
-                }
+            for (IndexInt cellI : reverseWeights[cellJ])
+            {
+                weights[cellI][cellJ] *= factor;
             }
         }
 
@@ -454,7 +465,10 @@ namespace Manta
         recalculateBeta(beta, weights);
         for (IndexInt cellI = 0; cellI < numCells; cellI++)
         {
-            if (flags.isObstacle(cellI / gridSize[1], cellI % gridSize[1], 0) || flags.isOutflow(cellI / gridSize[1], cellI % gridSize[1], 0))
+            int i = cellI / gridSize[1];
+            int j = cellI % gridSize[1];
+            int k = 0;
+            if (!isValidFluid(i, j, k, flags, component))
             {
                 continue;
             }
@@ -489,8 +503,47 @@ namespace Manta
 
         // Step 6: Diffuse gamma using Gaus seidel Sweep
         recalculateGamma(gamma, weights);
-        for (int _ = 0; _ < 5; _++)
+        for (int _ = 0; _ < 7; _++)
         {
+            std::array<Vec3i, 4> dirs{{{1, 0, 0}, {0, 1, 0}, {-1, 0, 0}, {0, -1, 0}}};
+            GridType tempGrid(parent);
+            std::vector<Real> tempGamma(numCells, 0.);
+
+            for (auto &d : dirs)
+            {
+                FOR_IJK(grid)
+                {
+                    if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags, component))
+                    {
+                        continue;
+                    }
+
+                    Vec3i vecMoved = Vec3i(i + d.x, j + d.y, k + d.z);
+                    IndexInt indexHere = vecToIdx(Vec3i(i, j, k), gridSize);
+                    IndexInt indexMoved = vecToIdx(vecMoved, gridSize);
+
+                    Real averageGamma = (gamma[indexHere] + gamma[indexMoved]) / 2.;
+                    Real denominator = 2. * gamma[indexMoved];
+                    if (abs(denominator) < EPSILON)
+                    {
+                        continue;
+                    }
+                    Real phiToMove = newGrid(vecMoved) * (gamma[indexMoved] - gamma[indexHere]) / denominator;
+
+                    if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
+                    {
+                        continue;
+                    }
+
+                    tempGamma[indexMoved] = tempGamma[indexHere] = averageGamma;
+                    tempGrid(vecMoved) = newGrid(vecMoved) - phiToMove;
+                    tempGrid(i, j, k) = newGrid(i, j, k) + phiToMove;
+                }
+                newGrid.copyFrom(tempGrid);
+                gamma = tempGamma;
+            }
+            continue;
+
             // X-Dimension
             for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
             {
@@ -509,13 +562,15 @@ namespace Manta
                     Real gammaAvg = (gamma[cellI_1] - gamma[cellI]) / 2.;
                     T phiToMove = newGrid(x + 1, y, k) * (gammaAvg / gamma[cellI_1]);
 
-                    gamma[cellI_1] -= gammaAvg;
-                    gamma[cellI] += gammaAvg;
+                    tempGamma[cellI_1] = gamma[cellI_1] - gammaAvg;
+                    tempGamma[cellI] = gamma[cellI] + gammaAvg;
 
-                    newGrid(x + 1, y, k) -= phiToMove;
-                    newGrid(x, y, k) += phiToMove;
+                    tempGrid(x + 1, y, k) = newGrid(x + 1, y, k) - phiToMove;
+                    tempGrid(x, y, k) = newGrid(x, y, k) + phiToMove;
                 }
             }
+            newGrid.copyFrom(tempGrid);
+            gamma = tempGamma;
 
             // Y-Dimension
             for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
@@ -534,13 +589,15 @@ namespace Manta
                     Real gammaAvg = (gamma[cellI_1] - gamma[cellI]) / 2.;
                     T phiToMove = newGrid(x, y + 1, k) * (gammaAvg / gamma[cellI_1]);
 
-                    gamma[cellI_1] -= gammaAvg;
-                    gamma[cellI] += gammaAvg;
+                    tempGamma[cellI_1] = gamma[cellI_1] - gammaAvg;
+                    tempGamma[cellI] = gamma[cellI] + gammaAvg;
 
-                    newGrid(x, y + 1, k) -= phiToMove;
-                    newGrid(x, y, k) += phiToMove;
+                    tempGrid(x, y + 1, k) = newGrid(x, y + 1, k) - phiToMove;
+                    tempGrid(x, y, k) = newGrid(x, y, k) + phiToMove;
                 }
             }
+            newGrid.copyFrom(tempGrid);
+            gamma = tempGamma;
         }
 
         knSetNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
@@ -552,21 +609,6 @@ namespace Manta
     // WATER WATER WATER WATER WATER WATER WATER WATER WATER
     // WATER WATER WATER WATER WATER WATER WATER WATER WATER
     // WATER WATER WATER WATER WATER WATER WATER WATER WATER
-
-    inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
-    {
-        switch (component)
-        {
-        case MAC_X:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
-        case MAC_Y:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
-        case MAC_Z:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
-        default:
-            return flags.isFluid(i, j, k);
-        }
-    }
 
     inline Vec3 rungeKutta4(Vec3 pos, Real dt, const MACGrid &vel)
     {
@@ -873,16 +915,6 @@ namespace Manta
         newGrid(i, j, k) = 1.;
     }
 
-    inline IndexInt vecToIdx(Vec3i vec, Vec3i gridSize)
-    {
-        return vec.x * gridSize.y + vec.y;
-    }
-
-    inline Vec3i idxToVec(IndexInt idx, Vec3i gridSize)
-    {
-        return Vec3i(idx / gridSize.y, idx % gridSize.y, 0);
-    }
-
     inline void insertIntoWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
     {
         IndexInt indexCellI = vecToIdx(cellI, gridSize);
@@ -1077,6 +1109,8 @@ namespace Manta
         for (int _ = 0; _ < 5; _++)
         {
             std::array<Vec3i, 2> dirs{{{1, 0, 0}, {0, 1, 0}}};
+            Grid<Real> tempGrid(parent);
+            Grid<Real> tempGamma(parent);
 
             for (auto &d : dirs)
             {
@@ -1102,10 +1136,13 @@ namespace Manta
                         continue;
                     }
 
-                    gamma(i, j, k) = gamma(idx_moved) = averageGamma;
-                    newGrid(idx_moved) -= phiToMove;
-                    newGrid(i, j, k) += phiToMove;
+                    tempGamma(i, j, k) = tempGamma(idx_moved) = averageGamma;
+                    tempGrid(idx_moved) = newGrid(idx_moved) - phiToMove;
+                    tempGrid(i, j, k) = newGrid(i, j, k) + phiToMove;
                 }
+
+                gamma.copyFrom(tempGamma);
+                newGrid.copyFrom(tempGrid);
             }
         }
 
@@ -1142,9 +1179,9 @@ namespace Manta
 
         if (!water)
         {
-            fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX);
-            fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velY, gammaY, offsetY);
-            fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ);
+            fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velX, gammaX, offsetX, MAC_X);
+            fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velY, gammaY, offsetY, MAC_Y);
+            fnMassMomentumConservingAdvect<Grid<Real>>(parent, flags, vel, velZ, gammaZ, offsetZ, MAC_Z);
         }
         else
         {
@@ -1162,7 +1199,7 @@ namespace Manta
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvect<Grid<Real>>(flags->getParent(), *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5));
+            fnMassMomentumConservingAdvect<Grid<Real>>(flags->getParent(), *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), NONE);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {

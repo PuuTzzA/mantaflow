@@ -150,7 +150,7 @@ class Data_collectior:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
             # --- Plot CFL ---
-            ax1.plot(cfl_frames, marker='o', linestyle='-', color='blue', label='CFL', zorder=2)
+            ax1.plot(cfl_frames, linestyle='-', linewidth=2.5, color='blue', label='CFL', zorder=2)
             ax1.axhline(cfl_mean, color='purple', linestyle='--', linewidth=1.2, label=f'Mean: {cfl_mean:.2f}', zorder=1)
             ax1.axhline(cfl_median, color='deeppink', linestyle='--', linewidth=1.2, label=f'Median: {cfl_median:.2f}', zorder=1)
             ax1.axhline(cfl_minimum, color='darkslategray', linestyle=':', linewidth=1.2, label=f'Min: {cfl_minimum:.2f}', zorder=1)
@@ -162,7 +162,7 @@ class Data_collectior:
 
             # --- Plot Fixed Volume ---
             if has_fixed_volume:
-                ax2.plot(fixed_volume_frames, marker='s', linestyle='-', color='red', label='Fixed Volume', zorder=2)
+                ax2.plot(fixed_volume_frames, linestyle='-', linewidth=2.5, color='red', label='Fixed Volume', zorder=2)
                 ax2.axhline(fixed_volume_mean, color='darkgoldenrod', linestyle='--', linewidth=1.2, label=f'Mean: {fixed_volume_mean:.2f}', zorder=1)
                 ax2.axhline(fixed_volume_median, color='sienna', linestyle='--', linewidth=1.2, label=f'Median: {fixed_volume_median:.2f}', zorder=1)
                 ax2.axhline(fixed_volume_maximum, color='black', linestyle=':', linewidth=1.2, label=f'Min: {fixed_volume_minimum:.2f}', zorder=1)

@@ -107,7 +107,6 @@ boxCenter = gs*vec3(0.5, 0.15, 0.5)
 sourceBox = s.create( Box, center=boxCenter, size=boxSize )
 
 # Data Collection and Export
-
 data_collector = Data_collectior(title="Gas_Low_CFL", params=params, export_data=exportData, export_images=exportImages,
 						trackable_grid_names=[["density", density], [], [], [], [], [], ["fixed_volume", innen0außen1], ["curl", curl], [], [], [], [], [], []], 
 						tracked_grids_indeces=[0, 6, 7])

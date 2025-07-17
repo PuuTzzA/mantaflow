@@ -8,11 +8,10 @@ with open("../scenes/test_cases/params_high_clf.json") as f:
 
 LEVEL = 0
 doOpen = False
-doConserving = False
-doParticleLevelSetThomas = False
-exportImages = True
+doConserving = True
+doParticleLevelSetThomas = True
+exportImages = False
 exportData = True
-exportVideo = True
 layout = 1 # 0=dam break, 1=falling drop
 
 # solver params
@@ -132,7 +131,7 @@ if (GUI):
 		gui.nextParts()
 		gui.nextParts()
 
-	gui.pause()
+	#gui.pause()
 
 # Data collection and exportation
 data_collector = Data_collectior(title="test_multiple_images", params=params, export_data=exportData, export_images=exportImages, 
@@ -245,7 +244,7 @@ while (s.timeTotal < params["max_time"]):
 		
 	calculateCurl(vel=vel, curl=curl)
 
-	data_collector.step(solver=s, tracked_grids=[[innen1außen0, "test_real_grid"], [curl, "curl"]], flags=flags_n, vel=vel, gui=gui)
+	data_collector.step(solver=s, flags=flags_n, vel=vel, gui=gui)
 	s.step()
 
 data_collector.finish()
