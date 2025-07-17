@@ -6,14 +6,13 @@ params = {}
 with open("../scenes/test_cases/params_high_clf.json") as f:
 	params = json.load(f)
 
-data_collector = Data_collectior(title="test_multiple_images", params=params, export_data=True, export_images=False,
-								 trackable_grid_names=["phi_fluid", "_", "fixed_volume", "_", "curl", "pressure"], tracked_grids_indeces=[0, 2, 4, 5])
-data_collector.init()
-
 LEVEL = 0
 doOpen = False
 doConserving = False
 doParticleLevelSetThomas = False
+exportImages = True
+exportData = True
+exportVideo = True
 layout = 1 # 0=dam break, 1=falling drop
 
 # solver params
@@ -134,6 +133,11 @@ if (GUI):
 		gui.nextParts()
 
 	gui.pause()
+
+# Data collection and exportation
+data_collector = Data_collectior(title="test_multiple_images", params=params, export_data=exportData, export_images=exportImages, 
+								 trackable_grid_names=[["phi_fluid", phi_fluid], [], ["fixed_volume", innen1außen0], [], ["curl", curl], ["pressure", pressure]], tracked_grids_indeces=[0, 2, 4, 5])
+data_collector.init()
 
 firstFrame = True
 #main loop

@@ -41,7 +41,7 @@ frames = 250
 noise = s.create(NoiseField, loadFromFile=True)
 noise.posScale = vec3(45)
 noise.clamp = True
-noise.clampNeg = 0
+noise.clampNeg = 1
 noise.clampPos = 1
 noise.valScale = 1
 noise.valOffset = 0.75

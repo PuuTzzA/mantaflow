@@ -23,7 +23,7 @@ class Data_collectior:
         
         self.export_data = export_data
         self.export_images = export_images
-        self.trackable_grid_names=trackable_grid_names
+        self.trackable_grids=trackable_grid_names
         self.tracked_grids_indeces = tracked_grids_indeces
 
     def init(self):
@@ -40,30 +40,28 @@ class Data_collectior:
         self.data["dt"] = self.dt
         self.data["frame_data"] = {}
 
-        self.tracked_grids = set()
         self.current_frame = 0
         
         if (self.export_images):
            for index in self.tracked_grids_indeces:
-            (self.stats_dir / f"{self.trackable_grid_names[index]}_frames").mkdir(parents=True, exist_ok=True)
+            (self.stats_dir / f"{self.trackable_grids[index][0]}_frames").mkdir(parents=True, exist_ok=True)
 
-    def step(self, solver, tracked_grids, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
+    def step(self, solver, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
         self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
         self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
-
-        for [grid, name] in tracked_grids:
-            self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
-            self.tracked_grids.add(name)
 
         if self.export_images and gui is not None:
             gui.windowSize(windowSize[0], windowSize[1])
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
 
-            for i in range(len(self.trackable_grid_names)):
+            for i in range(len(self.trackable_grids)):
                 if i in self.tracked_grids_indeces:
-                    name = self.trackable_grid_names[i]
+                    name = self.trackable_grids[i][0]
                     gui.screenshot(str(self.stats_dir / f"{name}_frames" / f"{name}_{str(self.current_frame).zfill(4)}.png"))
-                
+                    
+                    grid = self.trackable_grids[i][1]
+                    self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
+
                 gui.nextRealGrid()
                 gui.update()
         
@@ -101,7 +99,8 @@ class Data_collectior:
         self.data["results"]["cfl"]["median"] = cfl_median
 
         fixed_volume_frames = []
-        for grid_name in sorted(self.tracked_grids):
+        for index in self.tracked_grids_indeces:
+            grid_name = self.trackable_grids[index][0]
             min_sum   = float("inf")
             max_sum   = -float("inf")
             found_any = False
@@ -151,11 +150,11 @@ class Data_collectior:
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
             # --- Plot CFL ---
-            ax1.plot(cfl_frames, marker='o', linestyle='-', color='blue', label='CFL')
-            ax1.axhline(cfl_mean, color='aqua', linestyle='--', linewidth=1.2, label=f'Mean: {cfl_mean:.2f}')
-            ax1.axhline(cfl_median, color='lime', linestyle='--', linewidth=1.2, label=f'Median: {cfl_median:.2f}')
-            ax1.axhline(cfl_minimum, color='aquamarine', linestyle=':', linewidth=1.2, label=f'Min: {cfl_minimum:.2f}')
-            ax1.axhline(cfl_maximum, color='slategrey', linestyle=':', linewidth=1.2, label=f'Max: {cfl_maximum:.2f}')
+            ax1.plot(cfl_frames, marker='o', linestyle='-', color='blue', label='CFL', zorder=2)
+            ax1.axhline(cfl_mean, color='purple', linestyle='--', linewidth=1.2, label=f'Mean: {cfl_mean:.2f}', zorder=1)
+            ax1.axhline(cfl_median, color='deeppink', linestyle='--', linewidth=1.2, label=f'Median: {cfl_median:.2f}', zorder=1)
+            ax1.axhline(cfl_minimum, color='darkslategray', linestyle=':', linewidth=1.2, label=f'Min: {cfl_minimum:.2f}', zorder=1)
+            ax1.axhline(cfl_maximum, color='darkslategray', linestyle=':', linewidth=1.2, label=f'Max: {cfl_maximum:.2f}', zorder=1)
             ax1.set_ylabel("CFL")
             ax1.set_title(f"CFL Over Time (fixed timestep: {self.dt})")
             ax1.legend(loc='best')
@@ -163,24 +162,22 @@ class Data_collectior:
 
             # --- Plot Fixed Volume ---
             if has_fixed_volume:
-                ax2.plot(fixed_volume_frames, marker='s', linestyle='-', color='red', label='Fixed Volume')
-                ax2.axhline(fixed_volume_mean, color='gold', linestyle='--', linewidth=1.2, label=f'Mean: {fixed_volume_mean:.2f}')
-                ax2.axhline(fixed_volume_median, color='orchid', linestyle='--', linewidth=1.2, label=f'Median: {fixed_volume_median:.2f}')
-                ax2.axhline(fixed_volume_maximum, color='coral', linestyle=':', linewidth=1.2, label=f'Min: {fixed_volume_minimum:.2f}')
-                ax2.axhline(fixed_volume_maximum, color='beige', linestyle=':', linewidth=1.2, label=f'Max: {fixed_volume_maximum:.2f}')
+                ax2.plot(fixed_volume_frames, marker='s', linestyle='-', color='red', label='Fixed Volume', zorder=2)
+                ax2.axhline(fixed_volume_mean, color='darkgoldenrod', linestyle='--', linewidth=1.2, label=f'Mean: {fixed_volume_mean:.2f}', zorder=1)
+                ax2.axhline(fixed_volume_median, color='sienna', linestyle='--', linewidth=1.2, label=f'Median: {fixed_volume_median:.2f}', zorder=1)
+                ax2.axhline(fixed_volume_maximum, color='black', linestyle=':', linewidth=1.2, label=f'Min: {fixed_volume_minimum:.2f}', zorder=1)
+                ax2.axhline(fixed_volume_maximum, color='black', linestyle=':', linewidth=1.2, label=f'Max: {fixed_volume_maximum:.2f}', zorder=1)
                 ax2.set_ylabel("Fixed Volume")
                 ax2.set_title("Fixed Volume Over Time")
                 ax2.legend(loc='best')
                 ax2.grid(True)
                     # Disable scientific notation and offset
-                ax2.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
-                ax2.ticklabel_format(style='plain', axis='y')
-
+                ax2.ticklabel_format(style='plain', axis='y', useOffset=False)
 
             # Common X label
             plt.xlabel("Frame")
             plt.tight_layout()
-            plt.savefig(self.stats_dir / "CFL_and_Volume.png", dpi=300)
+            plt.savefig(self.stats_dir / "CFL_and_Volume.png" if has_fixed_volume else "CFL.png", dpi=300)
 
     def finish(self):
         self.computeStats()
@@ -191,12 +188,12 @@ class Data_collectior:
 
         if self.export_images:
             for index in self.tracked_grids_indeces:
-                name = self.trackable_grid_names[index]
+                name = self.trackable_grids[index][0]
 
 
                 frames_dir   = self.stats_dir / f"{name}_frames"
                 pattern      = f"{name}_%04d.png"       # frame_0001.png, frame_0002.png …
-                fps          = 30                       # playback frame‑rate
+                fps          = 30 / self.dt             # playback frame‑rate
                 crf          = 28                       # 0 (lossless) … 63 (worst). 28~30 ≈ YouTube HD
                 bitrate      = "0"                      # Leave "0" for constrained‑quality mode
                 output_file  = self.stats_dir / f"{name}.webm"
@@ -223,12 +220,6 @@ class Data_collectior:
                     print(f"could not export {name} to video becase {repr(e)}")
 
     def format_results(self, results, float_fmt="{:.6g}"):
-        """
-        results  : dict wie data["results"]
-        float_fmt: Format‑String für Gleitkommazahlen (default 6 signifikante Stellen)
-
-        Gibt einen formatierten String zurück, der sich einfach ausdrucken lässt.
-        """
         # Zeilen sammeln ──> [(name, metric, value_as_str), …]
         rows = []
         for name, stats in results.items():
