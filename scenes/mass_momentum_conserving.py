@@ -21,9 +21,9 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 # scene params
 doOpen = False
 doObstacle = True
-doConserving = True
+doConserving = False
 exportData = True
-exportImages = False
+exportImages = True
 title = "Gas_Low_CFL_" + ("Conserving" if doConserving else "Traditional")
 
 # set time step range

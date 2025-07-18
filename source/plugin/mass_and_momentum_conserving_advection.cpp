@@ -37,7 +37,22 @@ namespace Manta
         case MAC_Z:
             return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
         default:
-            return flags.isFluid(i, j, k);
+            return flags.isFluid(i, j, k) && !flags.isObstacle(i, j, k);
+        }
+    }
+
+    inline bool isNotObstacle(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
+    {
+        switch (component)
+        {
+        case MAC_X:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k) || true) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+        case MAC_Y:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k) || true) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+        case MAC_Z:
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1) || true) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+        default:
+            return !flags.isObstacle(i, j, k);
         }
     }
 
@@ -391,7 +406,7 @@ namespace Manta
         // Step 1: backwards step
         FOR_IJK(grid)
         {
-            if (!isValidFluid(i, j, k, flags, component))
+            if (!isNotObstacle(i, j, k, flags, component))
             {
                 continue;
             }
@@ -414,7 +429,7 @@ namespace Manta
         // Step 2: forward step for all beta < 1
         FOR_IJK(grid)
         {
-            if (!isValidFluid(i, j, k, flags, component))
+            if (!isNotObstacle(i, j, k, flags, component))
             {
                 continue;
             }
@@ -443,7 +458,7 @@ namespace Manta
         recalculateGamma(gamma, weights);
         FOR_IJK(grid)
         {
-            if (!isValidFluid(i, j, k, flags, component))
+            if (!isNotObstacle(i, j, k, flags, component))
             {
                 continue;
             }
@@ -468,7 +483,7 @@ namespace Manta
             int i = cellI / gridSize[1];
             int j = cellI % gridSize[1];
             int k = 0;
-            if (!isValidFluid(i, j, k, flags, component))
+            if (!isNotObstacle(i, j, k, flags, component))
             {
                 continue;
             }
@@ -505,15 +520,16 @@ namespace Manta
         recalculateGamma(gamma, weights);
         for (int _ = 0; _ < 7; _++)
         {
-            std::array<Vec3i, 4> dirs{{{1, 0, 0}, {0, 1, 0}, {-1, 0, 0}, {0, -1, 0}}};
-            GridType tempGrid(parent);
-            std::vector<Real> tempGamma(numCells, 0.);
+            std::array<Vec3i, 4> dirs{{{1, 0, 0}, {0, 1, 0}}};
 
             for (auto &d : dirs)
             {
+                GridType deltaGrid(parent);
+                std::vector<Real> deltaGamma(numCells, 0.);
+
                 FOR_IJK(grid)
                 {
-                    if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags, component))
+                    if (!isNotObstacle(i, j, k, flags, component) || !isNotObstacle(i + d.x, j + d.y, k + d.z, flags, component))
                     {
                         continue;
                     }
@@ -522,7 +538,7 @@ namespace Manta
                     IndexInt indexHere = vecToIdx(Vec3i(i, j, k), gridSize);
                     IndexInt indexMoved = vecToIdx(vecMoved, gridSize);
 
-                    Real averageGamma = (gamma[indexHere] + gamma[indexMoved]) / 2.;
+                    Real gammaToMove = (gamma[indexMoved] - gamma[indexHere]) / 2.;
                     Real denominator = 2. * gamma[indexMoved];
                     if (abs(denominator) < EPSILON)
                     {
@@ -535,69 +551,19 @@ namespace Manta
                         continue;
                     }
 
-                    tempGamma[indexMoved] = tempGamma[indexHere] = averageGamma;
-                    tempGrid(vecMoved) = newGrid(vecMoved) - phiToMove;
-                    tempGrid(i, j, k) = newGrid(i, j, k) + phiToMove;
+                    deltaGamma[indexHere] += gammaToMove;
+                    deltaGamma[indexMoved] -= gammaToMove;
+                    deltaGrid(i, j, k) += phiToMove;
+                    deltaGrid(vecMoved) -= phiToMove;
                 }
-                newGrid.copyFrom(tempGrid);
-                gamma = tempGamma;
-            }
-            continue;
 
-            // X-Dimension
-            for (IndexInt y = bnd; y < gridSize[1] - bnd; y++)
-            {
-                for (IndexInt x = bnd; x < gridSize[0] - bnd - 1; x++)
+                FOR_IJK(grid)
                 {
-                    int k = 0;
-
-                    if (!flags.isFluid(x, y, k) || !flags.isFluid(x + 1, y, k))
-                    {
-                        continue;
-                    }
-
-                    IndexInt cellI = x * gridSize[1] + y;
-                    IndexInt cellI_1 = (x + 1) * gridSize[1] + y;
-
-                    Real gammaAvg = (gamma[cellI_1] - gamma[cellI]) / 2.;
-                    T phiToMove = newGrid(x + 1, y, k) * (gammaAvg / gamma[cellI_1]);
-
-                    tempGamma[cellI_1] = gamma[cellI_1] - gammaAvg;
-                    tempGamma[cellI] = gamma[cellI] + gammaAvg;
-
-                    tempGrid(x + 1, y, k) = newGrid(x + 1, y, k) - phiToMove;
-                    tempGrid(x, y, k) = newGrid(x, y, k) + phiToMove;
+                    IndexInt index = vecToIdx(Vec3i(i, j, k), gridSize);
+                    newGrid(i, j, k) += deltaGrid(i, j, k);
+                    gamma[index] += deltaGamma[index];
                 }
             }
-            newGrid.copyFrom(tempGrid);
-            gamma = tempGamma;
-
-            // Y-Dimension
-            for (IndexInt x = bnd; x < gridSize[0] - bnd; x++)
-            {
-                for (IndexInt y = bnd; y < gridSize[1] - bnd - 1; y++)
-                {
-                    int k = 0;
-                    if (!flags.isFluid(x, y, k) || !flags.isFluid(x, y + 1, k))
-                    {
-                        continue;
-                    }
-
-                    IndexInt cellI = x * gridSize[1] + y;
-                    IndexInt cellI_1 = x * gridSize[1] + y + 1;
-
-                    Real gammaAvg = (gamma[cellI_1] - gamma[cellI]) / 2.;
-                    T phiToMove = newGrid(x, y + 1, k) * (gammaAvg / gamma[cellI_1]);
-
-                    tempGamma[cellI_1] = gamma[cellI_1] - gammaAvg;
-                    tempGamma[cellI] = gamma[cellI] + gammaAvg;
-
-                    tempGrid(x, y + 1, k) = newGrid(x, y + 1, k) - phiToMove;
-                    tempGrid(x, y, k) = newGrid(x, y, k) + phiToMove;
-                }
-            }
-            newGrid.copyFrom(tempGrid);
-            gamma = tempGamma;
         }
 
         knSetNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
@@ -1023,7 +989,6 @@ namespace Manta
             {
                 continue;
             }
-
             if (beta(i, j, k) < 1 - EPSILON)
             {
                 Real amountToDistribute = 1 - beta(i, j, k);
@@ -1106,14 +1071,15 @@ namespace Manta
 
         // Step 6: Diffuse Gamma with per-axis sweeps
         recalculateGamma(gamma, weights, gridSize);
-        for (int _ = 0; _ < 5; _++)
+        for (int _ = 0; _ < 7; _++)
         {
             std::array<Vec3i, 2> dirs{{{1, 0, 0}, {0, 1, 0}}};
-            Grid<Real> tempGrid(parent);
-            Grid<Real> tempGamma(parent);
 
             for (auto &d : dirs)
             {
+                Grid<Real> deltaGrid(parent);
+                Grid<Real> deltaGamma(parent);
+
                 FOR_IJK(grid)
                 {
                     if (!isValidFluid(i, j, k, flags_n_plus_one, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags_n_plus_one, component))
@@ -1123,7 +1089,7 @@ namespace Manta
 
                     Vec3i idx_moved = Vec3i(i + d.x, j + d.y, k + d.z);
 
-                    Real averageGamma = (gamma(i, j, k) + gamma(idx_moved)) / 2.;
+                    Real gammaToMove = (gamma(idx_moved) - gamma(i, j, k)) / 2.;
                     Real denominator = 2. * gamma(idx_moved);
                     if (abs(denominator) < EPSILON)
                     {
@@ -1136,13 +1102,14 @@ namespace Manta
                         continue;
                     }
 
-                    tempGamma(i, j, k) = tempGamma(idx_moved) = averageGamma;
-                    tempGrid(idx_moved) = newGrid(idx_moved) - phiToMove;
-                    tempGrid(i, j, k) = newGrid(i, j, k) + phiToMove;
+                    deltaGamma(idx_moved) -= gammaToMove;
+                    deltaGamma(i, j, k) += gammaToMove;
+                    deltaGrid(idx_moved) -= phiToMove;
+                    deltaGrid(i, j, k) += phiToMove;
                 }
 
-                gamma.copyFrom(tempGamma);
-                newGrid.copyFrom(tempGrid);
+                gamma.add(deltaGamma);
+                newGrid.add(deltaGrid);
             }
         }
 

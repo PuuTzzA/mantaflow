@@ -6,7 +6,7 @@ import shutil
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
+import math
 
 class Data_collectior:
     def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, trackable_grid_names=[], tracked_grids_indeces=[]):
@@ -49,6 +49,14 @@ class Data_collectior:
     def step(self, solver, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
         self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
         self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
+        self.data["frame_data"][str(self.current_frame).zfill(4)]["dt"] = solver.timestep
+
+        if self.export_data:
+            for i in range(len(self.trackable_grids)):
+                if i in self.tracked_grids_indeces:    
+                    name = self.trackable_grids[i][0]              
+                    grid = self.trackable_grids[i][1]
+                    self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
 
         if self.export_images and gui is not None:
             gui.windowSize(windowSize[0], windowSize[1])
@@ -57,11 +65,8 @@ class Data_collectior:
             for i in range(len(self.trackable_grids)):
                 if i in self.tracked_grids_indeces:
                     name = self.trackable_grids[i][0]
-                    gui.screenshot(str(self.stats_dir / f"{name}_frames" / f"{name}_{str(self.current_frame).zfill(4)}.png"))
+                    gui.screenshot(str(self.stats_dir / f"{name}_frames" / f"{name}_{str(math.floor(self.current_frame)).zfill(4)}.png"))
                     
-                    grid = self.trackable_grids[i][1]
-                    self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
-
                 gui.nextRealGrid()
                 gui.update()
         
@@ -156,7 +161,7 @@ class Data_collectior:
             ax1.axhline(cfl_minimum, color='darkslategray', linestyle=':', linewidth=1.2, label=f'Min: {cfl_minimum:.2f}', zorder=1)
             ax1.axhline(cfl_maximum, color='darkslategray', linestyle=':', linewidth=1.2, label=f'Max: {cfl_maximum:.2f}', zorder=1)
             ax1.set_ylabel("CFL")
-            ax1.set_title(f"CFL Over Time (fixed timestep: {self.dt})")
+            ax1.set_title(f"CFL Over Time (target timestep: {self.dt})")
             ax1.legend(loc='best')
             ax1.grid(True)
 
@@ -193,7 +198,7 @@ class Data_collectior:
 
                 frames_dir   = self.stats_dir / f"{name}_frames"
                 pattern      = f"{name}_%04d.png"       # frame_0001.png, frame_0002.png …
-                fps          = 30 / self.dt             # playback frame‑rate
+                fps          = 30                       # playback frame‑rate
                 crf          = 28                       # 0 (lossless) … 63 (worst). 28~30 ≈ YouTube HD
                 bitrate      = "0"                      # Leave "0" for constrained‑quality mode
                 output_file  = self.stats_dir / f"{name}.webm"
