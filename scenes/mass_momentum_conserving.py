@@ -5,9 +5,12 @@
 from manta import *
 from data_collection import * 
 import json
+import os
+
+print(os.getcwd())
 
 params = {}
-with open("../scenes/test_cases/params_gas_low_cfl.json") as f:
+with open("../scenes/test_cases/gas/params_gas_low_cfl.json") as f:
 	params = json.load(f)
 
 # solver params
@@ -21,10 +24,12 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 # scene params
 doOpen = False
 doObstacle = True
-doConserving = False
-exportData = True
-exportImages = True
+doConserving = True
+exportData = False
+exportImages = False
+exportVideos = False
 title = "Gas_Low_CFL_" + ("Conserving" if doConserving else "Traditional")
+title = "____gas_with_gas"
 
 # set time step range
 s.cfl         = params["maxCFL"]
@@ -75,7 +80,7 @@ if (GUI):
 source = s.create(Cylinder, center=gs*vec3(0.5,0.1,0.5), radius=res*0.14, z=gs*vec3(0, 0.02, 0))
 
 #Data Colleciton and Export
-data_collector = Data_collectior(title=title, params=params, export_data=exportData, export_images=exportImages,
+data_collector = Data_collectior(title=title, params=params, export_data=exportData, export_images=exportImages, export_videos=exportVideos,
 						trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], [], []], 
 						tracked_grids_indeces=[0, 2, 3])
 
@@ -105,9 +110,9 @@ while (s.timeTotal < params["max_time"]):
 	#dissolveSmoke(flags=flags, density=density, speed=4)
 
 	if not doConserving:
-		advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=2) 
-		advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=2)
-		advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=2)
+		advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) 
+		advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1)
+		advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1)
 	else:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)

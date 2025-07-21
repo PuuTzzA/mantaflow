@@ -10,26 +10,22 @@
 #include <numeric>
 #include <algorithm>
 
-#include <functional>
-
-namespace std
-{
-    template <>
-    struct hash<Manta::Vector3D<int>>
-    {
-        std::size_t operator()(const Manta::Vector3D<int> &v) const noexcept
-        {
-            std::size_t h1 = std::hash<int>{}(v.x);
-            std::size_t h2 = std::hash<int>{}(v.y);
-            std::size_t h3 = std::hash<int>{}(v.z);
-            // Combine hashes (this is a common technique)
-            return h1 ^ (h2 << 1) ^ (h3 << 2);
-        }
-    };
-}
-
 namespace Manta
 {
+    template <typename T>
+    using Sparse2DMap = std::unordered_map<IndexInt, std::unordered_map<IndexInt, T>>;
+    using Reverse2dMap = std::unordered_map<IndexInt, std::unordered_set<IndexInt>>;
+
+    inline IndexInt vecToIdx(Vec3i vec, Vec3i gridSize)
+    {
+        return vec.x * gridSize.y + vec.y;
+    }
+
+    inline Vec3i idxToVec(IndexInt idx, Vec3i gridSize)
+    {
+        return Vec3i(idx / gridSize.y, idx % gridSize.y, 0);
+    }
+
     inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
     {
         switch (component)
@@ -115,6 +111,12 @@ namespace Manta
         }
     }
 
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+    // MASS_MOMENTUM_CONSERVING_ADVECTION MASS_MOMENTUM_CONSERVING_ADVECTION
+
     bool isValid(int i, int j, int k, const FlagGrid &flags, Vec3i &gs)
     {
         return (!flags.isObstacle(i, j, k)) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1 && k >= 0 && k <= gs[2] - 1;
@@ -199,11 +201,381 @@ namespace Manta
         return lastKnownFluidPos;
     }
 
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    Real getDx(const Grid<Real> &grid)
+    {
+        return grid.getParent()->getDx();
+    }
+
+    std::vector<std::tuple<Vec3i, Real>> getInterpolationstencilAndWeights(const FlagGrid &flags, Vec3 x, Vec3i &gs, Vec3 &offset)
+    {
+        x -= offset;
+
+        int i = std::floor(x[0]);
+        int j = std::floor(x[1]);
+        int k = std::floor(x[2]);
+
+        Real fx = x[0] - i;
+        Real fy = x[1] - j;
+        Real fz = x[2] - k;
+
+        Real w000, w100, w010, w110;
+        Real w001, w101, w011, w111;
+
+        w000 = w100 = w010 = w110 = 0.;
+        w001 = w101 = w011 = w111 = 0.;
+
+        if (isValid(i, j, k, flags, gs))
+        {
+            w000 = (1 - fx) * (1 - fy) * (1 - fz);
+        }
+        if (isValid(i + 1, j, k, flags, gs))
+        {
+            w100 = fx * (1 - fy) * (1 - fz);
+        }
+        if (isValid(i, j + 1, k, flags, gs))
+        {
+            w010 = (1 - fx) * fy * (1 - fz);
+        }
+        if (isValid(i + 1, j + 1, k, flags, gs))
+        {
+            w110 = fx * fy * (1 - fz);
+        }
+        if (gs.z > 1)
+        {
+            if (isValid(i, j, k + 1, flags, gs))
+            {
+                w001 = (1 - fx) * (1 - fy) * fz;
+            }
+            if (isValid(i + 1, j, k + 1, flags, gs))
+            {
+                w101 = fx * (1 - fy) * fz;
+            }
+            if (isValid(i, j + 1, k + 1, flags, gs))
+            {
+                w011 = (1 - fx) * fy * fz;
+            }
+            if (isValid(i + 1, j + 1, k + 1, flags, gs))
+            {
+                w111 = fx * fy * fz;
+            }
+        }
+
+        Real tot = w000 + w010 + w100 + w110;
+        if (gs.z > 1)
+        {
+            tot += w001 + w011 + w101 + w111;
+        }
+
+        if (tot < 1e-5)
+        {
+            return {};
+        }
+
+        w000 /= tot;
+        w100 /= tot;
+        w010 /= tot;
+        w110 /= tot;
+        if (gs.z > 1)
+        {
+            w001 /= tot;
+            w101 /= tot;
+            w011 /= tot;
+            w111 /= tot;
+        }
+
+        std::vector<std::tuple<Vec3i, Real>> result{};
+        result.reserve(gs.z > 1 ? 8 : 4);
+
+        const Real EPSILON = 1e-5;
+
+        if (w000 > EPSILON)
+        {
+            result.push_back({Vec3i{i, j, 0}, w000});
+        }
+        if (w100 > EPSILON)
+        {
+            result.push_back({Vec3i{i + 1, j, 0}, w100});
+        }
+        if (w010 > EPSILON)
+        {
+            result.push_back({Vec3i{i, j + 1, 0}, w010});
+        }
+        if (w110 > EPSILON)
+        {
+            result.push_back({Vec3i{i + 1, j + 1, 0}, w110});
+        }
+        if (gs.z > 1)
+        {
+            if (w001 > EPSILON)
+                result.push_back({Vec3i{i, j, k + 1}, w001});
+            if (w101 > EPSILON)
+                result.push_back({Vec3i{i + 1, j, k + 1}, w101});
+            if (w011 > EPSILON)
+                result.push_back({Vec3i{i, j + 1, k + 1}, w011});
+            if (w111 > EPSILON)
+                result.push_back({Vec3i{i + 1, j + 1, k + 1}, w111});
+        }
+
+        return result;
+    }
+
+    KERNEL(bnd = 0)
+    template <class T>
+    void knAdvectGammaCum(const MACGrid &vel, Grid<T> &grid, Grid<T> &newGrid, float dt, Vec3i gridSize, Vec3 &offset, const FlagGrid &flags)
+    {
+        if (flags.isObstacle(i, j, k))
+        {
+            // newGrid(i, j, k) = 1;
+        }
+        else
+        {
+            Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
+            newPos = customTrace(newPos, vel, -dt, flags, gridSize);
+
+            auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
+            for (const auto &[n, w] : neighboursAndWeights)
+            {
+                newGrid(i, j, k) += w * grid(n);
+            }
+        }
+    }
+
+    KERNEL()
+    template <class T>
+    void knSetNewGammaCum(Grid<Real> &gammaCum, std::vector<Real> gamma, Vec3i gridSize)
+    {
+        gammaCum(i, j, k) = gamma[i * gridSize[1] + j];
+    }
+
+    void recalculateBeta(std::vector<Real> &beta, const Sparse2DMap<Real> &weights)
+    {
+        std::fill(beta.begin(), beta.end(), 0);
+
+        for (const auto &[cellI, innerMap] : weights)
+        {
+            for (const auto &[cellJ, value] : innerMap)
+            {
+                beta[cellI] += value;
+            }
+        }
+    }
+
+    void recalculateGamma(std::vector<Real> &gamma, const Sparse2DMap<Real> &weights)
+    {
+        std::fill(gamma.begin(), gamma.end(), 0.0);
+        for (const auto &[cellI, innerMap] : weights)
+        {
+            for (const auto &[cellJ, value] : innerMap)
+            {
+                gamma[cellJ] += value;
+            }
+        }
+    }
+
+    template <class GridType>
+    void fnMassMomentumConservingAdvect(FluidSolver *parent, const FlagGrid &flags, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, MACGridComponent component)
+    {
+        std::cout << "NOTNOT water" << std::endl;
+        typedef typename GridType::BASETYPE T;
+        const Real EPSILON = 1e-5;
+
+        // For testing of the "normal" advection step that is used in this function
+        /* Grid<T> testGrid(parent);
+        knAdvectGammaCum<T>(vel, grid, testGrid, parent->getDt(), parent->getGridSize(), offset, flags);
+        grid.swap(testGrid);
+        return; */
+
+        // Advect the cummulative Gamma the same way as later the rest
+        Real dt = parent->getDt();
+        Vec3i gridSize = parent->getGridSize();
+        Grid<Real> newGammaCum(parent);
+        knAdvectGammaCum<Real>(vel, gammaCumulative, newGammaCum, dt, gridSize, offset, flags);
+        gammaCumulative.swap(newGammaCum);
+
+        // main advection part
+        long unsigned numCells = gridSize[0] * gridSize[1] * gridSize[2];
+
+        GridType newGrid(parent);
+        // weights[k][p] = weight from cell k to cell p (cell indeces k/p = i * gridSize[0] + j)
+        Sparse2DMap<Real> weights;
+        Reverse2dMap reverseWeights;
+        std::vector<Real> beta(numCells, 0.);
+        std::vector<Real> gamma(numCells, 0.);
+
+        int bnd = 0;
+
+        // Step 1: backwards step
+        FOR_IJK(grid)
+        {
+            if (!isNotObstacle(i, j, k, flags, component))
+            {
+                continue;
+            }
+
+            IndexInt cellJ = i * gridSize[1] + j;
+
+            Vec3 newPos = Vec3(i + offset[0], j + offset[1], k + offset[2]);
+            newPos = customTrace(newPos, vel, -dt, flags, gridSize);
+
+            auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, newPos, gridSize, offset);
+            for (const auto &[n, w] : neighboursAndWeights)
+            {
+                IndexInt cellI = n[0] * gridSize[1] + n[1];
+                weights[cellI][cellJ] = w;
+                reverseWeights[cellJ].insert(cellI);
+                beta[cellI] += w;
+            }
+        }
+
+        // Step 2: forward step for all beta < 1
+        FOR_IJK(grid)
+        {
+            if (!isNotObstacle(i, j, k, flags, component))
+            {
+                continue;
+            }
+
+            IndexInt cellI = i * gridSize[1] + j;
+
+            if (beta[cellI] < 1 - EPSILON)
+            {
+                Vec3 posForward = Vec3(i + offset[0], j + offset[1], k + offset[2]);
+                posForward = customTrace(posForward, vel, dt, flags, gridSize);
+
+                Real amountToDistribute = 1. - beta[cellI];
+
+                auto neighboursAndWeights = getInterpolationstencilAndWeights(flags, posForward, gridSize, offset);
+                for (const auto &[n, w] : neighboursAndWeights)
+                {
+                    IndexInt cellJ = n[0] * gridSize[1] + n[1];
+
+                    weights[cellI][cellJ] += w * amountToDistribute;
+                    reverseWeights[cellJ].insert(cellI);
+                }
+            }
+        }
+
+        // Step 3: Clamp gamma to the cumulative gamma
+        recalculateGamma(gamma, weights);
+        FOR_IJK(grid)
+        {
+            if (!isNotObstacle(i, j, k, flags, component))
+            {
+                continue;
+            }
+
+            IndexInt cellJ = i * gridSize[1] + j;
+
+            if (gamma[cellJ] < EPSILON)
+                continue; // avoid division by 0
+
+            Real factor = gammaCumulative(i, j, k) / gamma[cellJ];
+
+            for (IndexInt cellI : reverseWeights[cellJ])
+            {
+                weights[cellI][cellJ] *= factor;
+            }
+        }
+
+        // Step 4: Clamp beta to 1 for conservation
+        recalculateBeta(beta, weights);
+        for (IndexInt cellI = 0; cellI < numCells; cellI++)
+        {
+            int i = cellI / gridSize[1];
+            int j = cellI % gridSize[1];
+            int k = 0;
+            if (!isNotObstacle(i, j, k, flags, component))
+            {
+                continue;
+            }
+
+            if (beta[cellI] < EPSILON)
+                continue; // avoid division by 0
+
+            Real factor = 1 / beta[cellI];
+
+            for (auto &[_, value] : weights[cellI])
+            {
+                value *= factor;
+            }
+        }
+
+        // Step 5 calculate the an intermediate result
+        for (const auto &[cellI, innerMap] : weights)
+        {
+            for (const auto &[cellJ, weight] : innerMap)
+            {
+                int k = 0;
+
+                IndexInt cellI_i = cellI / gridSize[1];
+                IndexInt cellI_j = cellI % gridSize[1];
+
+                IndexInt cellJ_i = cellJ / gridSize[1];
+                IndexInt cellJ_j = cellJ % gridSize[1];
+
+                newGrid(cellJ_i, cellJ_j, k) += weight * grid(cellI_i, cellI_j, k);
+            }
+        }
+
+        // Step 6: Diffuse gamma using Gaus seidel Sweep
+        recalculateGamma(gamma, weights);
+        for (int _ = 0; _ < 7; _++)
+        {
+            std::array<Vec3i, 4> dirs{{{1, 0, 0}, {0, 1, 0}}};
+
+            for (auto &d : dirs)
+            {
+                GridType deltaGrid(parent);
+                std::vector<Real> deltaGamma(numCells, 0.);
+
+                FOR_IJK(grid)
+                {
+                    if (!isNotObstacle(i, j, k, flags, component) || !isNotObstacle(i + d.x, j + d.y, k + d.z, flags, component))
+                    {
+                        continue;
+                    }
+
+                    Vec3i vecMoved = Vec3i(i + d.x, j + d.y, k + d.z);
+                    IndexInt indexHere = vecToIdx(Vec3i(i, j, k), gridSize);
+                    IndexInt indexMoved = vecToIdx(vecMoved, gridSize);
+
+                    Real gammaToMove = (gamma[indexMoved] - gamma[indexHere]) / 2.;
+                    Real denominator = 2. * gamma[indexMoved];
+                    if (abs(denominator) < EPSILON)
+                    {
+                        continue;
+                    }
+                    Real phiToMove = newGrid(vecMoved) * (gamma[indexMoved] - gamma[indexHere]) / denominator;
+
+                    if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
+                    {
+                        continue;
+                    }
+
+                    deltaGamma[indexHere] += gammaToMove;
+                    deltaGamma[indexMoved] -= gammaToMove;
+                    deltaGrid(i, j, k) += phiToMove;
+                    deltaGrid(vecMoved) -= phiToMove;
+                }
+
+                FOR_IJK(grid)
+                {
+                    IndexInt index = vecToIdx(Vec3i(i, j, k), gridSize);
+                    newGrid(i, j, k) += deltaGrid(i, j, k);
+                    gamma[index] += deltaGamma[index];
+                }
+            }
+        }
+
+        knSetNewGammaCum<Real>(gammaCumulative, gamma, gridSize);
+        grid.swap(newGrid);
+    }
+
+    // UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED
+    // UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED
+    // UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED
+    // UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED
+    // UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED UNIFIED
 
     inline Vec3 rungeKutta4(Vec3 pos, Real dt, const MACGrid &vel)
     {
@@ -512,19 +884,28 @@ namespace Manta
 
     inline void insertIntoWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
     {
-        map[cellI][cellJ] = value;
-        rmap[cellJ].insert(cellI);
+        IndexInt indexCellI = vecToIdx(cellI, gridSize);
+        IndexInt indexCellJ = vecToIdx(cellJ, gridSize);
+
+        map[indexCellI][indexCellJ] = value;
+        rmap[indexCellJ].insert(indexCellI);
     }
 
     inline void addToWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
     {
-        map[cellI][cellJ] += value;
-        rmap[cellJ].insert(cellI);
+        IndexInt indexCellI = vecToIdx(cellI, gridSize);
+        IndexInt indexCellJ = vecToIdx(cellJ, gridSize);
+
+        map[indexCellI][indexCellJ] += value;
+        rmap[indexCellJ].insert(indexCellI);
     }
 
     inline void scaleWeightBy(Sparse2DMap<Real> &map, Vec3i cellI, Vec3i cellJ, Real factor, Vec3i gridSize)
     {
-        map[cellI][cellJ] *= factor;
+        IndexInt indexCellI = vecToIdx(cellI, gridSize);
+        IndexInt indexCellJ = vecToIdx(cellJ, gridSize);
+
+        map[indexCellI][indexCellJ] *= factor;
     }
 
     void recalculateGamma(Grid<Real> &gamma, const Sparse2DMap<Real> &weights, Vec3i gridSize)
@@ -534,7 +915,7 @@ namespace Manta
         {
             for (const auto &[cellJ, value] : innerMap)
             {
-                newGrid(cellJ) += value;
+                newGrid(idxToVec(cellJ, gridSize)) += value;
             }
         }
         gamma.swap(newGrid);
@@ -547,7 +928,7 @@ namespace Manta
         {
             for (const auto &[cellJ, value] : innerMap)
             {
-                newGrid(cellI) += value;
+                newGrid(idxToVec(cellI, gridSize)) += value;
             }
         }
         beta.swap(newGrid);
@@ -656,9 +1037,9 @@ namespace Manta
             Real factor = gammaCumulative(i, j, k) / gamma(i, j, k);
             // factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
 
-            for (Vec3i cellI : reverseWeights[Vec3i(i, j, k)])
+            for (IndexInt cellI : reverseWeights[vecToIdx(Vec3i(i, j, k), gridSize)])
             {
-                scaleWeightBy(weights, cellI, Vec3i(i, j, k), factor, gridSize);
+                scaleWeightBy(weights, idxToVec(cellI, gridSize), Vec3i(i, j, k), factor, gridSize);
             }
         }
 
@@ -675,7 +1056,7 @@ namespace Manta
                 continue;
             }
             Real factor = 1 / beta(i, j, k);
-            for (auto &[_, value] : weights[Vec3i(i, j, k)])
+            for (auto &[_, value] : weights[vecToIdx(Vec3i(i, j, k), gridSize)])
             {
                 value *= factor;
             }
@@ -686,7 +1067,7 @@ namespace Manta
         {
             for (const auto &[cellJ, weight] : innerMap)
             {
-                newGrid(cellJ) += weight * grid(cellI);
+                newGrid(idxToVec(cellJ, gridSize)) += weight * grid(idxToVec(cellI, gridSize));
             }
         }
 
@@ -844,7 +1225,7 @@ namespace Manta
 
         Grid<Real> newGrid(parent);
 
-        knAdvectTraditional<Real>(*flags, *vel, *grid, newGrid, offset, dt, NONE, false);
+        knAdvectGammaCum<Real>(*vel, *grid, newGrid, dt, gridSize, offset, *flags);
 
         grid->swap(newGrid);
     }

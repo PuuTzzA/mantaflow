@@ -10,8 +10,8 @@
 namespace Manta
 {
     template <typename T>
-    using Sparse2DMap = std::unordered_map<IndexInt, std::unordered_map<IndexInt, T>>;
-    using Reverse2dMap = std::unordered_map<IndexInt, std::unordered_set<IndexInt>>;
+    using Sparse2DMap = std::unordered_map<Vec3i, std::unordered_map<Vec3i, T>>;
+    using Reverse2dMap = std::unordered_map<Vec3i, std::unordered_set<Vec3i>>;
 
     enum MACGridComponent
     {
@@ -36,7 +36,7 @@ namespace Manta
     void fnMassMomentumConservingAdvect(FluidSolver *parent, const FlagGrid &flags, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset);
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectWater(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset);
+    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi = nullptr, MACGridComponent component = NONE);
 
     KERNEL()
     void knMAC2Grids(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)

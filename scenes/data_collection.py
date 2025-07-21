@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Data_collectior:
-    def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, trackable_grid_names=[], tracked_grids_indeces=[]):
+    def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, export_videos=False, trackable_grid_names=[], tracked_grids_indeces=[]):
         self.title = title
         self.base_dir = Path(base_dir).expanduser().resolve()
         self.stats_dir = self.base_dir / f"{self.title}_stats"
@@ -23,6 +23,7 @@ class Data_collectior:
         
         self.export_data = export_data
         self.export_images = export_images
+        self.export_videos = export_videos
         self.trackable_grids=trackable_grid_names
         self.tracked_grids_indeces = tracked_grids_indeces
 
@@ -191,7 +192,7 @@ class Data_collectior:
             with open(self.stats_dir / "data.json", "w") as f:
                 json.dump(self.data, f, indent=4)
 
-        if self.export_images:
+        if self.export_videos:
             for index in self.tracked_grids_indeces:
                 name = self.trackable_grids[index][0]
 
