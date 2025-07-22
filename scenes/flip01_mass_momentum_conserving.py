@@ -219,7 +219,7 @@ while (s.timeTotal < params["max_time"]):
 			if layout == 0:
 				pushOutofObs(parts=level_set_particles, flags=flags_n, phiObs=phiObs, thresh=0.5*0.5, ptype=particle_pT)
 			
-			#simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid )
+			#simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid ) # don't use!! it only advects inside fluid
 			advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
 			#massMomentumConservingAdvect( flags=flags_n, vel=vel, grid=phi_fluid, gammaCumulative=phi_gamma)
 

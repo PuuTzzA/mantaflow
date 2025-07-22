@@ -35,28 +35,13 @@ namespace Manta
         switch (component)
         {
         case MAC_X:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
         case MAC_Y:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
         case MAC_Z:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
         default:
-            return flags.isFluid(i, j, k) && !flags.isObstacle(i, j, k);
-        }
-    }
-
-    inline bool isNotObstacle(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
-    {
-        switch (component)
-        {
-        case MAC_X:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k) || true) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
-        case MAC_Y:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k) || true) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
-        case MAC_Z:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1) || true) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
-        default:
-            return !flags.isObstacle(i, j, k);
+            return (flags.isFluid(i, j, k) || flags.isOutflow(i, j, k)) && !flags.isObstacle(i, j, k);
         }
     }
 
@@ -507,7 +492,6 @@ namespace Manta
         {
             newGrid(i, j, k) = 1.;
         }
-        newGrid(i, j, k) = 1.;
     }
 
     inline void insertIntoWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
@@ -556,7 +540,6 @@ namespace Manta
     template <class GridType>
     void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component)
     {
-        std::cout << "water" << std::endl;
         typedef typename GridType::BASETYPE T;
         const Real EPSILON = 1e-5;
         Real dt = parent->getDt();
@@ -574,8 +557,9 @@ namespace Manta
         Grid<Real> gamma(parent);
         Grid<Real> newGrid(parent);
 
+        int bnd = 1;
         // Step 1: Backwards step
-        FOR_IJK(grid)
+        FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n_plus_one, component))
             {
@@ -592,6 +576,8 @@ namespace Manta
                     insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), gridSize, w);
                     beta(i, j, k) += w;
                 } */
+                insertIntoWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, 1.0);
+                beta(i, j, k) += 1;
             }
             else
             {
@@ -604,7 +590,8 @@ namespace Manta
         }
 
         // Step 2: Forwards Step
-        FOR_IJK(grid)
+        recalculateBeta(beta, weights, gridSize);
+        FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n, component))
             {
@@ -643,7 +630,7 @@ namespace Manta
 
         // Step 3: clamp gamma
         recalculateGamma(gamma, weights, gridSize);
-        FOR_IJK(grid)
+        FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n_plus_one, component))
             {
@@ -664,7 +651,7 @@ namespace Manta
 
         // Step 4: clamp beta
         recalculateBeta(beta, weights, gridSize);
-        FOR_IJK(grid)
+        FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n, component))
             {
@@ -701,7 +688,7 @@ namespace Manta
                 Grid<Real> deltaGrid(parent);
                 Grid<Real> deltaGamma(parent);
 
-                FOR_IJK(grid)
+                FOR_IJK_BND(grid, bnd)
                 {
                     if (!isValidFluid(i, j, k, flags_n_plus_one, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags_n_plus_one, component))
                     {
