@@ -25,7 +25,7 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 doOpen = False
 doObstacle = True
 doConserving = True
-exportData = False
+exportData = True
 exportImages = False
 exportVideos = False
 title = "Gas_Low_CFL_" + ("Conserving" if doConserving else "Traditional")

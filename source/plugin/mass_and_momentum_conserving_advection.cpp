@@ -490,28 +490,28 @@ namespace Manta
         }
         else
         {
-            newGrid(i, j, k) = 1.;
+            // newGrid(i, j, k) = 1.;
         }
     }
 
-    inline void insertIntoWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
+    inline void insertIntoWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Real value)
     {
         map[cellI][cellJ] = value;
         rmap[cellJ].insert(cellI);
     }
 
-    inline void addToWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Vec3i gridSize, Real value)
+    inline void addToWeights(Sparse2DMap<Real> &map, Reverse2dMap &rmap, Vec3i cellI, Vec3i cellJ, Real value)
     {
         map[cellI][cellJ] += value;
         rmap[cellJ].insert(cellI);
     }
 
-    inline void scaleWeightBy(Sparse2DMap<Real> &map, Vec3i cellI, Vec3i cellJ, Real factor, Vec3i gridSize)
+    inline void scaleWeightBy(Sparse2DMap<Real> &map, Vec3i cellI, Vec3i cellJ, Real factor)
     {
         map[cellI][cellJ] *= factor;
     }
 
-    void recalculateGamma(Grid<Real> &gamma, const Sparse2DMap<Real> &weights, Vec3i gridSize)
+    void recalculateGamma(Grid<Real> &gamma, const Sparse2DMap<Real> &weights)
     {
         Grid<Real> newGrid(gamma.getParent());
         for (const auto &[cellI, innerMap] : weights)
@@ -524,7 +524,7 @@ namespace Manta
         gamma.swap(newGrid);
     }
 
-    void recalculateBeta(Grid<Real> &beta, const Sparse2DMap<Real> &weights, Vec3i gridSize)
+    void recalculateBeta(Grid<Real> &beta, const Sparse2DMap<Real> &weights)
     {
         Grid<Real> newGrid(beta.getParent());
         for (const auto &[cellI, innerMap] : weights)
@@ -541,7 +541,7 @@ namespace Manta
     void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component)
     {
         typedef typename GridType::BASETYPE T;
-        const Real EPSILON = 1e-5;
+        const Real EPSILON = 1e-6;
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
 
@@ -576,28 +576,27 @@ namespace Manta
                     insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), gridSize, w);
                     beta(i, j, k) += w;
                 } */
-                insertIntoWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, 1.0);
-                beta(i, j, k) += 1;
+                /* insertIntoWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, 1.0);
+                beta(i, j, k) += 1; */
             }
             else
             {
                 for (const auto &[n, w] : neighboursAndWeights)
                 {
-                    insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), gridSize, w);
-                    beta(i, j, k) += w;
+                    insertIntoWeights(weights, reverseWeights, n, Vec3i(i, j, k), w);
+                    beta(n) += w;
                 }
             }
         }
 
         // Step 2: Forwards Step
-        recalculateBeta(beta, weights, gridSize);
         FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n, component))
             {
                 continue;
             }
-            if (beta(i, j, k) < 1 - EPSILON)
+            if (beta(i, j, k) < 1)
             {
                 Real amountToDistribute = 1 - beta(i, j, k);
 
@@ -605,16 +604,17 @@ namespace Manta
 
                 if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
                 {
+                    std::cout << "ASLDkfj" << std::endl;
                     auto surfaceNeighboursAndWeights = getClosestSurfacePoint(Vec3(i, j, k), *phi, offset, flags_n_plus_one, component);
                     if (surfaceNeighboursAndWeights.empty()) // Now really just dump it into the same cell
                     {
-                        addToWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), gridSize, amountToDistribute);
+                        addToWeights(weights, reverseWeights, Vec3i(i, j, k), Vec3i(i, j, k), amountToDistribute);
                     }
                     else
                     {
                         for (const auto &[n, w] : surfaceNeighboursAndWeights)
                         {
-                            addToWeights(weights, reverseWeights, Vec3i(i, j, k), n, gridSize, w * amountToDistribute);
+                            addToWeights(weights, reverseWeights, Vec3i(i, j, k), n, w * amountToDistribute);
                         }
                     }
                 }
@@ -622,14 +622,14 @@ namespace Manta
                 {
                     for (const auto &[n, w] : neighboursAndWeights)
                     {
-                        addToWeights(weights, reverseWeights, Vec3i(i, j, k), n, gridSize, w * amountToDistribute);
+                        addToWeights(weights, reverseWeights, Vec3i(i, j, k), n, w * amountToDistribute);
                     }
                 }
             }
         }
 
         // Step 3: clamp gamma
-        recalculateGamma(gamma, weights, gridSize);
+        recalculateGamma(gamma, weights);
         FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n_plus_one, component))
@@ -645,12 +645,12 @@ namespace Manta
 
             for (Vec3i cellI : reverseWeights[Vec3i(i, j, k)])
             {
-                scaleWeightBy(weights, cellI, Vec3i(i, j, k), factor, gridSize);
+                scaleWeightBy(weights, cellI, Vec3i(i, j, k), factor);
             }
         }
 
         // Step 4: clamp beta
-        recalculateBeta(beta, weights, gridSize);
+        recalculateBeta(beta, weights);
         FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n, component))
@@ -678,8 +678,8 @@ namespace Manta
         }
 
         // Step 6: Diffuse Gamma with per-axis sweeps
-        recalculateGamma(gamma, weights, gridSize);
-        for (int _ = 0; _ < 7; _++)
+        recalculateGamma(gamma, weights);
+        for (int _ = 0; _ < 10; _++)
         {
             std::array<Vec3i, 2> dirs{{{1, 0, 0}, {0, 1, 0}}};
 
@@ -698,17 +698,25 @@ namespace Manta
                     Vec3i idx_moved = Vec3i(i + d.x, j + d.y, k + d.z);
 
                     Real gammaToMove = (gamma(idx_moved) - gamma(i, j, k)) / 2.;
-                    Real denominator = 2. * gamma(idx_moved);
+                    Real denominator = gamma(idx_moved); 
+
                     if (abs(denominator) < EPSILON)
                     {
                         continue;
                     }
-                    Real phiToMove = newGrid(idx_moved) * (gamma(idx_moved) - gamma(i, j, k)) / denominator;
+
+                    Real fraction_to_move = gammaToMove / denominator;
+
+                    fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.5), static_cast<Real>(0.5));
+
+                    Real phiToMove = newGrid(idx_moved) * fraction_to_move;
 
                     if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
                     {
                         continue;
                     }
+
+                    gammaToMove = gamma(idx_moved) * fraction_to_move;
 
                     deltaGamma(idx_moved) -= gammaToMove;
                     deltaGamma(i, j, k) += gammaToMove;
