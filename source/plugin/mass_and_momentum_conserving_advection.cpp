@@ -681,7 +681,7 @@ namespace Manta
         recalculateGamma(gamma, weights);
         for (int _ = 0; _ < 10; _++)
         {
-            std::array<Vec3i, 2> dirs{{{1, 0, 0}, {0, 1, 0}}};
+            std::array<Vec3i, 2> dirs{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
 
             for (auto &d : dirs)
             {
@@ -698,7 +698,7 @@ namespace Manta
                     Vec3i idx_moved = Vec3i(i + d.x, j + d.y, k + d.z);
 
                     Real gammaToMove = (gamma(idx_moved) - gamma(i, j, k)) / 2.;
-                    Real denominator = gamma(idx_moved); 
+                    Real denominator = gamma(idx_moved);
 
                     if (abs(denominator) < EPSILON)
                     {
