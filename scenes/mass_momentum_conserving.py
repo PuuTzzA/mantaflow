@@ -60,7 +60,7 @@ if doOpen:
 	setOpenBound(flags, bWidth,'yY',FlagOutflow|FlagEmpty) 
 
 if doObstacle:
-	obsPos = vec3(0.5, 0.63, 0)
+	obsPos = vec3(0.5, 0.63, 0.5)
 	obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
 	obsSize = 0.11
 

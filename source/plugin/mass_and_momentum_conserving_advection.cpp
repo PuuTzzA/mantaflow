@@ -681,7 +681,7 @@ namespace Manta
         recalculateGamma(gamma, weights);
         for (int _ = 0; _ < 10; _++)
         {
-            std::array<Vec3i, 2> dirs{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
+            std::array<Vec3i, 3> dirs{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
 
             for (auto &d : dirs)
             {

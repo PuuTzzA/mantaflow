@@ -38,8 +38,27 @@ namespace Manta
     KERNEL()
     void knCalculateCurl(const MACGrid &vel, Grid<Real> &curl)
     {
-        curl(i, j, k) = (vel.getCentered(i + 1, j, k).y - vel.getCentered(i - 1, j, k).y) / 2;
-        curl(i, j, k) -= (vel.getCentered(i, j + 1, k).y - vel.getCentered(i, j - 1, k).y) / 2;
+        if (!curl.is3D())
+        {
+
+            curl(i, j, k) = (vel.getCentered(i + 1, j, k).y - vel.getCentered(i - 1, j, k).y) / 2;
+            curl(i, j, k) -= (vel.getCentered(i, j + 1, k).y - vel.getCentered(i, j - 1, k).y) / 2;
+        }
+        else
+        {
+            Vec3 curlVec(0.);
+
+            curlVec.x = (vel.getCentered(i, j + 1, k).z - vel.getCentered(i, j - 1, k).z) / 2;
+            curlVec.x -= (vel.getCentered(i, j, k + 1).y - vel.getCentered(i, j, k - 1).y) / 2;
+
+            curlVec.y = (vel.getCentered(i, j, k + 1).x - vel.getCentered(i, j, k - 1).x) / 2;
+            curlVec.y -= (vel.getCentered(i + 1, j, k).z - vel.getCentered(i - 1, j, k).z) / 2;
+
+            curlVec.z = (vel.getCentered(i + 1, j, k).y - vel.getCentered(i - 1, j, k).y) / 2;
+            curlVec.z -= (vel.getCentered(i, j + 1, k).x - vel.getCentered(i, j - 1, k).x) / 2;
+
+            curl(i, j, k) = normalize(curlVec);
+        }
     }
 
     PYTHON()
