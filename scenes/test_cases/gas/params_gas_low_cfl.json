@@ -1,7 +1,7 @@
 {
-  "dimension": 3,
-  "resolutionX": 20,
-  "resolutionY": 25,
+  "dimension": 2,
+  "resolutionX": 30,
+  "resolutionY": 35,
   "resolutionZ": 20,
   "maxCFL": 1.5,
   "max_time": 250,

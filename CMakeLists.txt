@@ -396,7 +396,7 @@ if(OPENVDB)
 		else()
 			message("Warning - OpenVDB not found, trying default paths") 
 			# might be in path...
-			list(APPEND F_LIBS Half openvdb tbb)
+			list(APPEND F_LIBS Imath openvdb tbb)
 		endif()
 	endif()
 	
@@ -408,7 +408,7 @@ if(OPENVDB)
 			list(APPEND INCLUDE_PATHS ${HOUDINI_INCLUDE_DIRS})
 			list(APPEND INCLUDE_PATHS ${HOUDINI_INCLUDE_DIRS}/OpenEXR)
 			list(APPEND F_LIB_PATHS ${HOUDINI_LIBRARY_DIRS})
-			list(APPEND F_LIBS "Half.lib")
+			list(APPEND F_LIBS "Imath.lib")
 		endif()
 	else()
 		# for open exr - should be in the default path, add includes if necessary

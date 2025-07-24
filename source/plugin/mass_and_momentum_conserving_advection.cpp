@@ -9,7 +9,6 @@
 #include <array>
 #include <numeric>
 #include <algorithm>
-
 #include <functional>
 
 namespace std

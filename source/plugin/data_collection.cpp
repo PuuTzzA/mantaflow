@@ -35,8 +35,14 @@ namespace Manta
         return std::to_string(sum) + "," + std::to_string(min) + "," + std::to_string(max);
     }
 
+    inline bool doCurlHere(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags)
+    {
+        bool inbounds = i >= 1 && j >= 1 && k >= 1 && i < flags.getSize().x - 1 && j < flags.getSize().y - 1 && k < flags.getSize().z - 1;
+        return inbounds && !flags.isObstacle(i, j, k);
+    }
+
     KERNEL()
-    void knCalculateCurl(const MACGrid &vel, Grid<Real> &curl)
+    void knCalculateCurl(const MACGrid &vel, Grid<Real> &curl, const FlagGrid &flags)
     {
         if (!curl.is3D())
         {
@@ -46,6 +52,12 @@ namespace Manta
         }
         else
         {
+            if (!doCurlHere(i, j, k, flags))
+            {
+                curl(i, j, k) = 0.;
+                return;
+            }
+
             Vec3 curlVec(0.);
 
             curlVec.x = (vel.getCentered(i, j + 1, k).z - vel.getCentered(i, j - 1, k).z) / 2;
@@ -62,9 +74,9 @@ namespace Manta
     }
 
     PYTHON()
-    void calculateCurl(const MACGrid &vel, Grid<Real> &curl)
+    void calculateCurl(const MACGrid &vel, Grid<Real> &curl, const FlagGrid &flags)
     {
-        knCalculateCurl(vel, curl);
+        knCalculateCurl(vel, curl, flags);
     }
 
     PYTHON()

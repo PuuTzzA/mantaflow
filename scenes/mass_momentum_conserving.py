@@ -1,7 +1,3 @@
-#
-# Simple example scene for a 2D simulation
-# Simulation of a buoyant smoke density plume with open boundaries at top & bottom
-#
 from manta import *
 from data_collection import * 
 import json
@@ -24,8 +20,8 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 # scene params
 doOpen = False
 doObstacle = True
-doConserving = True
-exportData = True
+doConserving = False
+exportData = False
 exportImages = False
 exportVideos = False
 title = "Gas_Low_CFL_" + ("Conserving" if doConserving else "Traditional")
@@ -80,11 +76,12 @@ if (GUI):
 source = s.create(Cylinder, center=gs*vec3(0.5,0.1,0.5), radius=res*0.14, z=gs*vec3(0, 0.02, 0))
 
 #Data Colleciton and Export
-data_collector = Data_collectior(title=title, params=params, export_data=exportData, export_images=exportImages, export_videos=exportVideos,
+if GUI:
+	data_collector = Data_collectior(title=title, params=params, export_data=exportData, export_images=exportImages, export_videos=exportVideos,
 						trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], [], []], 
 						tracked_grids_indeces=[0, 2, 3])
 
-data_collector.init()
+	data_collector.init()
 
 firstFrame = True
 #main loop
@@ -128,16 +125,19 @@ while (s.timeTotal < params["max_time"]):
 	solvePressure(flags=flags, vel=vel, pressure=pressure)
 	
 	#timings.display()    
-	calculateCurl(vel=vel, curl=curl)
-	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui)
+	calculateCurl(vel=vel, curl=curl, flags=flags)
+
+	if GUI:
+		data_collector.step(solver=s, flags=flags, vel=vel, gui=gui)
 
 	# optionally save some of the simulation objects to an OpenVDB file (requires compilation with -DOPENVDB=1)
-	if False:
+	if True and s.frame % 1 == 0 and not GUI:
 		# note: when saving pdata fields, they must be accompanied by and listed before their parent pp
-		objects = [flags, phiParts, phi, pressure, vel, pVel, pp]
-		save( name='fluid_data_%04d.vdb' % s.frame, objects=objects )
+		objects = [flags, pressure, density, vel, curl]
+		save( name='../analysis/test_vdb_export/test_vdb_export_%04d.vdb' % s.frame, objects=objects )
 
 	s.step()
 
-data_collector.finish()
-data_collector.printStats()
+if GUI:
+	data_collector.finish()
+	data_collector.printStats()
