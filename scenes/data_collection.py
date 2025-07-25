@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Data_collectior:
-    def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, export_videos=False, trackable_grid_names=[], tracked_grids_indeces=[]):
+    def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, export_videos=False, trackable_grid_names=[], tracked_grids_indeces=[], fixed_volume="fixed_volume"):
         self.title = title
         self.base_dir = Path(base_dir).expanduser().resolve()
         self.stats_dir = self.base_dir / f"{self.title}_stats"
@@ -26,6 +26,7 @@ class Data_collectior:
         self.export_videos = export_videos
         self.trackable_grids=trackable_grid_names
         self.tracked_grids_indeces = tracked_grids_indeces
+        self.fixed_volume = fixed_volume
 
     def init(self):
         if self.export_data or self.export_images:
@@ -48,6 +49,7 @@ class Data_collectior:
             (self.stats_dir / f"{self.trackable_grids[index][0]}_frames").mkdir(parents=True, exist_ok=True)
 
     def step(self, solver, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3]):
+        #self.current_frame = math.floor(solver.timeTotal)
         self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
         self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
         self.data["frame_data"][str(self.current_frame).zfill(4)]["dt"] = solver.timestep
@@ -124,7 +126,7 @@ class Data_collectior:
                 min_sum = min(min_sum, s)
                 max_sum = max(max_sum, s)  
 
-                if grid_name == "fixed_volume":
+                if grid_name == self.fixed_volume:
                     fixed_volume_frames.append(s)
 
             if not found_any:
@@ -165,6 +167,7 @@ class Data_collectior:
             ax1.set_title(f"CFL Over Time (target timestep: {self.dt})")
             ax1.legend(loc='best')
             ax1.grid(True)
+            ax1.ticklabel_format(style='plain', axis='y', useOffset=False)
 
             # --- Plot Fixed Volume ---
             if has_fixed_volume:

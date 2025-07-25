@@ -20,7 +20,7 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 # scene params
 doOpen = False
 doObstacle = True
-doConserving = False
+doConserving = True
 exportData = False
 exportImages = False
 exportVideos = False
@@ -114,7 +114,7 @@ while (s.timeTotal < params["max_time"]):
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
 
 	if doOpen:
 		resetOutflow(flags=flags,real=density) 
