@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import math
 
 class Data_collectior:
-    def __init__(self, title="no_title_specified", base_dir="../analysis/experiments/", params=None, export_data=True, export_images=False, export_videos=False, trackable_grid_names=[], tracked_grids_indeces=[], fixed_volume="fixed_volume"):
+    def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, trackable_grid_names=[], tracked_grids_indeces=[], fixed_volume="fixed_volume"):
         self.title = title
         self.base_dir = Path(base_dir).expanduser().resolve()
         self.stats_dir = self.base_dir / f"{self.title}_stats"

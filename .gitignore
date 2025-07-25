@@ -5,7 +5,6 @@
 *.npz
 *.pyc
 *.bin
-*.png
 manta/
 mantaVDB/
 .vscode/
@@ -14,4 +13,4 @@ waveletNoiseTileDouble.bin
 build
 doc
 tensorflow/mantaGen/datasets
-analysis/
+exports/

@@ -114,7 +114,7 @@ while (s.timeTotal < params["max_time"]):
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
 
-		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
 
 	if doOpen:
 		resetOutflow(flags=flags,real=density) 
@@ -134,7 +134,7 @@ while (s.timeTotal < params["max_time"]):
 	if True and s.frame % 1 == 0 and not GUI:
 		# note: when saving pdata fields, they must be accompanied by and listed before their parent pp
 		objects = [flags, pressure, density, vel, curl]
-		save( name='../analysis/test_vdb_export/test_vdb_export_%04d.vdb' % s.frame, objects=objects )
+		save( name='../analysis/test_vdb_export_2/test_vdb_export_%04d.vdb' % s.frame, objects=objects )
 
 	s.step()
 
