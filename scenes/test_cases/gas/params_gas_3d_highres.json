@@ -1,0 +1,10 @@
+{
+  "dimension": 3,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 100,
+  "maxCFL": 1.5,
+  "max_time": 250,
+  "dt": 0.25
+}
+

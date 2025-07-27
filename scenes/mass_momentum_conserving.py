@@ -18,7 +18,7 @@ if dim==2:
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # scene params
-doOpen = False
+doOpen = True
 doObstacle = True
 doConserving = True
 exportData = False

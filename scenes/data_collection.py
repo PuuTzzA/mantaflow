@@ -54,12 +54,11 @@ class Data_collectior:
         self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
         self.data["frame_data"][str(self.current_frame).zfill(4)]["dt"] = solver.timestep
 
-        if self.export_data:
-            for i in range(len(self.trackable_grids)):
-                if i in self.tracked_grids_indeces:    
-                    name = self.trackable_grids[i][0]              
-                    grid = self.trackable_grids[i][1]
-                    self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
+        for i in range(len(self.trackable_grids)):
+            if i in self.tracked_grids_indeces:    
+                name = self.trackable_grids[i][0]              
+                grid = self.trackable_grids[i][1]
+                self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
 
         if self.export_images and gui is not None:
             gui.windowSize(windowSize[0], windowSize[1])

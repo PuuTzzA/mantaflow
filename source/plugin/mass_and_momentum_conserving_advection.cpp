@@ -29,18 +29,40 @@ namespace std
 
 namespace Manta
 {
+
     inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
     {
         switch (component)
         {
         case MAC_X:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
         case MAC_Y:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
         case MAC_Z:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
         default:
-            return (flags.isFluid(i, j, k) || flags.isOutflow(i, j, k)) && !flags.isObstacle(i, j, k);
+            return (flags.isFluid(i, j, k)) && !flags.isObstacle(i, j, k);
+        }
+    }
+
+    inline bool isSampleableFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
+    {
+        Vec3i gs = flags.getParent()->getGridSize();
+        bool inBounds;
+        switch (component)
+        {
+        case MAC_X:
+            inBounds = 1 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+        case MAC_Y:
+            inBounds = 0 <= i && i < gs.x && 1 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+        case MAC_Z:
+            inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 1 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+        default:
+            inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k) || flags.isOutflow(i, j, k)) && !flags.isObstacle(i, j, k);
         }
     }
 
@@ -219,37 +241,37 @@ namespace Manta
         w000 = w100 = w010 = w110 = 0.;
         w001 = w101 = w011 = w111 = 0.;
 
-        if (isValidFluid(i, j, k, flags, component))
+        if (isSampleableFluid(i, j, k, flags, component))
         {
             w000 = (1 - fx) * (1 - fy) * (1 - fz);
         }
-        if (isValidFluid(i + 1, j, k, flags, component))
+        if (isSampleableFluid(i + 1, j, k, flags, component))
         {
             w100 = fx * (1 - fy) * (1 - fz);
         }
-        if (isValidFluid(i, j + 1, k, flags, component))
+        if (isSampleableFluid(i, j + 1, k, flags, component))
         {
             w010 = (1 - fx) * fy * (1 - fz);
         }
-        if (isValidFluid(i + 1, j + 1, k, flags, component))
+        if (isSampleableFluid(i + 1, j + 1, k, flags, component))
         {
             w110 = fx * fy * (1 - fz);
         }
         if (flags.getParent()->getGridSize().z > 1)
         {
-            if (isValidFluid(i, j, k + 1, flags, component))
+            if (isSampleableFluid(i, j, k + 1, flags, component))
             {
                 w001 = (1 - fx) * (1 - fy) * fz;
             }
-            if (isValidFluid(i + 1, j, k + 1, flags, component))
+            if (isSampleableFluid(i + 1, j, k + 1, flags, component))
             {
                 w101 = fx * (1 - fy) * fz;
             }
-            if (isValidFluid(i, j + 1, k + 1, flags, component))
+            if (isSampleableFluid(i, j + 1, k + 1, flags, component))
             {
                 w011 = (1 - fx) * fy * fz;
             }
-            if (isValidFluid(i + 1, j + 1, k + 1, flags, component))
+            if (isSampleableFluid(i + 1, j + 1, k + 1, flags, component))
             {
                 w111 = fx * fy * fz;
             }

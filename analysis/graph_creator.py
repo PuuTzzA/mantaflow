@@ -8,9 +8,9 @@ NAME = "shear_flow"
 
 data_1 = None
 data_2 = None
-with open(f"./analysis/experiments/{NAME}_Traditional_stats/data.json") as f:
+with open(f"./exports/experiments/{NAME}_Traditional_stats/data.json") as f:
 	data_1 = json.load(f)
-with open(f"./analysis/experiments/{NAME}_Conserving_stats/data.json") as f:
+with open(f"./exports/experiments/{NAME}_Conserving_stats/data.json") as f:
 	data_2 = json.load(f)
 	
 COLOR_THEMES = [
@@ -37,7 +37,7 @@ COLOR_THEMES = [
     }
 ]
 
-def create_combined_graph(data_array, data_names, interested_fields, title, include_cfl=True, include_extra_stats=True, export_path="./analysis/combinded.png"):
+def create_combined_graph(data_array, data_names, interested_fields, title, include_cfl=True, include_extra_stats=True, export_path="./exports/combinded.png"):
     frames_sets = []
 
     for data in data_array:
