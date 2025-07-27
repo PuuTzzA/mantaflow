@@ -18,9 +18,9 @@ if dim==2:
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # scene params
-doOpen = True
+doOpen = False
 doObstacle = True
-doConserving = True
+doConserving = False
 exportData = False
 exportImages = False
 exportVideos = False
@@ -107,9 +107,14 @@ while (s.timeTotal < params["max_time"]):
 	#dissolveSmoke(flags=flags, density=density, speed=4)
 
 	if not doConserving:
-		advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) 
-		advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1)
-		advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1)
+		#advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) 
+		#advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1)
+		#advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1)
+
+		simpleSLAdvect(flags=flags, vel=vel, grid=density)
+		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1)
+		simpleSLAdvect(flags=flags, vel=vel, grid=vel)
+
 	else:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)

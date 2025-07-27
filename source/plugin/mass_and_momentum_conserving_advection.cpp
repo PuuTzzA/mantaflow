@@ -221,19 +221,20 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
-    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    /// @brief normal trilinear (bilinear) interpolation
+    bool getInterpolationStencilWithWeightsOld(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
         result.clear();
 
         pos -= offset;
 
-        int i = std::floor(pos[0]);
-        int j = std::floor(pos[1]);
-        int k = std::floor(pos[2]);
+        const int i = std::floor(pos[0]);
+        const int j = std::floor(pos[1]);
+        const int k = std::floor(pos[2]);
 
-        Real fx = pos[0] - i;
-        Real fy = pos[1] - j;
-        Real fz = pos[2] - k;
+        const Real fx = pos[0] - i;
+        const Real fy = pos[1] - j;
+        const Real fz = pos[2] - k;
 
         Real w000, w100, w010, w110;
         Real w001, w101, w011, w111;
@@ -257,7 +258,7 @@ namespace Manta
         {
             w110 = fx * fy * (1 - fz);
         }
-        if (flags.getParent()->getGridSize().z > 1)
+        if (flags.is3D())
         {
             if (isSampleableFluid(i, j, k + 1, flags, component))
             {
@@ -278,7 +279,7 @@ namespace Manta
         }
 
         Real tot = w000 + w010 + w100 + w110;
-        if (flags.getParent()->getGridSize().z > 1)
+        if (flags.is3D())
         {
             tot += w001 + w011 + w101 + w111;
         }
@@ -292,7 +293,7 @@ namespace Manta
         w100 /= tot;
         w010 /= tot;
         w110 /= tot;
-        if (flags.getParent()->getGridSize().z > 1)
+        if (flags.is3D())
         {
             w001 /= tot;
             w101 /= tot;
@@ -328,6 +329,73 @@ namespace Manta
                 result.push_back({Vec3i{i, j + 1, k + 1}, w011});
             if (w111 > EPSILON)
                 result.push_back({Vec3i{i + 1, j + 1, k + 1}, w111});
+        }
+
+        return true;
+    }
+
+    inline Real cubicInterpolationWeight(Real s, int idx)
+    {
+        if (idx == -1)
+            return -0.333333 * s + 0.5 * s * s - 0.166666 * s * s * s;
+        if (idx == 0)
+            return 1.0 - s * s + 0.5 * (s * s * s - s);
+        if (idx == 1)
+            return s + 0.5 * (s * s - s * s * s);
+        if (idx == 2)
+            return 0.166666 * (s * s * s - s);
+        return 0.0;
+    }
+
+    /// @brief better interpolation to reduce numerical diffusion alla Catmull-Rom
+    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    {
+        result.clear();
+        pos -= offset;
+
+        const int i = std::floor(pos[0]);
+        const int j = std::floor(pos[1]);
+        const int k = std::floor(pos[2]);
+
+        const Real fx = pos[0] - i;
+        const Real fy = pos[1] - j;
+        const Real fz = pos[2] - k;
+
+        const Real EPSILON = 1e-5;
+        Real totalWeight = 0.;
+
+        // Loop over 4x4x4 neighborhood
+        for (int dz = -1; dz <= (flags.is3D() ? 2 : -1); ++dz)
+        {
+            Real wz = flags.is3D() ? cubicInterpolationWeight(fz, dz) : 1.;
+            int zk = flags.is3D() ? k + dz : k;
+            for (int dy = -1; dy <= 2; ++dy)
+            {
+                Real wy = cubicInterpolationWeight(fy, dy);
+                int yj = j + dy;
+                for (int dx = -1; dx <= 2; ++dx)
+                {
+                    Real wx = cubicInterpolationWeight(fx, dx);
+                    int xi = i + dx;
+
+                    Real w = wx * wy * wz;
+
+                    if (std::abs(w) > EPSILON && isSampleableFluid(xi, yj, zk, flags, component))
+                    {
+                        result.push_back({Vec3i{xi, yj, zk}, w});
+                        totalWeight += w;
+                    }
+                }
+            }
+        }
+
+        if (totalWeight < EPSILON)
+            return false;
+
+        // Normalize
+        for (auto &entry : result)
+        {
+            std::get<1>(entry) /= totalWeight;
         }
 
         return true;
@@ -836,6 +904,12 @@ namespace Manta
             errMsg("AdvectSemiLagrange: Grid Type is not supported (only Real, MAC)");
     }
 
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+
     KERNEL(points)
     void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i gs)
     {
@@ -850,18 +924,51 @@ namespace Manta
         knAdvectParticlesForward(*particles, *vel, vel->getParent()->getDt(), *flags, vel->getParent()->getGridSize());
     }
 
+    void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt)
+    {
+        Grid<Real> gridX(parent);
+        Grid<Real> gridY(parent);
+        Grid<Real> gridZ(parent);
+
+        Grid<Real> newGridX(parent);
+        Grid<Real> newGridY(parent);
+        Grid<Real> newGridZ(parent);
+
+        knMAC2Grids(grid, gridX, gridY, gridZ);
+
+        /* Vec3 offsetX = Vec3(0.5, 0.0, 0.0);
+        Vec3 offsetY = Vec3(0.0, 0.5, 0.0);
+        Vec3 offsetZ = Vec3(0.0, 0.0, 0.5); */
+
+        Vec3 offsetX = Vec3(0.0, 0.5, 0.5);
+        Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
+        Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
+
+        knAdvectTraditional<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false);
+        knAdvectTraditional<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false);
+        knAdvectTraditional<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false);
+
+        knGrids2MAC(grid, newGridX, newGridY, newGridZ, flags);
+    }
+
     PYTHON()
-    void simpleSLAdvection(const FlagGrid *flags, const MACGrid *vel, Grid<Real> *grid)
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();
-        Vec3i gridSize = parent->getGridSize();
-        Vec3 offset = Vec3(0.5, 0.5, 0.5);
 
-        Grid<Real> newGrid(parent);
-
-        knAdvectTraditional<Real>(*flags, *vel, *grid, newGrid, offset, dt, NONE, false);
-
-        grid->swap(newGrid);
+        if (grid->getType() & GridBase::TypeReal)
+        {
+            Grid<Real> newGrid(parent);
+            Vec3 offset = Vec3(0.5, 0.5, 0.5);
+            knAdvectTraditional<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false);
+            ((Grid<Real> *)grid)->swap(newGrid);
+        }
+        else if (grid->getType() & GridBase::TypeMAC)
+        {
+            fnSimpleSLAdcetMAC(*flags, *vel, *((MACGrid *)grid), parent, dt);
+        }
+        else
+            errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");
     }
 }
