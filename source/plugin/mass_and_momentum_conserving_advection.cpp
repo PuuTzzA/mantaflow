@@ -222,7 +222,7 @@ namespace Manta
     }
 
     /// @brief normal trilinear (bilinear) interpolation
-    bool getInterpolationStencilWithWeightsOld(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
         result.clear();
 
@@ -348,7 +348,7 @@ namespace Manta
     }
 
     /// @brief better interpolation to reduce numerical diffusion alla Catmull-Rom
-    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    bool getInterpolationStencilWithWeighCatmullRom(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
     {
         result.clear();
         pos -= offset;
@@ -401,7 +401,7 @@ namespace Manta
         return true;
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doFluid)
+    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
     {
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, -dt, vel);
@@ -409,9 +409,19 @@ namespace Manta
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
+        if (interpolationType == TRILIENAR)
         {
-            return resultVec;
+            if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
+            {
+                return resultVec;
+            }
+        }
+        else if (interpolationType == CATMULL_ROM)
+        {
+            if (getInterpolationStencilWithWeighCatmullRom(resultVec, newPos, flags, offset, component))
+            {
+                return resultVec;
+            }
         }
 
         // Special trace back for MAC grid componets
@@ -482,13 +492,27 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component))
+            if (interpolationType == TRILIENAR)
             {
-                resultVec = testResultVec;
+                if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component))
+                {
+                    resultVec = testResultVec;
+                }
+                else
+                {
+                    return resultVec;
+                }
             }
-            else
+            else if (interpolationType == CATMULL_ROM)
             {
-                return resultVec;
+                if (getInterpolationStencilWithWeighCatmullRom(testResultVec, current, flags, offset, component))
+                {
+                    resultVec = testResultVec;
+                }
+                else
+                {
+                    return resultVec;
+                }
             }
         }
         return {};
@@ -565,12 +589,12 @@ namespace Manta
 
     KERNEL()
     template <class T>
-    void knAdvectTraditional(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid)
+    void knAdvectTraditional(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
     {
         if (isValidFluid(i, j, k, flags, component))
         {
             newGrid(i, j, k) = 0;
-            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component, doFluid);
+            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component, doFluid, interpolationType);
 
             for (const auto &[n, w] : neighboursAndWeights)
             {
@@ -636,7 +660,7 @@ namespace Manta
 
         // Step 0: Advect Gamma with the same tratitional sceme
         Grid<Real> newGammaCum(parent);
-        knAdvectTraditional(flags_n_plus_one, vel, gammaCumulative, newGammaCum, offset, dt, component, phi);
+        knAdvectTraditional(flags_n_plus_one, vel, gammaCumulative, newGammaCum, offset, dt, component, phi, TRILIENAR);
         // knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
         gammaCumulative.swap(newGammaCum);
 
@@ -655,7 +679,7 @@ namespace Manta
                 continue;
             }
 
-            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi);
+            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, TRILIENAR);
 
             if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
             {
@@ -924,7 +948,7 @@ namespace Manta
         knAdvectParticlesForward(*particles, *vel, vel->getParent()->getDt(), *flags, vel->getParent()->getGridSize());
     }
 
-    void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt)
+    void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType)
     {
         Grid<Real> gridX(parent);
         Grid<Real> gridY(parent);
@@ -944,15 +968,15 @@ namespace Manta
         Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
         Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
 
-        knAdvectTraditional<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false);
-        knAdvectTraditional<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false);
-        knAdvectTraditional<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false);
+        knAdvectTraditional<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
+        knAdvectTraditional<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
+        knAdvectTraditional<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
 
         knGrids2MAC(grid, newGridX, newGridY, newGridZ, flags);
     }
 
     PYTHON()
-    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid)
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();
@@ -961,12 +985,12 @@ namespace Manta
         {
             Grid<Real> newGrid(parent);
             Vec3 offset = Vec3(0.5, 0.5, 0.5);
-            knAdvectTraditional<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false);
+            knAdvectTraditional<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
             ((Grid<Real> *)grid)->swap(newGrid);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnSimpleSLAdcetMAC(*flags, *vel, *((MACGrid *)grid), parent, dt);
+            fnSimpleSLAdcetMAC(*flags, *vel, *((MACGrid *)grid), parent, dt, (InterpolationType)interpolationType);
         }
         else
             errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");

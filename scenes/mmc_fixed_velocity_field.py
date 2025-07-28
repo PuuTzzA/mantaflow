@@ -3,7 +3,7 @@ from data_collection import *
 import json
 
 params = {}
-with open("../scenes/test_cases/fixed_vel_field/params_fixed_velocity_deformation_flow.json") as f:
+with open("../scenes/test_cases/fixed_vel_field/params_fixed_velocity_low.json") as f:
 	params = json.load(f)
 
 # solver params
@@ -17,15 +17,16 @@ s = Solver(name='main', gridSize = gs, dim=dim)
 # scenario selection, choose one of the four
 #scenario = "diagonal_motion"
 #scenario = "zalesak_rotation"
-#scenario = "shear_flow"
-scenario = "deformation_field"
+scenario = "shear_flow"
+#scenario = "deformation_field"
 
 # scene params
 doConserving = True
 exportData = True
-exportImages = True
-exportVideos = True
+exportImages = False
+exportVideos = False
 title = scenario + "_" + ("Conserving" if doConserving else "Traditional")
+title = "____--asldkjfalskdfj"
 
 # set time step range
 s.cfl         = params["maxCFL"]
@@ -50,6 +51,9 @@ testFieldGamma = s.create(RealGrid)
 bWidth=2
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
+
+setOpenBound(flags, bWidth,'xXyY',FlagOutflow|FlagEmpty) 
+
 
 if scenario == "diagonal_motion":
 	source = s.create(Sphere, center=gs*vec3(0.5,0.5,0.5), radius=res*0.20)
@@ -108,8 +112,12 @@ while (s.timeTotal < params["max_time"]):
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	if not doConserving:
-		advectSemiLagrange(flags=flags, vel=vel, grid=testPhi, order=1) 
-		advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=1) 
+		#advectSemiLagrange(flags=flags, vel=vel, grid=testPhi, order=1) 
+		#advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=1) 
+
+		simpleSLAdvect(flags=flags, vel=vel, grid=testPhi)
+		simpleSLAdvect(flags=flags, vel=vel, grid=testField) 
+
 	else:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma)

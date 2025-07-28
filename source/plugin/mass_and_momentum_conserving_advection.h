@@ -21,8 +21,15 @@ namespace Manta
         NONE
     };
 
+    enum InterpolationType
+    {
+        TRILIENAR,
+        CATMULL_ROM
+    };
+
     //! Semi-Lagrange interpolation kernel
-    void fillWithOnes(GridBase *grid);
+    void
+    fillWithOnes(GridBase *grid);
 
     void fillFluidWithOnes(GridBase *grid, const FlagGrid *flags);
 
@@ -52,7 +59,7 @@ namespace Manta
     {
         vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
     }
-    
+
     void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water);
 
     void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative);

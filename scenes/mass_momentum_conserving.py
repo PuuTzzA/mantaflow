@@ -18,14 +18,14 @@ if dim==2:
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # scene params
-doOpen = False
-doObstacle = True
-doConserving = False
+doOpen = True
+doObstacle = False
+doConserving = True
 exportData = False
 exportImages = False
 exportVideos = False
-title = "Gas_Low_CFL_" + ("Conserving" if doConserving else "Traditional")
-title = "____gas_with_gas"
+title = "simple_plume_cfl_20_" + ("conserving" if doConserving else "advectSemiLagrange")
+#title = "____gas_with_gas"
 
 # set time step range
 s.cfl         = params["maxCFL"]
@@ -53,10 +53,10 @@ flags.initDomain(boundaryWidth=bWidth)
 flags.fillGrid()
 
 if doOpen:
-	setOpenBound(flags, bWidth,'yY',FlagOutflow|FlagEmpty) 
+	setOpenBound(flags, bWidth,'xXYzZ',FlagOutflow|FlagEmpty) 
 
 if doObstacle:
-	obsPos = vec3(0.5, 0.63, 0.5)
+	obsPos = vec3(0.5, 0.55, 0.5)
 	obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
 	obsSize = 0.11
 
@@ -73,7 +73,7 @@ if (GUI):
 	gui.show( True ) 
 	#gui.pause()
 
-source = s.create(Cylinder, center=gs*vec3(0.5,0.1,0.5), radius=res*0.14, z=gs*vec3(0, 0.02, 0))
+source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.14, z=gs*vec3(0, 0.04, 0))
 
 #Data Colleciton and Export
 if GUI:
@@ -100,20 +100,20 @@ while (s.timeTotal < params["max_time"]):
 		fillWithOnes( grid=vel_gamma )
 		firstFrame = False
 
-	if s.timeTotal<300:
+	if s.timeTotal<3000:
 		source.applyToGrid(grid=density, value=1)
 
 	# optionally, dissolve smoke
 	#dissolveSmoke(flags=flags, density=density, speed=4)
 
 	if not doConserving:
-		#advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) 
-		#advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1)
-		#advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1)
+		advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect 
+		advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
+		advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 
-		simpleSLAdvect(flags=flags, vel=vel, grid=density)
-		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1)
-		simpleSLAdvect(flags=flags, vel=vel, grid=vel)
+		#simpleSLAdvect(flags=flags, vel=vel, grid=density,           interpolationType=0) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
+		#simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,      interpolationType=0) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
+		#simpleSLAdvect(flags=flags, vel=vel, grid=vel,               interpolationType=0) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
 
 	else:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma)
@@ -139,7 +139,7 @@ while (s.timeTotal < params["max_time"]):
 	if True and s.frame % 1 == 0 and not GUI:
 		# note: when saving pdata fields, they must be accompanied by and listed before their parent pp
 		objects = [flags, pressure, density, vel, curl]
-		save( name='../analysis/test_vdb_export_2/test_vdb_export_%04d.vdb' % s.frame, objects=objects )
+		save( name='../exports/'+ title + '/'+ title + '_%04d.vdb' % s.frame, objects=objects )
 
 	s.step()
 
