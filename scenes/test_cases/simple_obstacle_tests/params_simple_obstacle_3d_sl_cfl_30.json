@@ -1,0 +1,21 @@
+{
+  "title": "simple_obstacle_3d_sl_cfl_30",
+
+  "dimension": 3,
+  "resolutionX": 100,
+  "resolutionY": 150,
+  "resolutionZ": 100,
+
+  "doOpen": true,
+  "doObstacle": true,
+  "doConserving": false,
+
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": true,
+
+  "max_time": 105,
+  "maxCFL": 30, 
+  "dt": 60
+}

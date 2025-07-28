@@ -196,6 +196,8 @@ void FluidSolver::adaptTimestep(Real maxVel)
 	const Real mvt = maxVel * mDt;
 	if (!mLockDt) {
 		// calculate current timestep from maxvel, clamp range
+		Real mDtBefore = mDt;
+
 		mDt = std::max( std::min( mDt * (Real)(mCflCond/(mvt+1e-05)), mDtMax) , mDtMin );
 		if( (mTimePerFrame+mDt*1.05) > mFrameLength ) {
 			// within 5% of full step? add epsilon to prevent roundoff errors...
@@ -205,6 +207,11 @@ void FluidSolver::adaptTimestep(Real maxVel)
 			// avoid tiny timesteps and strongly varying ones, do 2 medium size ones if necessary...
 			mDt = (mFrameLength-mTimePerFrame+ 1e-04)*0.5;
 			mLockDt = true;
+		}
+
+		if ( mDt >= mDtBefore * 2 ) {
+			// avoid fast growth of mDt
+			mDt = mDtBefore * 2;
 		}
 	}
 	debMsg( "Frame "<<mFrame<<", max vel per step: "<<mvt<<" , dt: "<<mDt<<", frame time "<<mTimePerFrame<<"/"<<mFrameLength<<"; lock:"<<mLockDt , 2);

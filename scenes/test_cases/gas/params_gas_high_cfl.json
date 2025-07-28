@@ -4,7 +4,7 @@
   "resolutionY": 150,
   "resolutionZ": 100,
   "maxCFL": 20,
-  "max_time": 250,
+  "max_time": 50,
   "dt": 3
 }
 

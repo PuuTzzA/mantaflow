@@ -1,9 +1,9 @@
 {
-  "dimension": 3,
+  "dimension": 2,
   "resolutionX": 45,
   "resolutionY": 60,
   "resolutionZ": 45,
-  "maxCFL": 20,
+  "maxCFL": 2,
   "max_time": 200,
   "dt": 25
 }

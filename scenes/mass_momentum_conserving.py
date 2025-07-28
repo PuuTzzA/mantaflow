@@ -1,12 +1,16 @@
+import sys
 from manta import *
 from data_collection import * 
 import json
 import os
 
-print(os.getcwd())
-
 params = {}
-with open("../scenes/test_cases/gas/params_gas_low_cfl.json") as f:
+
+param_path = "../scenes/test_cases/simple_plume_tests/params_simple_plume_3d_test.json"
+if len(sys.argv) > 1:
+    param_path = sys.argv[1]
+
+with open(param_path) as f:
 	params = json.load(f)
 
 # solver params
@@ -18,25 +22,41 @@ if dim==2:
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # scene params
-doOpen = True
-doObstacle = False
-doConserving = True
-exportData = False
-exportImages = False
-exportVideos = False
+if False:
+	doOpen = False
+	doObstacle = False
+	doConserving = False
+	exportData = True
+	exportImages = False
+	exportVideos = False
+	exportVDBs = False if GUI else True
+	exportVDBs = True
+else:
+	doOpen = params["doOpen"]
+	doObstacle = params["doObstacle"]
+	doConserving = params["doConserving"]
+	exportData = params["exportData"]
+	exportImages = params["exportImages"]
+	exportVideos = params["exportVideos"]
+	exportVDBs = params["exportVDBs"]
+
+if exportVDBs and (exportImages or exportVideos):
+	raise Exception("Cannot export both VDBs and Images") 
+
 title = "simple_plume_cfl_20_" + ("conserving" if doConserving else "advectSemiLagrange")
-#title = "____gas_with_gas"
+title = "testtestestesets_volume"
+title = params["title"]
 
 # set time step range
 s.cfl         = params["maxCFL"]
+s.timestep    = params["dt"]
 s.frameLength = params["dt"]     
-s.timestep    = s.frameLength 
 s.timestepMin = 0.001 
 s.timestepMax = 20000
 
 timings = Timings()
 
-# prepare grids
+# create grids
 flags = s.create(FlagGrid)
 vel = s.create(MACGrid)
 density = s.create(RealGrid)
@@ -48,6 +68,7 @@ vel_gamma = s.create(MACGrid)
 density_gamma = s.create(RealGrid)
 innen0außen1_gamma = s.create(RealGrid)
 
+#prepare grids
 bWidth=1
 flags.initDomain(boundaryWidth=bWidth) 
 flags.fillGrid()
@@ -68,37 +89,42 @@ if doObstacle:
 	flags.fillGrid()
 	obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
 
-if (GUI):
+source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.14, z=gs*vec3(0, 0.04, 0))
+
+source.applyToGrid(grid=innen0außen1, value=1)
+fillWithOnes( grid=density_gamma )
+fillWithOnes( grid=innen0außen1_gamma )
+fillWithOnes( grid=vel_gamma )
+
+# guid and data collection
+gui = None
+if (GUI) and not exportVDBs:
 	gui = Gui()
 	gui.show( True ) 
 	#gui.pause()
 
-source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.14, z=gs*vec3(0, 0.04, 0))
+data_collector = Data_collectior(title=title ,base_dir=f"../exports/{title}/", params=params, export_data=exportData, 
+								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
+								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], []], tracked_grids_indeces=[0, 2])
 
-#Data Colleciton and Export
-if GUI:
-	data_collector = Data_collectior(title=title, params=params, export_data=exportData, export_images=exportImages, export_videos=exportVideos,
-						trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], [], []], 
-						tracked_grids_indeces=[0, 2, 3])
-
-	data_collector.init()
+data_collector.init()
 
 firstFrame = True
 #main loop
 while (s.timeTotal < params["max_time"]):
+	
 	maxvel = vel.getMax()
+
+	if firstFrame:
+		maxvel = 15     
+		firstFrame = False
+
 	s.adaptTimestep(maxvel)
 
-	print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}")
+	print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxvel: {maxvel}")
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 
-	if firstFrame:
-		source.applyToGrid(grid=innen0außen1, value=1)
-		fillWithOnes( grid=density_gamma )
-		fillWithOnes( grid=innen0außen1_gamma )
-		fillWithOnes( grid=vel_gamma )
-		firstFrame = False
 
 	if s.timeTotal<3000:
 		source.applyToGrid(grid=density, value=1)
@@ -132,17 +158,9 @@ while (s.timeTotal < params["max_time"]):
 	#timings.display()    
 	calculateCurl(vel=vel, curl=curl, flags=flags)
 
-	if GUI:
-		data_collector.step(solver=s, flags=flags, vel=vel, gui=gui)
-
-	# optionally save some of the simulation objects to an OpenVDB file (requires compilation with -DOPENVDB=1)
-	if True and s.frame % 1 == 0 and not GUI:
-		# note: when saving pdata fields, they must be accompanied by and listed before their parent pp
-		objects = [flags, pressure, density, vel, curl]
-		save( name='../exports/'+ title + '/'+ title + '_%04d.vdb' % s.frame, objects=objects )
+	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[density])
 
 	s.step()
 
-if GUI:
-	data_collector.finish()
-	data_collector.printStats()
+data_collector.finish()
+data_collector.printStats()
