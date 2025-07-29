@@ -2,9 +2,9 @@
   "title": "simple_plume_3d_conserving_cfl_15",
 
   "dimension": 3,
-  "resolutionX": 100,
-  "resolutionY": 150,
-  "resolutionZ": 100,
+  "resolutionX": 80,
+  "resolutionY": 120,
+  "resolutionZ": 80,
 
   "doOpen": true,
   "doObstacle": false,
