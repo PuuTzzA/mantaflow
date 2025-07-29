@@ -7,6 +7,8 @@ import os
 params = {}
 
 param_path = "../scenes/test_cases/simple_plume_tests/params_simple_plume_3d_test.json"
+#param_path = "../scenes/test_cases/gas/params_gas_low_cfl.json"
+
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
 
@@ -155,11 +157,11 @@ while (s.timeTotal < params["max_time"]):
 
 	solvePressure(flags=flags, vel=vel, pressure=pressure)
 	
-	#timings.display()    
 	calculateCurl(vel=vel, curl=curl, flags=flags)
 
 	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[density])
 
+	timings.display()    
 	s.step()
 
 data_collector.finish()

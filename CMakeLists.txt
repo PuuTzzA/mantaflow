@@ -204,6 +204,7 @@ set(PP_SOURCES
 	source/edgecollapse.cpp
 	source/plugin/advection.cpp
 	source/plugin/mass_and_momentum_conserving_advection.cpp
+	source/plugin/massMomentumWeights.cpp
 	source/plugin/particle_level_set.cpp
 	source/plugin/data_collection.cpp
 	source/plugin/velocity_fields.cpp
@@ -239,6 +240,7 @@ set(PP_HEADERS
 	source/particle.h
 	source/levelset.h
 	source/plugin/mass_and_momentum_conserving_advection.h
+	source/plugin/massMomentumWeights.h
 	source/shapes.h
 	source/noisefield.h
 	source/vortexsheet.h

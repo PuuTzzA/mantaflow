@@ -1,10 +1,21 @@
 {
-  "dimension": 2,
-  "resolutionX": 45,
-  "resolutionY": 60,
-  "resolutionZ": 45,
-  "maxCFL": 2,
-  "max_time": 200,
-  "dt": 25
-}
+  "title": "test_test_test_2",
 
+  "dimension": 2,
+  "resolutionX": 40,
+  "resolutionY": 60,
+  "resolutionZ": 40,
+
+  "doOpen": true,
+  "doObstacle": false,
+  "doConserving": true,
+
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+
+  "max_time": 100,
+  "maxCFL": 1, 
+  "dt": 3
+}

@@ -2,20 +2,20 @@
   "title": "simple_plume_3d_conserving_test",
 
   "dimension": 3,
-  "resolutionX": 80,
-  "resolutionY": 120,
-  "resolutionZ": 80,
+  "resolutionX": 40,
+  "resolutionY": 60,
+  "resolutionZ": 40,
 
   "doOpen": true,
   "doObstacle": false,
-  "doConserving": false,
+  "doConserving": true,
 
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 25,
+  "max_time": 1,
   "maxCFL": 1, 
   "dt": 3
 }
