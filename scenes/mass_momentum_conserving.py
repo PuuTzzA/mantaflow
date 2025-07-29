@@ -105,7 +105,7 @@ if (GUI) and not exportVDBs:
 	gui.show( True ) 
 	#gui.pause()
 
-data_collector = Data_collectior(title=title ,base_dir=f"../exports/{title}/", params=params, export_data=exportData, 
+data_collector = Data_collectior(title=title ,base_dir=f"../exports/simple_plume_3d/{title}/", params=params, export_data=exportData, 
 								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
 								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], []], tracked_grids_indeces=[0, 2])
 
