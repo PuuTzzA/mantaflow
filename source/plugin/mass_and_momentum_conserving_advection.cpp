@@ -440,7 +440,7 @@ namespace Manta
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_STRICT))
+        if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
         {
             return resultVec;
         }
@@ -473,13 +473,13 @@ namespace Manta
             if (isValidFluid(std::floor(start1.x), std::floor(start1.y), std::floor(start1.z), flags, NONE))
             {
                 newPos = rungeKutta4(start1, -dt, vel);
-                getCorrectInterpolationStencilWithWeights(resultVec1, newPos + neighbourOffset, flags, offset, component, FLUID_STRICT);
+                getCorrectInterpolationStencilWithWeights(resultVec1, newPos + neighbourOffset, flags, offset, component, FLUID_ISH);
             }
 
             if (isValidFluid(std::floor(start2.x), std::floor(start2.y), std::floor(start2.z), flags, NONE))
             {
                 newPos = rungeKutta4(start2, -dt, vel);
-                getCorrectInterpolationStencilWithWeights(resultVec2, newPos - neighbourOffset, flags, offset, component, FLUID_STRICT);
+                getCorrectInterpolationStencilWithWeights(resultVec2, newPos - neighbourOffset, flags, offset, component, FLUID_ISH);
             }
 
             resultVec.clear();
@@ -513,7 +513,7 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_STRICT))
+            if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
             {
                 resultVec = testResultVec;
             }
@@ -662,7 +662,6 @@ namespace Manta
         // Step 0: Advect Gamma with the same tratitional sceme
         Grid<Real> newGammaCum(parent);
         knAdvectTraditional(flags_n_plus_one, vel, gammaCumulative, newGammaCum, offset, dt, component, phi, TRILIENAR);
-        // knAdvectGammaCum(vel, grid, newGammaCum, dt, gridSize, offset, flags_n_plus_one);
         gammaCumulative.swap(newGammaCum);
 
         MassMomentumWeights weights(gridSize);
@@ -671,7 +670,7 @@ namespace Manta
         Grid<Real> gamma(parent);
         Grid<Real> newGrid(parent);
 
-        int bnd = 1;
+        int bnd = 0;
         // Step 1: Backwards step
         FOR_IJK_BND(grid, bnd)
         {
@@ -756,7 +755,14 @@ namespace Manta
                 continue; // avoid division by 0
             }
             Real factor = gammaCumulative(i, j, k) / gamma(i, j, k);
-            // factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
+            /* factor = 1 / gammaCumulative(i, j, k);
+
+            if (factor == 0 || std::isnan(factor) || std::isinf(factor))
+            {
+                factor = 1;
+            }
+            */
+            factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
 
             weights.scaleAllReverseWeightsAt(Vec3i(i, j, k), factor);
         }
@@ -765,7 +771,7 @@ namespace Manta
         weights.calculateBeta(beta);
         FOR_IJK_BND(grid, bnd)
         {
-            if (!isSampleableFluid(i, j, k, flags_n, component))
+            if (!isValidFluid(i, j, k, flags_n, component))
             {
                 continue;
             }
@@ -912,8 +918,7 @@ namespace Manta
     }
 
     KERNEL()
-    template <class T>
-    void knSimpleSLAdvectAll(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
+    void knSimpleSLAdvectAll(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
     {
         Vec3 pos = Vec3(i, j, k) + offset;
         if (!isNotObstacle(i, j, k, flags, component))
@@ -964,9 +969,9 @@ namespace Manta
 
         if (all)
         {
-            knSimpleSLAdvectAll<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
-            knSimpleSLAdvectAll<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
-            knSimpleSLAdvectAll<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
+            knSimpleSLAdvectAll(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
+            knSimpleSLAdvectAll(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
+            knSimpleSLAdvectAll(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
         }
         else
         {
@@ -990,7 +995,7 @@ namespace Manta
             Vec3 offset = Vec3(0.5, 0.5, 0.5);
             if (all)
             {
-                knSimpleSLAdvectAll<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
+                knSimpleSLAdvectAll(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
             }
             else
             {

@@ -71,7 +71,7 @@ density_gamma = s.create(RealGrid)
 innen0außen1_gamma = s.create(RealGrid)
 
 #prepare grids
-bWidth=1
+bWidth=2
 flags.initDomain(boundaryWidth=bWidth) 
 flags.fillGrid()
 
@@ -113,7 +113,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while (s.timeTotal < params["max_time"] and data_collector.current_frame < 230):
+while (s.timeTotal < params["max_time"] and data_collector.current_frame < 200):
 	
 	maxvel = vel.getMax()
 

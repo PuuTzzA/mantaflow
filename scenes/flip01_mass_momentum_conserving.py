@@ -15,11 +15,11 @@ with open(param_path) as f:
 	params = json.load(f)
 
 LEVEL = 0
-if True:
+if False:
 	doOpen = False
 	doObstacle = False
 	doConserving = True
-	doParticleLevelSetThomas = False
+	doParticleLevelSet = False
 
 	exportData = False
 	exportImages = False
@@ -30,6 +30,8 @@ else:
 	doOpen = params["doOpen"]
 	doObstacle = params["doObstacle"]
 	doConserving = params["doConserving"]
+	doParticleLevelSet = params["doParticleLevelSet"]
+
 	exportData = params["exportData"]
 	exportImages = params["exportImages"]
 	exportVideos = params["exportVideos"]
@@ -38,6 +40,7 @@ else:
 layout = 0 # 0=dam break, 1=falling drop
 
 title = "testestestste"
+title = params["title"]
 
 # solver params
 dim = params["dimension"]
@@ -156,11 +159,11 @@ if (GUI):
 	if layout == 1:
 		pass
 
-	if doConserving and doParticleLevelSetThomas:
+	if doConserving and doParticleLevelSet:
 		gui.nextParts()
 		gui.nextParts()
 	
-	if doConserving and not doParticleLevelSetThomas:
+	if doConserving and not doParticleLevelSet:
 		gui.nextParts()
 		
 	#gui.pause()
@@ -218,9 +221,10 @@ while (s.timeTotal < params["max_time"]):
 		vel_extrapolated.copyFrom(vel)
 		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
 
-		if not doParticleLevelSetThomas:
+		if not doParticleLevelSet:
 			simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=0, all=True) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
 			#advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
+			#reinitializeLevelset( phi=phi_fluid, flags=flags_n )
 
 			setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
