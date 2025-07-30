@@ -23,6 +23,13 @@ namespace Manta
         CATMULL_ROM
     };
 
+    enum TargetCellType
+    {
+        NOT_OBSTACLE,
+        FLUID_ISH,
+        FLUID_STRICT
+    };
+
     //! Semi-Lagrange interpolation kernel
     void
     fillWithOnes(GridBase *grid);

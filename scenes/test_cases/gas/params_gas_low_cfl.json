@@ -2,20 +2,20 @@
   "title": "test_test_test_2",
 
   "dimension": 2,
-  "resolutionX": 40,
-  "resolutionY": 60,
+  "resolutionX": 30,
+  "resolutionY": 30,
   "resolutionZ": 40,
 
-  "doOpen": true,
+  "doOpen": false,
   "doObstacle": false,
-  "doConserving": true,
+  "doConserving": false,
 
-  "exportData": true,
-  "exportImages": true,
-  "exportVideos": true,
+  "exportData": false,
+  "exportImages": false,
+  "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 100,
+  "max_time": 300,
   "maxCFL": 1, 
   "dt": 3
 }

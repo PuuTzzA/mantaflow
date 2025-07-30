@@ -31,7 +31,8 @@ class Data_collectior:
     def init(self):
         #if self.export_data or self.export_images:
         #    shutil.rmtree(self.base_dir, ignore_errors=True)
-        self.base_dir.mkdir(parents=True, exist_ok=True)
+        if self.export_data or self.export_images or self.export_videos or self.export_vdbs:
+            self.base_dir.mkdir(parents=True, exist_ok=True)
         
         self.data = {}
         self.data["title"] = self.title

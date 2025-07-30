@@ -3,19 +3,19 @@
 
   "dimension": 3,
   "resolutionX": 100,
-  "resolutionY": 150,
+  "resolutionY": 30,
   "resolutionZ": 100,
 
   "doOpen": true,
   "doObstacle": false,
   "doConserving": true,
 
-  "exportData": true,
+  "exportData": false,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 100,
-  "maxCFL": 1, 
-  "dt": 3
+  "max_time": 300,
+  "maxCFL": 20, 
+  "dt": 20
 }

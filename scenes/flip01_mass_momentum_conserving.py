@@ -1,21 +1,43 @@
 from manta import *
 from data_collection import *
 import json
+import sys
 
-cfl_level = "high"
 params = {}
-with open(f"../scenes/test_cases/liquid/params_{cfl_level}_cfl.json") as f:
+
+param_path = "../scenes/test_cases/simple_plume_tests/params_simple_plume_3d_test.json"
+param_path = "../scenes/test_cases/liquid/params_low_cfl.json"
+
+if len(sys.argv) > 1:
+    param_path = sys.argv[1]
+
+with open(param_path) as f:
 	params = json.load(f)
 
 LEVEL = 0
-doOpen = False
-doConserving = True
-doParticleLevelSetThomas = True
-exportImages = True
-exportData = True
+if True:
+	doOpen = False
+	doObstacle = False
+	doConserving = True
+	doParticleLevelSetThomas = False
+
+	exportData = False
+	exportImages = False
+	exportVideos = False
+	exportVDBs = False if GUI else True
+	exportVDBs = False
+else:
+	doOpen = params["doOpen"]
+	doObstacle = params["doObstacle"]
+	doConserving = params["doConserving"]
+	exportData = params["exportData"]
+	exportImages = params["exportImages"]
+	exportVideos = params["exportVideos"]
+	exportVDBs = params["exportVDBs"]
+
 layout = 0 # 0=dam break, 1=falling drop
 
-title=f"AAAAAAAA_{f"Conserving_{"PLS" if doParticleLevelSetThomas else "FLIP_Particles"}" if doConserving else "Traditional"}_{cfl_level}_CFL"
+title = "testestestste"
 
 # solver params
 dim = params["dimension"]
@@ -137,18 +159,24 @@ if (GUI):
 	if doConserving and doParticleLevelSetThomas:
 		gui.nextParts()
 		gui.nextParts()
+	
+	if doConserving and not doParticleLevelSetThomas:
+		gui.nextParts()
 		
 	#gui.pause()
 
 # Data collection and exportation
 data_collector = None
 if layout == 0:
-	data_collector = Data_collectior(base_dir="../analysis/experiments/Liquid", title=title, params=params, export_data=exportData, export_images=exportImages, 
-								 	trackable_grid_names=[["phi_fluid", phi_fluid], [], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], tracked_grids_indeces=[0, 3])
+	data_collector = Data_collectior(title=title ,base_dir=f"../exports/{title}/", params=params, export_data=exportData, 
+									export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
+									trackable_grid_names=[["phi_fluid", phi_fluid], [], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], tracked_grids_indeces=[0, 3])
 
 if layout == 1:
-	data_collector = Data_collectior(base_dir="../analysis/experiments/Liquid", title=title, params=params, export_data=exportData, export_images=exportImages, 
-								 	trackable_grid_names=[["phi_fluid", phi_fluid], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], tracked_grids_indeces=[0, 2, 4])
+	data_collector = Data_collectior(title=title ,base_dir=f"../exports/{title}/", params=params, export_data=exportData, 
+									export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
+									trackable_grid_names=[["phi_fluid", phi_fluid], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], tracked_grids_indeces=[0, 2, 4])
+
 data_collector.init()
 
 firstFrame = True
@@ -177,13 +205,12 @@ while (s.timeTotal < params["max_time"]):
 		# Standard advection for the test grid
 		vel_extrapolated.copyFrom(vel)
 		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=3, intoObs=True )
-		advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=innen1außen0, order=2 )
+		advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=innen1außen0, order=1 )
 		
 		addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
 		setWallBcs(flags=flags_n, vel=vel)
 		solvePressure(flags=flags_n, vel=vel, pressure=pressure)
 		setWallBcs(flags=flags_n, vel=vel)
-		extrapolateMACSimple( flags=flags_n, vel=vel )
 		extrapolateMACSimple( flags=flags_n, vel=vel )
 		flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 )
 
@@ -192,24 +219,10 @@ while (s.timeTotal < params["max_time"]):
 		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
 
 		if not doParticleLevelSetThomas:
-			pp.advectInGrid(flags=flags_n, vel=vel_extrapolated, integrationMode=IntRK4, deleteInObstacle=False, ptype=pT, exclude=FlagEmpty)
-			eulerStep(parts=pp, vel=pVel, ptype=pT, exclude=FlagFluid)
+			simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=0, all=True) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
+			#advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
 
-			pp.projectOutOfBnd(flags=flags_n, bnd=bWidth + 1, plane='xXyYzZ', ptype=pT)
-			if layout == 0:
-				pass
-				#pushOutofObs(parts=pp, flags=flags_n, phiObs=phiObs, thresh=0.5*0.5, ptype=pT)
-
-
-			markFluidCells(parts=pp, flags=flags_n_plus_one, ptype=pT)
-			setPartType(parts=pp, ptype=pT, mark=FlagFluid, stype=FlagEmpty, flags=flags_n_plus_one, cflag=FlagFluid)
-			markIsolatedFluidCell(flags=flags_n_plus_one, mark=FlagEmpty)
-			setPartType(parts=pp, ptype=pT, mark=FlagEmpty, stype=FlagFluid, flags=flags_n_plus_one, cflag=FlagEmpty)
-
-			gridParticleIndex(parts=pp, flags=flags_n_plus_one, indexSys=gIdxSys, index=gIdx)
-			unionParticleLevelset(parts=pp, indexSys=gIdxSys, flags=flags_n_plus_one, index=gIdx, phi=phi_fluid, radiusFactor=1.0)
-			extrapolateLsSimple(phi=phi_fluid, distance=5, inside=True)
-			extrapolateLsSimple(phi=phi_fluid, distance=5, inside=False)
+			setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
 		else:
 			advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
@@ -254,9 +267,9 @@ while (s.timeTotal < params["max_time"]):
 	if doOpen:
 		resetOutflow( flags=flags_n)
 		
-	calculateCurl(vel=vel, curl=curl)
+	calculateCurl(vel=vel, curl=curl, flags=flags_n)
 
-	data_collector.step(solver=s, flags=flags_n, vel=vel, gui=gui)
+	data_collector.step(solver=s, flags=flags_n, vel=vel, gui=gui, objects=[flags_n])
 	s.step()
 
 data_collector.finish()

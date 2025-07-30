@@ -16,21 +16,29 @@ namespace Manta
 {
 #define EPSILON 1e-6
 
+    /// @brief is not an obstacle and tagged as fluid
     inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
     {
+        Vec3i gs = flags.getParent()->getGridSize();
+        bool inBounds;
         switch (component)
         {
         case MAC_X:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+            inBounds = 1 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
         case MAC_Y:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+            inBounds = 0 <= i && i < gs.x && 1 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
         case MAC_Z:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+            inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 1 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
         default:
-            return (flags.isFluid(i, j, k)) && !flags.isObstacle(i, j, k);
+            inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && (flags.isFluid(i, j, k)) && !flags.isObstacle(i, j, k);
         }
     }
 
+    /// @brief is not an obstacle and some kind of fluid (fluid, outflow or inflow)
     inline bool isSampleableFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
     {
         Vec3i gs = flags.getParent()->getGridSize();
@@ -39,16 +47,38 @@ namespace Manta
         {
         case MAC_X:
             inBounds = 1 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
-            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i - 1, j, k) || flags.isInflow(i, j, k) || flags.isInflow(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
         case MAC_Y:
             inBounds = 0 <= i && i < gs.x && 1 <= j && j < gs.y && 0 <= k && k < gs.z;
-            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j - 1, k) || flags.isInflow(i, j, k) || flags.isInflow(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
         case MAC_Z:
             inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 1 <= k && k < gs.z;
-            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+            return inBounds && (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1) || flags.isOutflow(i, j, k) || flags.isOutflow(i, j, k - 1) || flags.isInflow(i, j, k) || flags.isInflow(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
         default:
             inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
-            return inBounds && (flags.isFluid(i, j, k) || flags.isOutflow(i, j, k)) && !flags.isObstacle(i, j, k);
+            return inBounds && (flags.isFluid(i, j, k) || flags.isOutflow(i, j, k) || flags.isInflow(i, j, k)) && !flags.isObstacle(i, j, k);
+        }
+    }
+
+    /// @brief is not an obstacle but all else does not matter
+    inline bool isNotObstacle(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
+    {
+        Vec3i gs = flags.getParent()->getGridSize();
+        bool inBounds;
+        switch (component)
+        {
+        case MAC_X:
+            inBounds = 1 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
+        case MAC_Y:
+            inBounds = 0 <= i && i < gs.x && 1 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
+        case MAC_Z:
+            inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 1 <= k && k < gs.z;
+            return inBounds && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
+        default:
+            inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && !flags.isObstacle(i, j, k);
         }
     }
 
@@ -115,26 +145,6 @@ namespace Manta
     bool isValid(Vec3 pos, const FlagGrid &flags, Vec3i &gs)
     {
         return isValid(std::floor(pos.x), std::floor(pos.y), std::floor(pos.z), flags, gs);
-    }
-
-    inline bool isFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
-    {
-        switch (component)
-        {
-        case MAC_X:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i - 1, j, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i - 1, j, k));
-        case MAC_Y:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j - 1, k)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j - 1, k));
-        case MAC_Z:
-            return (flags.isFluid(i, j, k) || flags.isFluid(i, j, k - 1)) && !(flags.isObstacle(i, j, k) || flags.isObstacle(i, j, k - 1));
-        default:
-            return flags.isFluid(i, j, k);
-        }
-    }
-
-    bool isValidWater(int i, int j, int k, const FlagGrid &flags, Vec3i &gs, MACGridComponent component)
-    {
-        return isFluid(i, j, k, flags, component) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1 && k >= 0 && k <= gs[2] - 1;
     }
 
     inline Vec3 RK4(Vec3 pos, Real dt, const MACGrid &vel)
@@ -208,11 +218,24 @@ namespace Manta
     }
 
     /// @brief normal trilinear (bilinear) interpolation
-    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
         result.clear();
-
         pos -= offset;
+
+        std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
+        switch (targetCellType)
+        {
+        case NOT_OBSTACLE:
+            isTargetCell = isNotObstacle;
+            break;
+        case FLUID_ISH:
+            isTargetCell = isSampleableFluid;
+            break;
+        case FLUID_STRICT:
+            isTargetCell = isValidFluid;
+            break;
+        }
 
         const int i = std::floor(pos[0]);
         const int j = std::floor(pos[1]);
@@ -228,37 +251,37 @@ namespace Manta
         w000 = w100 = w010 = w110 = 0.;
         w001 = w101 = w011 = w111 = 0.;
 
-        if (isSampleableFluid(i, j, k, flags, component))
+        if (isTargetCell(i, j, k, flags, component))
         {
             w000 = (1 - fx) * (1 - fy) * (1 - fz);
         }
-        if (isSampleableFluid(i + 1, j, k, flags, component))
+        if (isTargetCell(i + 1, j, k, flags, component))
         {
             w100 = fx * (1 - fy) * (1 - fz);
         }
-        if (isSampleableFluid(i, j + 1, k, flags, component))
+        if (isTargetCell(i, j + 1, k, flags, component))
         {
             w010 = (1 - fx) * fy * (1 - fz);
         }
-        if (isSampleableFluid(i + 1, j + 1, k, flags, component))
+        if (isTargetCell(i + 1, j + 1, k, flags, component))
         {
             w110 = fx * fy * (1 - fz);
         }
         if (flags.is3D())
         {
-            if (isSampleableFluid(i, j, k + 1, flags, component))
+            if (isTargetCell(i, j, k + 1, flags, component))
             {
                 w001 = (1 - fx) * (1 - fy) * fz;
             }
-            if (isSampleableFluid(i + 1, j, k + 1, flags, component))
+            if (isTargetCell(i + 1, j, k + 1, flags, component))
             {
                 w101 = fx * (1 - fy) * fz;
             }
-            if (isSampleableFluid(i, j + 1, k + 1, flags, component))
+            if (isTargetCell(i, j + 1, k + 1, flags, component))
             {
                 w011 = (1 - fx) * fy * fz;
             }
-            if (isSampleableFluid(i + 1, j + 1, k + 1, flags, component))
+            if (isTargetCell(i + 1, j + 1, k + 1, flags, component))
             {
                 w111 = fx * fy * fz;
             }
@@ -332,10 +355,24 @@ namespace Manta
     }
 
     /// @brief better interpolation to reduce numerical diffusion alla Catmull-Rom
-    bool getInterpolationStencilWithWeighCatmullRom(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    bool getInterpolationStencilWithWeighCatmullRom(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
         result.clear();
         pos -= offset;
+
+        std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
+        switch (targetCellType)
+        {
+        case NOT_OBSTACLE:
+            isTargetCell = isNotObstacle;
+            break;
+        case FLUID_ISH:
+            isTargetCell = isSampleableFluid;
+            break;
+        case FLUID_STRICT:
+            isTargetCell = isValidFluid;
+            break;
+        }
 
         const int i = std::floor(pos[0]);
         const int j = std::floor(pos[1]);
@@ -363,7 +400,7 @@ namespace Manta
 
                     Real w = wx * wy * wz;
 
-                    if (std::abs(w) > EPSILON && isSampleableFluid(xi, yj, zk, flags, component))
+                    if (std::abs(w) > EPSILON && (isTargetCell(xi, yj, zk, flags, component)))
                     {
                         result.push_back({Vec3i{xi, yj, zk}, w});
                         totalWeight += w;
@@ -386,25 +423,26 @@ namespace Manta
 
     std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
     {
+        std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
+        switch (interpolationType)
+        {
+        case TRILIENAR:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeights;
+            break;
+        case CATMULL_ROM:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeighCatmullRom;
+            break;
+        }
+
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, -dt, vel);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        if (interpolationType == TRILIENAR)
+        if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_STRICT))
         {
-            if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
-            {
-                return resultVec;
-            }
-        }
-        else if (interpolationType == CATMULL_ROM)
-        {
-            if (getInterpolationStencilWithWeighCatmullRom(resultVec, newPos, flags, offset, component))
-            {
-                return resultVec;
-            }
+            return resultVec;
         }
 
         // Special trace back for MAC grid componets
@@ -435,13 +473,13 @@ namespace Manta
             if (isValidFluid(std::floor(start1.x), std::floor(start1.y), std::floor(start1.z), flags, NONE))
             {
                 newPos = rungeKutta4(start1, -dt, vel);
-                getInterpolationStencilWithWeights(resultVec1, newPos + neighbourOffset, flags, offset, component);
+                getCorrectInterpolationStencilWithWeights(resultVec1, newPos + neighbourOffset, flags, offset, component, FLUID_STRICT);
             }
 
             if (isValidFluid(std::floor(start2.x), std::floor(start2.y), std::floor(start2.z), flags, NONE))
             {
                 newPos = rungeKutta4(start2, -dt, vel);
-                getInterpolationStencilWithWeights(resultVec2, newPos - neighbourOffset, flags, offset, component);
+                getCorrectInterpolationStencilWithWeights(resultVec2, newPos - neighbourOffset, flags, offset, component, FLUID_STRICT);
             }
 
             resultVec.clear();
@@ -475,27 +513,13 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            if (interpolationType == TRILIENAR)
+            if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_STRICT))
             {
-                if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component))
-                {
-                    resultVec = testResultVec;
-                }
-                else
-                {
-                    return resultVec;
-                }
+                resultVec = testResultVec;
             }
-            else if (interpolationType == CATMULL_ROM)
+            else
             {
-                if (getInterpolationStencilWithWeighCatmullRom(testResultVec, current, flags, offset, component))
-                {
-                    resultVec = testResultVec;
-                }
-                else
-                {
-                    return resultVec;
-                }
+                return resultVec;
             }
         }
         return {};
@@ -509,7 +533,7 @@ namespace Manta
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component))
+        if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
         {
             return resultVec;
         }
@@ -533,7 +557,7 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component))
+            if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
             {
                 resultVec = testResultVec;
             }
@@ -565,7 +589,7 @@ namespace Manta
             closestSurfacePoint -= grad * phiVal;
         }
         std::vector<std::tuple<Vec3i, Real>> surfaceNeighboursAndWeights;
-        getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags, offset, component);
+        getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags, offset, component, FLUID_ISH);
 
         return surfaceNeighboursAndWeights;
     }
@@ -574,7 +598,7 @@ namespace Manta
     template <class T>
     void knAdvectTraditional(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
     {
-        if (isValidFluid(i, j, k, flags, component))
+        if (isSampleableFluid(i, j, k, flags, component))
         {
             newGrid(i, j, k) = 0;
             auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component, doFluid, interpolationType);
@@ -593,7 +617,7 @@ namespace Manta
     KERNEL()
     void knDiffuseGamma(Grid<Real> &gamma, Grid<Real> &grid, const FlagGrid &flags, Vec3i &d, Grid<Real> &deltaGrid, Grid<Real> &deltaGamma, Grid<Real> &deltaGridNeighbour, Grid<Real> &deltaGammaNeighbour, MACGridComponent component)
     {
-        if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags, component))
+        if (!isSampleableFluid(i, j, k, flags, component) || !isSampleableFluid(i + d.x, j + d.y, k + d.z, flags, component))
         {
             return;
         }
@@ -651,7 +675,7 @@ namespace Manta
         // Step 1: Backwards step
         FOR_IJK_BND(grid, bnd)
         {
-            if (!isValidFluid(i, j, k, flags_n_plus_one, component))
+            if (!isSampleableFluid(i, j, k, flags_n_plus_one, component))
             {
                 continue;
             }
@@ -682,7 +706,7 @@ namespace Manta
         // Step 2: Forwards Step
         FOR_IJK_BND(grid, bnd)
         {
-            if (!isValidFluid(i, j, k, flags_n, component))
+            if (!isSampleableFluid(i, j, k, flags_n, component))
             {
                 continue;
             }
@@ -695,7 +719,7 @@ namespace Manta
 
                 if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
                 {
-                    std::cout << "ASLDkfj" << std::endl;
+                    // std::cout << "ASLDkfj" << std::endl;
                     auto surfaceNeighboursAndWeights = getClosestSurfacePoint(Vec3(i, j, k), *phi, offset, flags_n_plus_one, component);
                     if (surfaceNeighboursAndWeights.empty()) // Now really just dump it into the same cell
                     {
@@ -723,7 +747,7 @@ namespace Manta
         weights.calculateGamma(gamma);
         FOR_IJK_BND(grid, bnd)
         {
-            if (!isValidFluid(i, j, k, flags_n_plus_one, component))
+            if (!isSampleableFluid(i, j, k, flags_n_plus_one, component))
             {
                 continue;
             }
@@ -741,7 +765,7 @@ namespace Manta
         weights.calculateBeta(beta);
         FOR_IJK_BND(grid, bnd)
         {
-            if (!isValidFluid(i, j, k, flags_n, component))
+            if (!isSampleableFluid(i, j, k, flags_n, component))
             {
                 continue;
             }
@@ -887,7 +911,38 @@ namespace Manta
         knAdvectParticlesForward(*particles, *vel, vel->getParent()->getDt(), *flags, vel->getParent()->getGridSize());
     }
 
-    void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType)
+    KERNEL()
+    template <class T>
+    void knSimpleSLAdvectAll(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
+    {
+        Vec3 pos = Vec3(i, j, k) + offset;
+        if (flags.isObstacle(pos))
+        {
+            return;
+        }
+
+        pos = RK4(pos, -dt, vel);
+
+        std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
+
+        switch (interpolationType)
+        {
+        case TRILIENAR:
+            getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
+            break;
+        case CATMULL_ROM:
+            getInterpolationStencilWithWeighCatmullRom(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
+            break;
+        }
+
+        newGrid(i, j, k) = 0;
+        for (const auto &[n, w] : neighboursAndWeights)
+        {
+            newGrid(i, j, k) += w * oldGrid(n);
+        }
+    }
+
+    void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType, bool all)
     {
         Grid<Real> gridX(parent);
         Grid<Real> gridY(parent);
@@ -907,15 +962,24 @@ namespace Manta
         Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
         Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
 
-        knAdvectTraditional<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
-        knAdvectTraditional<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
-        knAdvectTraditional<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
+        if (all)
+        {
+            knSimpleSLAdvectAll<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
+            knSimpleSLAdvectAll<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
+            knSimpleSLAdvectAll<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
+        }
+        else
+        {
+            knAdvectTraditional<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
+            knAdvectTraditional<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
+            knAdvectTraditional<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
+        }
 
         knGrids2MAC(grid, newGridX, newGridY, newGridZ, flags);
     }
 
     PYTHON()
-    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType)
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();
@@ -924,12 +988,19 @@ namespace Manta
         {
             Grid<Real> newGrid(parent);
             Vec3 offset = Vec3(0.5, 0.5, 0.5);
-            knAdvectTraditional<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
+            if (all)
+            {
+                knSimpleSLAdvectAll<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
+            }
+            else
+            {
+                knAdvectTraditional<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
+            }
             ((Grid<Real> *)grid)->swap(newGrid);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnSimpleSLAdcetMAC(*flags, *vel, *((MACGrid *)grid), parent, dt, (InterpolationType)interpolationType);
+            fnSimpleSLAdcetMAC(*flags, *vel, *((MACGrid *)grid), parent, dt, (InterpolationType)interpolationType, all);
         }
         else
             errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");
