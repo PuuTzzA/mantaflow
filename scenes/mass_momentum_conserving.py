@@ -113,7 +113,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while (s.timeTotal < params["max_time"]):
+while (s.timeTotal < params["max_time"] and data_collector.current_frame < 230):
 	
 	maxvel = vel.getMax()
 

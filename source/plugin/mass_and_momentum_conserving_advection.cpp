@@ -916,7 +916,7 @@ namespace Manta
     void knSimpleSLAdvectAll(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
     {
         Vec3 pos = Vec3(i, j, k) + offset;
-        if (flags.isObstacle(pos))
+        if (!isNotObstacle(i, j, k, flags, component))
         {
             return;
         }

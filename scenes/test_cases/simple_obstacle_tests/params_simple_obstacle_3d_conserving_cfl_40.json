@@ -2,9 +2,9 @@
   "title": "simple_obstacle_3d_conserving_cfl_40",
 
   "dimension": 3,
-  "resolutionX": 100,
-  "resolutionY": 150,
-  "resolutionZ": 100,
+  "resolutionX": 128,
+  "resolutionY": 256,
+  "resolutionZ": 128,
 
   "doOpen": true,
   "doObstacle": true,
