@@ -617,7 +617,7 @@ namespace Manta
     KERNEL()
     void knDiffuseGamma(Grid<Real> &gamma, Grid<Real> &grid, const FlagGrid &flags, Vec3i &d, Grid<Real> &deltaGrid, Grid<Real> &deltaGamma, Grid<Real> &deltaGridNeighbour, Grid<Real> &deltaGammaNeighbour, MACGridComponent component)
     {
-        if (!isSampleableFluid(i, j, k, flags, component) || !isSampleableFluid(i + d.x, j + d.y, k + d.z, flags, component))
+        if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags, component))
         {
             return;
         }
@@ -650,6 +650,15 @@ namespace Manta
 
         deltaGridNeighbour(idx_moved) -= phiToMove;
         deltaGrid(i, j, k) += phiToMove;
+    }
+
+    KERNEL()
+    void setOutflowToZero(Grid<Real> &grid, const FlagGrid &flags, MACGridComponent c)
+    {
+        if (isSampleableFluid(i, j, k, flags, c) && !isValidFluid(i, j, k, flags, c))
+        {
+            grid(i, j, k) = 0.;
+        }
     }
 
     template <class GridType>
@@ -700,7 +709,7 @@ namespace Manta
         // Step 2: Forwards Step
         FOR_IJK_BND(grid, bnd)
         {
-            if (!isSampleableFluid(i, j, k, flags_n, component))
+            if (!isValidFluid(i, j, k, flags_n, component))
             {
                 continue;
             }
@@ -742,7 +751,7 @@ namespace Manta
         gammaCumulative.swap(newGammaCum);
         FOR_IJK_BND(grid, bnd)
         {
-            if (!isSampleableFluid(i, j, k, flags_n_plus_one, component))
+            if (!isValidFluid(i, j, k, flags_n_plus_one, component))
             {
                 continue;
             }
@@ -804,6 +813,7 @@ namespace Manta
             }
         }
 
+        setOutflowToZero(grid, flags_n_plus_one, component);
         grid.swap(newGrid);
     }
 

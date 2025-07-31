@@ -103,7 +103,7 @@ gui = None
 if (GUI) and not exportVDBs:
 	gui = Gui()
 	gui.show( True ) 
-	#gui.pause()
+	gui.pause()
 
 data_collector = Data_collectior(title=title ,base_dir=f"../exports/simple_plume_3d/{title}/", params=params, export_data=exportData, 
 								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
@@ -113,7 +113,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while (s.timeTotal < params["max_time"] and data_collector.current_frame < 100):
+while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000):
 	
 	#maxvel = vel.getMax()
 	maxvel = compMaxInFluid(flags, vel)
