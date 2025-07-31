@@ -659,16 +659,11 @@ namespace Manta
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
 
-        // Step 0: Advect Gamma with the same tratitional sceme
-        Grid<Real> newGammaCum(parent);
-        knAdvectTraditional(flags_n_plus_one, vel, gammaCumulative, newGammaCum, offset, dt, component, phi, TRILIENAR);
-        gammaCumulative.swap(newGammaCum);
-
         MassMomentumWeights weights(gridSize);
 
         Grid<Real> beta(parent);
-        Grid<Real> gamma(parent);
         Grid<Real> newGrid(parent);
+        Grid<Real> newGammaCum(parent);
 
         int bnd = 0;
         // Step 1: Backwards step
@@ -743,26 +738,24 @@ namespace Manta
         }
 
         // Step 3: clamp gamma
-        weights.calculateGamma(gamma);
+        weights.calculateIntermediateResult(newGammaCum, gammaCumulative);
+        gammaCumulative.swap(newGammaCum);
         FOR_IJK_BND(grid, bnd)
         {
             if (!isSampleableFluid(i, j, k, flags_n_plus_one, component))
             {
                 continue;
             }
-            if (gamma(i, j, k) < EPSILON)
+            if (gammaCumulative(i, j, k) < EPSILON)
             {
                 continue; // avoid division by 0
             }
-            Real factor = gammaCumulative(i, j, k) / gamma(i, j, k);
-            /* factor = 1 / gammaCumulative(i, j, k);
+            Real factor = 1 / gammaCumulative(i, j, k);
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
                 factor = 1;
             }
-            */
-            factor = Manta::clamp(factor, static_cast<Real>(0.1), static_cast<Real>(10.));
 
             weights.scaleAllReverseWeightsAt(Vec3i(i, j, k), factor);
         }
@@ -788,7 +781,7 @@ namespace Manta
         weights.calculateIntermediateResult(newGrid, grid);
 
         // Step 6: Diffuse Gamma with per-axis sweeps
-        weights.calculateGamma(gamma);
+        weights.calculateGamma(gammaCumulative);
         for (int _ = 0; _ < 10; _++)
         {
             std::array<Vec3i, 3> dirs{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
@@ -801,10 +794,10 @@ namespace Manta
                 Grid<Real> deltaGridNeighbour(parent);
                 Grid<Real> deltaGammaNeighbour(parent);
 
-                knDiffuseGamma(gamma, newGrid, flags_n_plus_one, d, deltaGrid, deltaGamma, deltaGridNeighbour, deltaGammaNeighbour, component);
+                knDiffuseGamma(gammaCumulative, newGrid, flags_n_plus_one, d, deltaGrid, deltaGamma, deltaGridNeighbour, deltaGammaNeighbour, component);
 
-                gamma.add(deltaGamma);
-                gamma.add(deltaGammaNeighbour);
+                gammaCumulative.add(deltaGamma);
+                gammaCumulative.add(deltaGammaNeighbour);
 
                 newGrid.add(deltaGrid);
                 newGrid.add(deltaGridNeighbour);
@@ -812,7 +805,6 @@ namespace Manta
         }
 
         grid.swap(newGrid);
-        gammaCumulative.swap(gamma);
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
