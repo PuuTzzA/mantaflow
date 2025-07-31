@@ -17,7 +17,7 @@ namespace Manta
 #define EPSILON 1e-6
 
     /// @brief is not an obstacle and tagged as fluid
-    inline bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
+    bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
     {
         Vec3i gs = flags.getParent()->getGridSize();
         bool inBounds;

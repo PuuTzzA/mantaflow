@@ -113,9 +113,10 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while (s.timeTotal < params["max_time"] and data_collector.current_frame < 200):
+while (s.timeTotal < params["max_time"] and data_collector.current_frame < 100):
 	
-	maxvel = vel.getMax()
+	#maxvel = vel.getMax()
+	maxvel = compMaxInFluid(flags, vel)
 
 	if firstFrame:
 		maxvel = 15     

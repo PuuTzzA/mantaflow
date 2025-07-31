@@ -36,6 +36,8 @@ namespace Manta
 
     void fillFluidWithOnes(GridBase *grid, const FlagGrid *flags);
 
+    bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component);
+
     bool isValid(int i, int j, int k, const FlagGrid &flags, Vec3i &gs);
 
     inline Vec3 RK4(Vec3 pos, Real dt, const MACGrid &vel);

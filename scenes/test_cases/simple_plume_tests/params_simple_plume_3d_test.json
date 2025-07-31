@@ -6,8 +6,8 @@
   "resolutionY": 100,
   "resolutionZ": 20,
 
-  "doOpen": false,
-  "doObstacle": false,
+  "doOpen": true,
+  "doObstacle": true,
   "doConserving": true,
 
   "exportData": false,
@@ -16,6 +16,6 @@
   "exportVDBs": false,
 
   "max_time": 300,
-  "maxCFL": 20, 
+  "maxCFL": 40, 
   "dt": 20
 }

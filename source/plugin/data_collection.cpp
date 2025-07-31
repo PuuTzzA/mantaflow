@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iomanip>
 
+using namespace std;
 namespace Manta
 {
     PYTHON()
@@ -151,5 +152,23 @@ namespace Manta
              << '}';
 
         return json.str(); // ready to log, save, or send
+    }
+
+    //! Kernel: Compute max norm of vec grid
+    KERNEL(ijk, reduce = max)
+    returns(Real maxVal = -std::numeric_limits<Real>::max())
+        Real knCompMaxInFluid(const FlagGrid &flags, const MACGrid &vel)
+    {
+        if (isValidFluid(i, j, k, flags, NONE))
+        {
+            const Real s = normSquare(vel.getCentered(i, j, k));
+            maxVal = std::max(maxVal, s);
+        }
+    }
+
+    PYTHON()
+    Real compMaxInFluid(const FlagGrid &flags, const MACGrid &vel)
+    {
+        return std::sqrt(knCompMaxInFluid(flags, vel));
     }
 }
