@@ -115,8 +115,8 @@ firstFrame = True
 #main loop
 while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000):
 	
-	#maxvel = vel.getMax()
-	maxvel = compMaxInFluid(flags, vel)
+	maxvel = vel.getMax()
+	#maxvel = compMaxInFluid(flags, vel)
 
 	if firstFrame:
 		maxvel = 15     
@@ -136,18 +136,21 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 	#dissolveSmoke(flags=flags, density=density, speed=4)
 
 	if not doConserving:
-		advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect 
-		advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
-		advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
+		#advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect 
+		#advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
+		#advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 
-		#simpleSLAdvect(flags=flags, vel=vel, grid=density,           interpolationType=0) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
-		#simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,      interpolationType=0) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
-		#simpleSLAdvect(flags=flags, vel=vel, grid=vel,               interpolationType=0) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
+		simpleSLAdvect(flags=flags, vel=vel, grid=density,           interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
+		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
+		simpleSLAdvect(flags=flags, vel=vel, grid=vel,               interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
 
 	else:
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma)
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma)
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma)
+		type = 1
+		#simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
+
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=type) # 0 = Trilinear, 1 = Catmull Rom
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=type) # 0 = Trilinear, 1 = Catmull Rom
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=type) # 0 = Trilinear, 1 = Catmull Rom
 
 	if doOpen:
 		resetOutflow(flags=flags,real=density) 
@@ -161,7 +164,7 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 
 	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[density])
 
-	timings.display()    
+	#timings.display()    
 	s.step()
 
 data_collector.finish()

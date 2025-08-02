@@ -127,15 +127,28 @@ namespace Manta
         gamma.swap(newGamma);
     }
 
-    void MassMomentumWeights::calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src)
+    void MassMomentumWeights::calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src, Grid<Real> &min, Grid<Real> &max)
     {
         FOR_IJK(dest)
         {
             Vec3i cellI = Vec3i(i, j, k);
+
+            if (weights[index(cellI)].empty())
+            {
+                continue;
+            }
+
             for (const auto &[cellJ, w] : weights[index(cellI)])
             {
                 dest(cellJ) += src(cellI) * w;
+                min(cellJ) = std::min(min(cellJ), src(cellI));
+                max(cellJ) = std::max(max(cellJ), src(cellI));
             }
         }
+    }
+
+    void MassMomentumWeights::distributeAmongWeights(Vec3i cellJ, Real value)
+    {
+        
     }
 }

@@ -30,20 +30,11 @@ namespace Manta
         FLUID_STRICT
     };
 
-    //! Semi-Lagrange interpolation kernel
-    void
-    fillWithOnes(GridBase *grid);
+    void fillWithOnes(GridBase *grid);
 
     void fillFluidWithOnes(GridBase *grid, const FlagGrid *flags);
 
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component);
-
-    bool isValid(int i, int j, int k, const FlagGrid &flags, Vec3i &gs);
-
-    inline Vec3 RK4(Vec3 pos, Real dt, const MACGrid &vel);
-
-    template <class GridType>
-    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi = nullptr, MACGridComponent component = NONE);
 
     KERNEL()
     void knMAC2Grids(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
@@ -60,16 +51,5 @@ namespace Manta
         vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
     }
 
-    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water);
-
-    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative);
-
-    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative);
-
-    std::string calculateMass(const Grid<Real> *grid);
-
     void advectParticlesForward(BasicParticleSystem *particles, const MACGrid *vel, const FlagGrid *flags);
-
-    void simpleSLAdvection(const FlagGrid *flags, const MACGrid *vel, Grid<Real> *grid);
-
 }

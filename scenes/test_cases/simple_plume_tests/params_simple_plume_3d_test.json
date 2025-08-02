@@ -2,11 +2,11 @@
   "title": "simple_plume_3d_conserving_test",
 
   "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
+  "resolutionX": 50,
+  "resolutionY": 50,
   "resolutionZ": 20,
 
-  "doOpen": true,
+  "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
 

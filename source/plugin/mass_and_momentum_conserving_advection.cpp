@@ -326,7 +326,7 @@ namespace Manta
         {
             result.push_back({Vec3i{i + 1, j + 1, k}, w110});
         }
-        if (flags.getParent()->getGridSize().z > 1)
+        if (flags.is3D())
         {
             if (w001 > EPSILON)
                 result.push_back({Vec3i{i, j, k + 1}, w001});
@@ -525,15 +525,26 @@ namespace Manta
         return {};
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component)
+    std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType)
     {
+        std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
+        switch (interpolationType)
+        {
+        case TRILIENAR:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeights;
+            break;
+        case CATMULL_ROM:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeighCatmullRom;
+            break;
+        }
+
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, dt, vel);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        if (getInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
+        if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
         {
             return resultVec;
         }
@@ -557,7 +568,7 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            if (getInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
+            if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
             {
                 resultVec = testResultVec;
             }
@@ -592,26 +603,6 @@ namespace Manta
         getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags, offset, component, FLUID_ISH);
 
         return surfaceNeighboursAndWeights;
-    }
-
-    KERNEL()
-    template <class T>
-    void knAdvectTraditional(const FlagGrid &flags, const MACGrid &vel, const Grid<T> &oldGrid, Grid<T> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
-    {
-        if (isSampleableFluid(i, j, k, flags, component))
-        {
-            newGrid(i, j, k) = 0;
-            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component, doFluid, interpolationType);
-
-            for (const auto &[n, w] : neighboursAndWeights)
-            {
-                newGrid(i, j, k) += w * oldGrid(n);
-            }
-        }
-        else
-        {
-            // newGrid(i, j, k) = 1.;
-        }
     }
 
     KERNEL()
@@ -653,6 +644,36 @@ namespace Manta
     }
 
     KERNEL()
+    void knInitializeMinMax(Grid<Real> &min, Grid<Real> &max)
+    {
+        min(i, j, k) = std::numeric_limits<Real>::max();
+        max(i, j, k) = -std::numeric_limits<Real>::max();
+    }
+
+    KERNEL()
+    void knClampToMinMax(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max)
+    {
+        val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
+        if (min(i, j, k) == std::numeric_limits<Real>::max())
+        {
+            val(i, j, k) = 0;
+        }
+    }
+
+    Real clampToMinMax(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff, IndexInt i, IndexInt j, IndexInt k)
+    {
+        Real start = val(i, j, k);
+        val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
+        if (min(i, j, k) == std::numeric_limits<Real>::max())
+        {
+            val(i, j, k) = 0;
+        }
+        diff(i, j, k) = val(i, j, k) - start;
+        return val(i, j, k) - start;
+        // val(i, j, k) = Manta::clamp(val(i, j, k), 0.f, 1.f);
+    }
+
+    KERNEL()
     void setOutflowToZero(Grid<Real> &grid, const FlagGrid &flags, MACGridComponent c)
     {
         if (isSampleableFluid(i, j, k, flags, c) && !isValidFluid(i, j, k, flags, c))
@@ -662,7 +683,7 @@ namespace Manta
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component)
+    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType)
     {
         typedef typename GridType::BASETYPE T;
         Real dt = parent->getDt();
@@ -671,8 +692,16 @@ namespace Manta
         MassMomentumWeights weights(gridSize);
 
         Grid<Real> beta(parent);
-        Grid<Real> newGrid(parent);
-        Grid<Real> newGammaCum(parent);
+        Grid<Real> tempGrid(parent);
+
+        Grid<Real> min(parent);
+        Grid<Real> max(parent);
+
+        Grid<Real> minGamma(parent);
+        Grid<Real> maxGamma(parent);
+
+        knInitializeMinMax(min, max);
+        knInitializeMinMax(minGamma, maxGamma);
 
         int bnd = 0;
         // Step 1: Backwards step
@@ -683,7 +712,7 @@ namespace Manta
                 continue;
             }
 
-            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, TRILIENAR);
+            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType);
 
             if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
             {
@@ -718,7 +747,7 @@ namespace Manta
             {
                 Real amountToDistribute = 1 - beta(i, j, k);
 
-                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component);
+                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType);
 
                 if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
                 {
@@ -747,15 +776,19 @@ namespace Manta
         }
 
         // Step 3: clamp gamma
-        weights.calculateIntermediateResult(newGammaCum, gammaCumulative);
-        gammaCumulative.swap(newGammaCum);
+        weights.calculateIntermediateResult(tempGrid, gammaCumulative, minGamma, maxGamma);
+        if (interpolationType != TRILIENAR)
+        {
+            knClampToMinMax(tempGrid, minGamma, maxGamma);
+        }
+        gammaCumulative.swap(tempGrid);
         FOR_IJK_BND(grid, bnd)
         {
             if (!isValidFluid(i, j, k, flags_n_plus_one, component))
             {
                 continue;
             }
-            if (gammaCumulative(i, j, k) < EPSILON)
+            if (std::abs(gammaCumulative(i, j, k)) < EPSILON)
             {
                 continue; // avoid division by 0
             }
@@ -777,7 +810,7 @@ namespace Manta
             {
                 continue;
             }
-            if (beta(i, j, k) < EPSILON)
+            if (std::abs(beta(i, j, k)) < EPSILON)
             {
                 continue;
             }
@@ -787,7 +820,9 @@ namespace Manta
         }
 
         // Step 5: intermediate Result
-        weights.calculateIntermediateResult(newGrid, grid);
+        tempGrid.clear();
+        weights.calculateIntermediateResult(tempGrid, grid, min, max);
+        grid.swap(tempGrid);
 
         // Step 6: Diffuse Gamma with per-axis sweeps
         weights.calculateGamma(gammaCumulative);
@@ -803,18 +838,59 @@ namespace Manta
                 Grid<Real> deltaGridNeighbour(parent);
                 Grid<Real> deltaGammaNeighbour(parent);
 
-                knDiffuseGamma(gammaCumulative, newGrid, flags_n_plus_one, d, deltaGrid, deltaGamma, deltaGridNeighbour, deltaGammaNeighbour, component);
+                knDiffuseGamma(gammaCumulative, grid, flags_n_plus_one, d, deltaGrid, deltaGamma, deltaGridNeighbour, deltaGammaNeighbour, component);
 
                 gammaCumulative.add(deltaGamma);
                 gammaCumulative.add(deltaGammaNeighbour);
 
-                newGrid.add(deltaGrid);
-                newGrid.add(deltaGridNeighbour);
+                grid.add(deltaGrid);
+                grid.add(deltaGridNeighbour);
             }
         }
 
-        setOutflowToZero(grid, flags_n_plus_one, component);
-        grid.swap(newGrid);
+        static Real sum = 0;
+        static Real sumDistributed = 0;
+        if (interpolationType != TRILIENAR)
+        {
+            Real sum_loc = 0;
+            tempGrid.clear();
+            FOR_IJK(grid)
+            {
+                sum_loc += clampToMinMax(grid, min, max, tempGrid, i, j, k);
+            }
+            if (component == NONE)
+            {
+                sum += sum_loc;
+
+                FOR_IJK(grid)
+                {
+                    Vec3 pos = Vec3(i, j, k) + offset;
+                    pos = RK4(pos, -dt, vel);
+
+                    std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
+                    getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags_n_plus_one, offset, component, FLUID_ISH);
+
+                    for (const auto &[n, w] : neighboursAndWeights)
+                    {
+                        grid(n) -= w * tempGrid(i, j, k);
+                        sumDistributed -= w * tempGrid(i, j, k);
+                    }
+                }
+
+                std::cout << "TOTAL CLAMPED STUFF: " << sum << std::endl;
+                std::cout << "TOTAL ANTI-CLAMPED STUFF: " << sumDistributed << std::endl;
+            }
+        }
+
+        FOR_IJK(grid)
+        {
+            if (grid(i, j, k) >= 0 && tempGrid(i, j, k) < 0 && component == NONE)
+            {
+                std::cout << "ASDLFKJASLDFKJASLDFKJ" << grid(i, j, k) << ", new: " << tempGrid(i, j, k) << ", at: (" << i << ", " << j << std::endl;
+            }
+        }
+
+        // setOutflowToZero(grid, flags_n_plus_one, component);
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
@@ -823,7 +899,7 @@ namespace Manta
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
 
-    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> *phi)
+    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> *phi, InterpolationType interpolationType)
     {
         Grid<Real> velX(parent);
         Grid<Real> velY(parent);
@@ -846,15 +922,15 @@ namespace Manta
 
         if (!water)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType);
         }
         else
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType);
         }
 
         knGrids2MAC(grid, velX, velY, velZ, flags);
@@ -862,15 +938,15 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative)
+    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = TRILIENAR)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags->getParent(), *flags, *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5));
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags->getParent(), *flags, *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), nullptr, NONE, (InterpolationType)interpolationType);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false, nullptr);
+            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false, nullptr, (InterpolationType)interpolationType);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
@@ -881,15 +957,15 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi)
+    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi, int interpolationType = TRILIENAR)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE, (InterpolationType)interpolationType);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi);
+            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi, (InterpolationType)interpolationType);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
@@ -920,33 +996,54 @@ namespace Manta
     }
 
     KERNEL()
-    void knSimpleSLAdvectAll(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
+    void knSimpleSLAdvect(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType, bool all)
     {
-        Vec3 pos = Vec3(i, j, k) + offset;
-        if (!isNotObstacle(i, j, k, flags, component))
+        std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
+        if (all)
+        {
+            if (!isNotObstacle(i, j, k, flags, component))
+            {
+                return;
+            }
+
+            Vec3 pos = Vec3(i, j, k) + offset;
+            pos = RK4(pos, -dt, vel);
+
+            switch (interpolationType)
+            {
+            case TRILIENAR:
+                getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
+                break;
+            case CATMULL_ROM:
+                getInterpolationStencilWithWeighCatmullRom(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
+                break;
+            }
+        }
+        else
+        {
+            if (isSampleableFluid(i, j, k, flags, component))
+            {
+                neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component, doFluid, interpolationType);
+            }
+        }
+        newGrid(i, j, k) = 0;
+
+        if (neighboursAndWeights.empty())
         {
             return;
         }
 
-        pos = RK4(pos, -dt, vel);
+        Real max = -std::numeric_limits<Real>::max();
+        Real min = std::numeric_limits<Real>::max();
 
-        std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
-
-        switch (interpolationType)
-        {
-        case TRILIENAR:
-            getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
-            break;
-        case CATMULL_ROM:
-            getInterpolationStencilWithWeighCatmullRom(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
-            break;
-        }
-
-        newGrid(i, j, k) = 0;
         for (const auto &[n, w] : neighboursAndWeights)
         {
             newGrid(i, j, k) += w * oldGrid(n);
+            max = std::max(max, oldGrid(n));
+            min = std::min(min, oldGrid(n));
         }
+
+        newGrid(i, j, k) = Manta::clamp(newGrid(i, j, k), min, max);
     }
 
     void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType, bool all)
@@ -969,18 +1066,9 @@ namespace Manta
         Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
         Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
 
-        if (all)
-        {
-            knSimpleSLAdvectAll(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
-            knSimpleSLAdvectAll(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
-            knSimpleSLAdvectAll(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
-        }
-        else
-        {
-            knAdvectTraditional<Real>(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType);
-            knAdvectTraditional<Real>(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType);
-            knAdvectTraditional<Real>(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType);
-        }
+        knSimpleSLAdvect(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType, all);
+        knSimpleSLAdvect(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType, all);
+        knSimpleSLAdvect(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType, all);
 
         knGrids2MAC(grid, newGridX, newGridY, newGridZ, flags);
     }
@@ -995,14 +1083,7 @@ namespace Manta
         {
             Grid<Real> newGrid(parent);
             Vec3 offset = Vec3(0.5, 0.5, 0.5);
-            if (all)
-            {
-                knSimpleSLAdvectAll(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
-            }
-            else
-            {
-                knAdvectTraditional<Real>(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType);
-            }
+            knSimpleSLAdvect(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType, all);
             ((Grid<Real> *)grid)->swap(newGrid);
         }
         else if (grid->getType() & GridBase::TypeMAC)

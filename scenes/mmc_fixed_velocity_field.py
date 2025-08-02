@@ -22,7 +22,7 @@ scenario = "shear_flow"
 
 # scene params
 doConserving = True
-exportData = True
+exportData = False
 exportImages = False
 exportVideos = False
 title = scenario + "_" + ("Conserving" if doConserving else "Traditional")
@@ -112,11 +112,11 @@ while (s.timeTotal < params["max_time"]):
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	if not doConserving:
-		#advectSemiLagrange(flags=flags, vel=vel, grid=testPhi, order=1) 
-		#advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=1) 
+		advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=1) 
+		advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=1) 
 
-		simpleSLAdvect(flags=flags, vel=vel, grid=testPhi)
-		simpleSLAdvect(flags=flags, vel=vel, grid=testField) 
+		#simpleSLAdvect(flags=flags, vel=vel, grid=testPhi,  interpolationType=1)
+		#simpleSLAdvect(flags=flags, vel=vel, grid=testField,interpolationType=1) 
 
 	else:
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma)
