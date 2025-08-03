@@ -147,8 +147,57 @@ namespace Manta
         }
     }
 
-    void MassMomentumWeights::distributeAmongWeights(Vec3i cellJ, Real value)
+    void MassMomentumWeights::distributeLostMass(Grid<Real> &grid, Grid<Real> &lostMass, Grid<Real> &min, Grid<Real> &max, Real &subractedMass)
     {
+        for (int _ = 0; _ < 4; _++)
+        {
+            Grid<Real> removedMass(lostMass.getParent());
+
+            FOR_IJK(grid)
+            {
+                Vec3i cellJ = Vec3i(i, j, k);
+
+                Real weight = 1.0 / (Real)reverseWeights[index(cellJ)].size();
+
+                for (auto it = reverseWeights[index(cellJ)].begin(); it != reverseWeights[index(cellJ)].end();)
+                {
+                    Vec3i cellI = (*it);
+
+                    bool deleted = false;
+
+                    // find the correct cell (bc it is only a vector)
+                    for (auto &[_cellJ, w] : weights[index(cellI)])
+                    {
+                        if (_cellJ == cellJ) // found correct weight from cellI -> cellJ
+                        {
+                            if (min(cellI) <= grid(cellI) - lostMass(cellJ) * weight && grid(cellI) - lostMass(cellJ) * weight <= max(cellI))
+                            {
+                                grid(cellI) -= lostMass(cellJ) * weight;
+                                subractedMass -= lostMass(cellJ) * weight;
+
+                                removedMass(cellJ) -= lostMass(cellJ) * weight;
+                                break;
+                            }
+                            else
+                            {
+                                Real start = grid(cellI);
+                                grid(cellI) = Manta::clamp(grid(cellI) - lostMass(cellJ) * weight, min(cellI), max(cellI));
+
+                                removedMass(cellJ) -= start - grid(cellI);
+
+                                reverseWeights[index(cellJ)].erase(it);
+                                deleted = true;
+                            }
+                        }
+                    }
+                    if (!deleted)
+                    {
+                        it++;
+                    }
+                }
+            }
         
+            lostMass.add(removedMass);
+        }
     }
 }

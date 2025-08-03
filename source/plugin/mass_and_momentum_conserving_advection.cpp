@@ -830,13 +830,19 @@ namespace Manta
         {
             std::array<Vec3i, 3> dirs{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
 
+            Grid<Real> deltaGrid(parent);
+            Grid<Real> deltaGamma(parent);
+
+            Grid<Real> deltaGridNeighbour(parent);
+            Grid<Real> deltaGammaNeighbour(parent);
+
             for (auto &d : dirs)
             {
-                Grid<Real> deltaGrid(parent);
-                Grid<Real> deltaGamma(parent);
+                deltaGrid.clear();
+                deltaGamma.clear();
 
-                Grid<Real> deltaGridNeighbour(parent);
-                Grid<Real> deltaGammaNeighbour(parent);
+                deltaGridNeighbour.clear();
+                deltaGammaNeighbour.clear();
 
                 knDiffuseGamma(gammaCumulative, grid, flags_n_plus_one, d, deltaGrid, deltaGamma, deltaGridNeighbour, deltaGammaNeighbour, component);
 
@@ -858,11 +864,13 @@ namespace Manta
             {
                 sum_loc += clampToMinMax(grid, min, max, tempGrid, i, j, k);
             }
-            if (component == NONE)
+            if (true || component == NONE)
             {
                 sum += sum_loc;
 
-                FOR_IJK(grid)
+                weights.distributeLostMass(grid, tempGrid, min, max, sumDistributed);
+
+                /* FOR_IJK(grid)
                 {
                     Vec3 pos = Vec3(i, j, k) + offset;
                     pos = RK4(pos, -dt, vel);
@@ -875,18 +883,17 @@ namespace Manta
                         grid(n) -= w * tempGrid(i, j, k);
                         sumDistributed -= w * tempGrid(i, j, k);
                     }
-                }
+                } */
 
                 std::cout << "TOTAL CLAMPED STUFF: " << sum << std::endl;
                 std::cout << "TOTAL ANTI-CLAMPED STUFF: " << sumDistributed << std::endl;
-            }
-        }
-
-        FOR_IJK(grid)
-        {
-            if (grid(i, j, k) >= 0 && tempGrid(i, j, k) < 0 && component == NONE)
-            {
-                std::cout << "ASDLFKJASLDFKJASLDFKJ" << grid(i, j, k) << ", new: " << tempGrid(i, j, k) << ", at: (" << i << ", " << j << std::endl;
+                FOR_IJK(grid)
+                {
+                    if (grid(i, j, k) < 0 && component == NONE)
+                    {
+                        std::cout << "ASDLFKJASLDFKJASLDFKJ" << grid(i, j, k) << ", new: " << tempGrid(i, j, k) << ", at: (" << i << ", " << j << std::endl;
+                    }
+                }
             }
         }
 

@@ -28,7 +28,7 @@ namespace Manta
 
         void calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src, Grid<Real> &min, Grid<Real> &max);
 
-        void distributeAmongWeights(Vec3i cellJ, Real value);
+        void distributeLostMass(Grid<Real>&grid, Grid<Real> &lostMass, Grid<Real>& min, Grid<Real>& max, Real& subtractedMass);
 
         inline IndexInt index(Vec3i pos) const
         {
