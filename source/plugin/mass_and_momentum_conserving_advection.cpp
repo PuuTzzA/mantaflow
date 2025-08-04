@@ -137,76 +137,6 @@ namespace Manta
         }
     }
 
-    bool isValid(int i, int j, int k, const FlagGrid &flags, Vec3i &gs)
-    {
-        return (!flags.isObstacle(i, j, k)) && i >= 0 && i <= gs[0] - 1 && j >= 0 && j <= gs[1] - 1 && k >= 0 && k <= gs[2] - 1;
-    }
-
-    bool isValid(Vec3 pos, const FlagGrid &flags, Vec3i &gs)
-    {
-        return isValid(std::floor(pos.x), std::floor(pos.y), std::floor(pos.z), flags, gs);
-    }
-
-    inline Vec3 RK4(Vec3 pos, Real dt, const MACGrid &vel)
-    {
-        Vec3 k1 = vel.getInterpolatedHi(pos, 2);
-        Vec3 k2 = vel.getInterpolatedHi(pos + dt / 2. * k1, 2);
-        Vec3 k3 = vel.getInterpolatedHi(pos + dt / 2. * k2, 2);
-        Vec3 k4 = vel.getInterpolatedHi(pos + dt * k3, 2);
-
-        return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
-    }
-
-    Vec3 customTrace(Vec3 pos, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i &gs)
-    {
-        if (flags.isObstacle(pos))
-        {
-            // throw std::runtime_error("trace starting from obstacle!");
-        }
-
-        Vec3 nextPos = RK4(pos, dt, vel);
-
-        if (isValid(nextPos, flags, gs))
-        {
-            return nextPos;
-        }
-
-        Vec3 segmentStart = pos;
-        Vec3 segmentEnd = nextPos;
-        Vec3 lastKnownFluidPos = pos;
-
-        Vec3 direction = segmentEnd - segmentStart;
-        Real totalDistance = norm(direction);
-
-        if (totalDistance < 1e-9)
-        {
-            return pos;
-        }
-
-        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
-        for (int i = 1; i <= numSearchSteps; ++i)
-        {
-            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
-            Vec3 currentTestPoint = segmentStart + t * direction;
-
-            if (isValid(currentTestPoint, flags, gs))
-            {
-                lastKnownFluidPos = currentTestPoint;
-            }
-            else
-            {
-                break;
-            }
-        }
-        return lastKnownFluidPos;
-    }
-
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-
     inline Vec3 rungeKutta4(Vec3 pos, Real dt, const MACGrid &vel)
     {
         Vec3 k1 = vel.getInterpolatedHi(pos, 2);
@@ -217,11 +147,69 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
+    Vec3 customTrace(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    {
+        std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
+        switch (targetCellType)
+        {
+        case NOT_OBSTACLE:
+            isTargetCell = isNotObstacle;
+            break;
+        case FLUID_ISH:
+            isTargetCell = isSampleableFluid;
+            break;
+        case FLUID_STRICT:
+            isTargetCell = isValidFluid;
+            break;
+        }
+
+        pos += offset;
+        Vec3 newPos = rungeKutta4(pos, dt, vel);
+
+        if (isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
+        {
+            return newPos;
+        }
+
+        // Fallback, try finding the closest surface point
+        Vec3 current;
+        Vec3 direction = newPos - pos;
+        Real totalDistance = norm(direction);
+        Vec3 lastKnowFluidPos = pos;
+
+        if (totalDistance < EPSILON)
+        {
+            return pos;
+        }
+
+        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
+        for (int i = 0; i <= numSearchSteps; i++)
+        {
+            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
+            current = pos + t * direction;
+
+            if (isTargetCell(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, component))
+            {
+                lastKnowFluidPos = current;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return pos;
+    }
+
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+
     /// @brief normal trilinear (bilinear) interpolation
     bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
         result.clear();
-        pos -= offset;
 
         std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
         switch (targetCellType)
@@ -237,6 +225,7 @@ namespace Manta
             break;
         }
 
+        pos -= offset;
         const int i = std::floor(pos[0]);
         const int j = std::floor(pos[1]);
         const int k = std::floor(pos[2]);
@@ -370,7 +359,6 @@ namespace Manta
     bool getInterpolationStencilWithWeightsCubic(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType, std::function<Real(Real, int)> getWeight)
     {
         result.clear();
-        pos -= offset;
 
         std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
         switch (targetCellType)
@@ -386,6 +374,7 @@ namespace Manta
             break;
         }
 
+        pos -= offset;
         const int i = std::floor(pos[0]);
         const int j = std::floor(pos[1]);
         const int k = std::floor(pos[2]);
@@ -443,6 +432,108 @@ namespace Manta
     bool getInterpolationStencilWithWeightsCubicConvolutional(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
         return getInterpolationStencilWithWeightsCubic(result, pos, flags, offset, component, targetCellType, cubicConvolutionalInterpolationWeight);
+    }
+
+    inline Real hermite0(Real t)
+    {
+        return 2 * t * t * t - 3 * t * t + 1;
+    }
+
+    inline Real hermite1(Real t)
+    {
+        return t * t * t - 2 * t * t + t;
+    }
+
+    inline Real hermite2(Real t)
+    {
+        return -2 * t * t * t + 3 * t * t;
+    }
+
+    inline Real hermite3(Real t)
+    {
+        return t * t * t - t * t;
+    }
+
+    Real interpolateMonotoneCubicHermite(Real q0, Real q1, Real q2, Real q3, Real x)
+    {
+        const Real dx = 1;
+
+        Real m1 = (q2 - q0) / (2 * dx);
+        Real m2 = (q3 - q1) / (2 * dx);
+
+        Real d1 = (q2 - q1) / dx;
+
+        if (m1 * d1 < 0 || d1 == 0)
+        {
+            m1 = 0;
+        }
+        if (m2 * d1 < 0 || d1 == 0)
+        {
+            m2 = 0;
+        }
+
+        Real alpha = m1 / d1;
+        Real beta = m2 / d1;
+
+        if (alpha * alpha + beta * beta > 9)
+        {
+            Real tau = 3 / std::sqrt(alpha * alpha + beta * beta);
+            m1 = tau * alpha * d1;
+            m2 = tau * beta * d1;
+        }
+
+        return hermite0(x) * q1 + hermite1(x) * m1 + hermite2(x) * q2 + hermite3(x) * m2;
+    }
+
+    /// @brief montotone cubic hermite interpolation following Fritsch and Carlson; assumes pos is in a sampleable region
+    Real interpolateMonotoneCubicHermite(Vec3 pos, const Grid<Real> &grid, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    {
+        std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
+        switch (targetCellType)
+        {
+        case NOT_OBSTACLE:
+            isTargetCell = isNotObstacle;
+            break;
+        case FLUID_ISH:
+            isTargetCell = isSampleableFluid;
+            break;
+        case FLUID_STRICT:
+            isTargetCell = isValidFluid;
+            break;
+        }
+
+        pos -= offset;
+        const int i = std::floor(pos[0]);
+        const int j = std::floor(pos[1]);
+        const int k = std::floor(pos[2]);
+
+        const Real fx = pos[0] - i;
+        const Real fy = pos[1] - j;
+        const Real fz = pos[2] - k;
+
+        Real totalWeight = 0.;
+
+        std::array<Real, 4> arr{};
+
+        for (int dy = -1; dy <= 2; dy++)
+        {
+            Real fallback = grid(i, j, k);
+            if (dy == 2 && isTargetCell(i, j + 1, k, flags, component))
+            {
+                fallback = grid(i, j + 1, k);
+            }
+
+            Real q0, q1, q2, q3;
+
+            fallback = q1 = isTargetCell(i + 0, j + dy, k, flags, component) ? grid(i + 0, j + dy, k) : fallback;
+            q0 = /*      */ isTargetCell(i - 1, j + dy, k, flags, component) ? grid(i - 1, j + dy, k) : fallback;
+            fallback = q2 = isTargetCell(i + 1, j + dy, k, flags, component) ? grid(i + 1, j + dy, k) : fallback;
+            q3 = /*      */ isTargetCell(i + 2, j + dy, k, flags, component) ? grid(i + 2, j + dy, k) : fallback;
+
+            arr[dy + 1] = interpolateMonotoneCubicHermite(q0, q1, q2, q3, fx);
+        }
+
+        return interpolateMonotoneCubicHermite(arr[0], arr[1], arr[2], arr[3], fy);
     }
 
     std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
@@ -715,6 +806,11 @@ namespace Manta
     template <class GridType>
     void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType)
     {
+        if (interpolationType == MONOTONE_CUBIC_HERMITE)
+        {
+            throw "InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection";
+        }
+
         typedef typename GridType::BASETYPE T;
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
@@ -1023,7 +1119,7 @@ namespace Manta
     void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i gs)
     {
         Vec3 pos = particles.getPos(idx);
-        pos = customTrace(pos, vel, dt, flags, gs);
+        pos = customTrace(pos, dt, vel, flags, Vec3(0.0, 0.0, 0.0), NONE, NOT_OBSTACLE);
         particles.setPos(idx, pos);
     }
 
@@ -1036,55 +1132,53 @@ namespace Manta
     KERNEL()
     void knSimpleSLAdvect(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType, bool all)
     {
-        std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
-        if (all)
-        {
-            if (!isNotObstacle(i, j, k, flags, component))
-            {
-                return;
-            }
-
-            Vec3 pos = Vec3(i, j, k) + offset;
-            pos = RK4(pos, -dt, vel);
-
-            switch (interpolationType)
-            {
-            case LINIEAR:
-                getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
-                break;
-            case CUBIC_POLYNOMIAL:
-                getInterpolationStencilWithWeightsCubicPolynomial(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
-                break;
-            case CUBIC_CONVOLUTIONAL:
-                getInterpolationStencilWithWeightsCubicConvolutional(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
-                break;
-            }
-        }
-        else
-        {
-            if (isSampleableFluid(i, j, k, flags, component))
-            {
-                neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags, offset, component, doFluid, interpolationType);
-            }
-        }
-        newGrid(i, j, k) = 0;
-
-        if (neighboursAndWeights.empty())
+        if (all ? !isNotObstacle(i, j, k, flags, component) : !isSampleableFluid(i, j, k, flags, component))
         {
             return;
         }
 
-        Real max = -std::numeric_limits<Real>::max();
-        Real min = std::numeric_limits<Real>::max();
+        Vec3 pos = customTrace(Vec3(i, j, k), -dt, vel, flags, offset, component, FLUID_ISH);
 
-        for (const auto &[n, w] : neighboursAndWeights)
+        if (interpolationType != MONOTONE_CUBIC_HERMITE)
         {
-            newGrid(i, j, k) += w * oldGrid(n);
-            max = std::max(max, oldGrid(n));
-            min = std::min(min, oldGrid(n));
-        }
+            std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
 
-        newGrid(i, j, k) = Manta::clamp(newGrid(i, j, k), min, max);
+            switch (interpolationType)
+            {
+            case LINIEAR:
+                getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                break;
+            case CUBIC_POLYNOMIAL:
+                getInterpolationStencilWithWeightsCubicPolynomial(neighboursAndWeights, pos, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                break;
+            case CUBIC_CONVOLUTIONAL:
+                getInterpolationStencilWithWeightsCubicConvolutional(neighboursAndWeights, pos, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                break;
+            }
+
+            newGrid(i, j, k) = 0;
+
+            if (neighboursAndWeights.empty())
+            {
+                return;
+            }
+
+            Real max = -std::numeric_limits<Real>::max();
+            Real min = std::numeric_limits<Real>::max();
+
+            for (const auto &[n, w] : neighboursAndWeights)
+            {
+                newGrid(i, j, k) += w * oldGrid(n);
+                max = std::max(max, oldGrid(n));
+                min = std::min(min, oldGrid(n));
+            }
+
+            newGrid(i, j, k) = Manta::clamp(newGrid(i, j, k), min, max);
+        }
+        else if (interpolationType == MONOTONE_CUBIC_HERMITE)
+        {
+            newGrid(i, j, k) = interpolateMonotoneCubicHermite(pos, oldGrid, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+        }
     }
 
     void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType, bool all)

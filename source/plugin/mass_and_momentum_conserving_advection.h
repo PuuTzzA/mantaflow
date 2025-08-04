@@ -22,6 +22,7 @@ namespace Manta
         LINIEAR,
         CUBIC_POLYNOMIAL, // polynomial interpolation with Lagrange basis functions
         CUBIC_CONVOLUTIONAL, // standart cubic interpolation (less accurate than CUBIC_POLYNOMIAL)
+        MONOTONE_CUBIC_HERMITE, // Monotone cubic Hermite interpolation (nach Fritsch und Carlson)
     };
 
     enum TargetCellType
