@@ -19,8 +19,9 @@ namespace Manta
 
     enum InterpolationType
     {
-        TRILIENAR,
-        CATMULL_ROM
+        LINIEAR,
+        CUBIC_POLYNOMIAL, // polynomial interpolation with Lagrange basis functions
+        CUBIC_CONVOLUTIONAL, // standart cubic interpolation (less accurate than CUBIC_POLYNOMIAL)
     };
 
     enum TargetCellType

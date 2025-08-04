@@ -341,7 +341,7 @@ namespace Manta
         return true;
     }
 
-    inline Real cubicInterpolationWeight(Real s, int idx)
+    inline Real cubicPolynomialInterpolationWeight(Real s, int idx)
     {
         if (idx == -1)
             return -0.333333 * s + 0.5 * s * s - 0.166666 * s * s * s;
@@ -354,8 +354,20 @@ namespace Manta
         return 0.0;
     }
 
-    /// @brief better interpolation to reduce numerical diffusion alla Catmull-Rom
-    bool getInterpolationStencilWithWeighCatmullRom(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    inline Real cubicConvolutionalInterpolationWeight(Real s, int idx)
+    {
+        if (idx == -1)
+            return -0.5 * s + s * s - 0.5 * s * s * s;
+        if (idx == 0)
+            return 1 - 2.5 * s * s + 1.5 * s * s * s;
+        if (idx == 1)
+            return 0.5 * s + 2 * s * s - 1.5 * s * s * s;
+        if (idx == 2)
+            return -0.5 * s * s + 0.5 * s * s * s;
+        return 0.0;
+    }
+
+    bool getInterpolationStencilWithWeightsCubic(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType, std::function<Real(Real, int)> getWeight)
     {
         result.clear();
         pos -= offset;
@@ -387,15 +399,15 @@ namespace Manta
         // Loop over 4x4x4 neighborhood
         for (int dz = -1; dz <= (flags.is3D() ? 2 : -1); ++dz)
         {
-            Real wz = flags.is3D() ? cubicInterpolationWeight(fz, dz) : 1.;
+            Real wz = flags.is3D() ? getWeight(fz, dz) : 1.;
             int zk = flags.is3D() ? k + dz : k;
             for (int dy = -1; dy <= 2; ++dy)
             {
-                Real wy = cubicInterpolationWeight(fy, dy);
+                Real wy = getWeight(fy, dy);
                 int yj = j + dy;
                 for (int dx = -1; dx <= 2; ++dx)
                 {
-                    Real wx = cubicInterpolationWeight(fx, dx);
+                    Real wx = getWeight(fx, dx);
                     int xi = i + dx;
 
                     Real w = wx * wy * wz;
@@ -421,16 +433,31 @@ namespace Manta
         return true;
     }
 
+    /// @brief cubic interpolation introduced in Bridsons Book (Lagrangian polynomial interpolation)
+    bool getInterpolationStencilWithWeightsCubicPolynomial(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    {
+        return getInterpolationStencilWithWeightsCubic(result, pos, flags, offset, component, targetCellType, cubicPolynomialInterpolationWeight);
+    }
+
+    /// @brief cubic convolutional interpolation (basic Bi/Tricubic interpolation)
+    bool getInterpolationStencilWithWeightsCubicConvolutional(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    {
+        return getInterpolationStencilWithWeightsCubic(result, pos, flags, offset, component, targetCellType, cubicConvolutionalInterpolationWeight);
+    }
+
     std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
         {
-        case TRILIENAR:
+        case LINIEAR:
             getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeights;
             break;
-        case CATMULL_ROM:
-            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeighCatmullRom;
+        case CUBIC_POLYNOMIAL:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeightsCubicPolynomial;
+            break;
+        case CUBIC_CONVOLUTIONAL:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeightsCubicConvolutional;
             break;
         }
 
@@ -530,11 +557,14 @@ namespace Manta
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
         {
-        case TRILIENAR:
+        case LINIEAR:
             getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeights;
             break;
-        case CATMULL_ROM:
-            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeighCatmullRom;
+        case CUBIC_POLYNOMIAL:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeightsCubicPolynomial;
+            break;
+        case CUBIC_CONVOLUTIONAL:
+            getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeightsCubicConvolutional;
             break;
         }
 
@@ -777,7 +807,7 @@ namespace Manta
 
         // Step 3: clamp gamma
         weights.calculateIntermediateResult(tempGrid, gammaCumulative, minGamma, maxGamma);
-        if (interpolationType != TRILIENAR)
+        if (interpolationType != LINIEAR)
         {
             knClampToMinMax(tempGrid, minGamma, maxGamma);
         }
@@ -854,9 +884,10 @@ namespace Manta
             }
         }
 
+        // Step 7: If higher order interpolation, make clamp and redistribute the clamped quantities
         static Real sum = 0;
         static Real sumDistributed = 0;
-        if (interpolationType != TRILIENAR)
+        if (interpolationType != LINIEAR)
         {
             Real sum_loc = 0;
             tempGrid.clear();
@@ -945,7 +976,7 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = TRILIENAR)
+    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = LINIEAR)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
@@ -964,7 +995,7 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi, int interpolationType = TRILIENAR)
+    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi, int interpolationType = LINIEAR)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
@@ -1018,11 +1049,14 @@ namespace Manta
 
             switch (interpolationType)
             {
-            case TRILIENAR:
+            case LINIEAR:
                 getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
                 break;
-            case CATMULL_ROM:
-                getInterpolationStencilWithWeighCatmullRom(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
+            case CUBIC_POLYNOMIAL:
+                getInterpolationStencilWithWeightsCubicPolynomial(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
+                break;
+            case CUBIC_CONVOLUTIONAL:
+                getInterpolationStencilWithWeightsCubicConvolutional(neighboursAndWeights, pos, flags, offset, component, NOT_OBSTACLE);
                 break;
             }
         }

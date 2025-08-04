@@ -140,17 +140,17 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 		#advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 		#advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 
-		simpleSLAdvect(flags=flags, vel=vel, grid=density,           interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
-		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
-		simpleSLAdvect(flags=flags, vel=vel, grid=vel,               interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
+		simpleSLAdvect(flags=flags, vel=vel, grid=density,           interpolationType=2) # 0 = Trilinear, 1 = Polynomial, 2 = Cubic
+		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,      interpolationType=2) # 0 = Trilinear, 1 = Polynomial, 2 = Cubic
+		simpleSLAdvect(flags=flags, vel=vel, grid=vel,               interpolationType=2) # 0 = Trilinear, 1 = Polynomial, 2 = Cubic
 
 	else:
-		type = 1
+		type = 2
 		#simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
 
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=type) # 0 = Trilinear, 1 = Catmull Rom
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=type) # 0 = Trilinear, 1 = Catmull Rom
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=type) # 0 = Trilinear, 1 = Catmull Rom
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=type)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=type)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=type)
 
 	if doOpen:
 		resetOutflow(flags=flags,real=density) 
