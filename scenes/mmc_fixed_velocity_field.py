@@ -1,9 +1,14 @@
 from manta import *
 from data_collection import * 
 import json
+import sys
 
-params = {}
-with open("../scenes/test_cases/fixed_vel_field/params_fixed_velocity_low.json") as f:
+param_path = "../scenes/test_cases/fixed_vel_field/params_fixed_velocity_low.json"
+
+if len(sys.argv) > 1:
+    param_path = sys.argv[1]
+
+with open(param_path) as f:
 	params = json.load(f)
 
 # solver params
@@ -14,26 +19,27 @@ if dim==2:
 	gs.z=1
 s = Solver(name='main', gridSize = gs, dim=dim)
 
-# scenario selection, choose one of the four
-#scenario = "diagonal_motion"
-#scenario = "zalesak_rotation"
-scenario = "shear_flow"
-#scenario = "deformation_field"
+# scenario selection, choose one of the four: "diagonal_motion","zalesak_rotation","shear_flow","deformation_field"
+scenario = params["scenario"]
 
 # scene params
-doConserving = True
-exportData = False
-exportImages = False
-exportVideos = False
-title = scenario + "_" + ("Conserving" if doConserving else "Traditional")
-title = "____--asldkjfalskdfj"
+title = params["title"]
+
+doConserving = params["doConserving"]
+exportData = params["exportData"]
+exportImages = params["exportImages"]
+exportVideos = params["exportVideos"]
+exportVDBs = params["exportVDBs"]
+
+interpolationMethod = params["interpolationMethod"] # only important for tracingMethod == "RK4"
+tracingMethod = params["tracingMethod"] # only important for notCoserving (EE1: Explicit Euler Order 1, EE2: Explicit Euler with MAC cormack, RK$, Runge Kutta 4)
 
 # set time step range
 s.cfl         = params["maxCFL"]
-s.timestep    = params["dt"] 
-s.frameLength = 10000     
+s.timestep    = params["dt"]
+s.frameLength = params["dt"]     
 s.timestepMin = 0.001 
-s.timestepMax = 1000
+s.timestepMax = 20000
 
 timings = Timings()
 
@@ -52,8 +58,7 @@ bWidth=2
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
 
-setOpenBound(flags, bWidth,'xXyY',FlagOutflow|FlagEmpty) 
-
+#setOpenBound(flags, bWidth,'xXyY',FlagOutflow|FlagEmpty) 
 
 if scenario == "diagonal_motion":
 	source = s.create(Sphere, center=gs*vec3(0.5,0.5,0.5), radius=res*0.20)
@@ -85,7 +90,6 @@ if scenario == "deformation_field":
 	source.applyToGrid(grid=testField, value=1)
 	testPhi.copyFrom(source.computeLevelset())
 
-
 fillWithOnes( grid=testPhiGamma )
 fillWithOnes( grid=testFieldGamma )
 setVelocityField(vel=vel, flags=flags, functionName=scenario)
@@ -95,47 +99,47 @@ if GUI:
 	gui = Gui()
 	gui.show( True ) 
 
-	data_collector = Data_collectior(title=title, params=params, export_data=exportData, export_images=exportImages, export_videos=exportVideos,
-						trackable_grid_names=[["testPhi", testPhi], ["testField", testField], ["curl", curl], [], []], 
-						tracked_grids_indeces=[0, 1], fixed_volume="testField")
-
-	data_collector.init()
-
 	gui.pause()
+
+data_collector = Data_collectior(title=title, base_dir="../exports/fixed_velocity_field/", params=params, 
+								 export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
+				                 trackable_grid_names=[["testPhi", testPhi], ["testField", testField], ["curl", curl], [], []], 
+				                 tracked_grids_indeces=[0, 1], fixed_volume="testField")
+
+data_collector.init()
+
+maxvel = vel.getMax()
+s.adaptTimestep(maxvel)
 
 #main loop
 while (s.timeTotal < params["max_time"]):
-	maxvel = vel.getMax()
-	s.adaptTimestep(maxvel)
 
 	print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxVel: {maxvel}")
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	if not doConserving:
-		advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=1) 
-		advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=1) 
+		if tracingMethod == "EE1": #Explicit Euler Order 1
+			advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=1) 
+			advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=1) 
 
-		#simpleSLAdvect(flags=flags, vel=vel, grid=testPhi,  interpolationType=1)
-		#simpleSLAdvect(flags=flags, vel=vel, grid=testField,interpolationType=1) 
+		elif tracingMethod == "EE2": #Explicit Euler Order 2
+			advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=2) 
+			advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=2)
+
+		elif tracingMethod == "RK4": #Runge Kutta 4 
+			simpleSLAdvect(flags=flags, vel=vel, grid=testPhi,  interpolationType=interpolationMethod) # 0 = linear, 1 = cubic, 2 = polynomial interpolation, 3 = monotone hermite
+			simpleSLAdvect(flags=flags, vel=vel, grid=testField,interpolationType=interpolationMethod) # 0 = linear, 1 = cubic, 2 = polynomial interpolation, 3 = monotone hermite 
 
 	else:
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma)
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma)
+		print(data_collector.current_frame)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma    ,interpolationType=interpolationMethod)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod)
 
 	#timings.display()    
 	calculateCurl(vel=vel, curl=curl, flags=flags)
 
-	if GUI:
-		data_collector.step(solver=s, flags=flags, vel=vel, gui=gui)
-
-	# optionally save some of the simulation objects to an OpenVDB file (requires compilation with -DOPENVDB=1)
-	if True and s.frame % 1 == 0 and not GUI:
-		# note: when saving pdata fields, they must be accompanied by and listed before their parent pp
-		objects = [flags, pressure, density, vel, curl]
-		save( name='../analysis/test_vdb_export/test_vdb_export_%04d.vdb' % s.frame, objects=objects )
-
+	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[testField])
 	s.step()
 
-if GUI:
-	data_collector.finish()
-	data_collector.printStats()
+data_collector.finish()
+data_collector.printStats()

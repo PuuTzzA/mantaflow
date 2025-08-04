@@ -20,8 +20,8 @@ namespace Manta
     enum InterpolationType
     {
         LINIEAR,
-        CUBIC_POLYNOMIAL, // polynomial interpolation with Lagrange basis functions
         CUBIC_CONVOLUTIONAL, // standart cubic interpolation (less accurate than CUBIC_POLYNOMIAL)
+        CUBIC_POLYNOMIAL, // polynomial interpolation with Lagrange basis functions
         MONOTONE_CUBIC_HERMITE, // Monotone cubic Hermite interpolation (nach Fritsch und Carlson)
     };
 

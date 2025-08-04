@@ -24,23 +24,13 @@ if dim==2:
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # scene params
-if False:
-	doOpen = False
-	doObstacle = False
-	doConserving = False
-	exportData = True
-	exportImages = False
-	exportVideos = False
-	exportVDBs = False if GUI else True
-	exportVDBs = True
-else:
-	doOpen = params["doOpen"]
-	doObstacle = params["doObstacle"]
-	doConserving = params["doConserving"]
-	exportData = params["exportData"]
-	exportImages = params["exportImages"]
-	exportVideos = params["exportVideos"]
-	exportVDBs = params["exportVDBs"]
+doOpen = params["doOpen"]
+doObstacle = params["doObstacle"]
+doConserving = params["doConserving"]
+exportData = params["exportData"]
+exportImages = params["exportImages"]
+exportVideos = params["exportVideos"]
+exportVDBs = params["exportVDBs"]
 
 if exportVDBs and (exportImages or exportVideos):
 	raise Exception("Cannot export both VDBs and Images") 
@@ -105,7 +95,7 @@ if (GUI) and not exportVDBs:
 	gui.show( True ) 
 	gui.pause()
 
-data_collector = Data_collectior(title=title ,base_dir=f"../exports/simple_plume_3d/{title}/", params=params, export_data=exportData, 
+data_collector = Data_collectior(title=title ,base_dir=f"../exports/simple_plume_3d/", params=params, export_data=exportData, 
 								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
 								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], []], tracked_grids_indeces=[0, 2])
 
@@ -141,9 +131,9 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 		#advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 
 		type = 3	
-		simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=type) # 0 = Trilinear, 1 = Polynomial, 2 = Cubic, 3 = monotonue cubib (hermite)
-		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,interpolationType=type) # 0 = Trilinear, 1 = Polynomial, 2 = Cubic, 3 = monotonue cubib (hermite)
-		simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=type) # 0 = Trilinear, 1 = Polynomial, 2 = Cubic, 3 = monotonue cubib (hermite)
+		simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=type) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,interpolationType=type) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+		simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=type) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
 	else:
 		type = 2

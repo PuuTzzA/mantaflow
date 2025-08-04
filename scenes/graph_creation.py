@@ -4,15 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-NAME = "shear_flow"
-
-data_1 = None
-data_2 = None
-with open(f"./exports/experiments/{NAME}_Traditional_stats/data.json") as f:
-	data_1 = json.load(f)
-with open(f"./exports/experiments/{NAME}_Conserving_stats/data.json") as f:
-	data_2 = json.load(f)
-	
 COLOR_THEMES = [
     {
         "main": "blue",
@@ -77,12 +68,13 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
             std_dev = np.std(frames)
             median = np.median(frames)
 
-            ax[current_ax].plot(frames, linestyle='-', linewidth=2.5, color=COLOR_THEMES[i]["main"], label=f'{key}, {data_names[i]}', zorder=2)
+            data_name = f", {data_names[i]}" if data_names[i] != "" else ""
+            ax[current_ax].plot(frames, linestyle='-', linewidth=2.5, color=COLOR_THEMES[i]["main"], label=f'{key}{data_name}', zorder=2)
             if include_extra_stats:
-                ax[current_ax].axhline(mean, color=COLOR_THEMES[i]["mean"], linestyle='--', linewidth=1.2, label=f'Mean, {data_names[i]}: {mean:.2f}', zorder=1)
-                ax[current_ax].axhline(median, color=COLOR_THEMES[i]["median"], linestyle='--', linewidth=1.2, label=f'Median, {data_names[i]}: {median:.2f}', zorder=1)
-                ax[current_ax].axhline(minimum, color=COLOR_THEMES[i]["min"], linestyle=':', linewidth=1.2, label=f'Min, {data_names[i]}: {minimum:.2f}', zorder=1)
-                ax[current_ax].axhline(maximum, color=COLOR_THEMES[i]["max"], linestyle=':', linewidth=1.2, label=f'Max, {data_names[i]}: {maximum:.2f}', zorder=1)
+                ax[current_ax].axhline(mean, color=COLOR_THEMES[i]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
+                ax[current_ax].axhline(median, color=COLOR_THEMES[i]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
+                ax[current_ax].axhline(minimum, color=COLOR_THEMES[i]["min"], linestyle=':', linewidth=1.2, label=f'Min{data_name}: {minimum:.2f}', zorder=1)
+                ax[current_ax].axhline(maximum, color=COLOR_THEMES[i]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
             ax[current_ax].set_ylabel(key)
             ax[current_ax].set_title(f"{key} Over Time")
             ax[current_ax].legend(loc='best')
@@ -96,10 +88,13 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
     plt.tight_layout()
     plt.savefig(export_path, dpi=300)
 
-
+#NAME = "shear_flow"
+#data_1 = None
+#data_2 = None
+#with open(f"./exports/experiments/{NAME}_Traditional_stats/data.json") as f:
+#	data_1 = json.load(f)
+#with open(f"./exports/experiments/{NAME}_Conserving_stats/data.json") as f:
+#	data_2 = json.load(f)
+#
 #create_combined_graph(data_array=[data_1, data_2], data_names=["Traditional", "Mass Momemtum Conserving"], interested_fields=["testField"], 
 #                      title="Fixed Shear Flow Field", include_cfl=True, include_extra_stats=False)
-
-
-create_combined_graph(data_array=[data_1], data_names=["Traditional"], interested_fields=["testField"], 
-                      title="Fixed Shear Flow gay", include_cfl=True, include_extra_stats=False)

@@ -165,6 +165,7 @@ namespace Manta
 
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, dt, vel);
+        //Vec3 newPos = pos + dt * vel.getInterpolatedHi(pos, 2);
 
         if (isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
         {
@@ -517,7 +518,7 @@ namespace Manta
 
         for (int dy = -1; dy <= 2; dy++)
         {
-            Real fallback = grid(i, j, k);
+            Real fallback = isTargetCell(i, j, k, flags, component) ? grid(i, j, k) : 0.0;
             if (dy == 2 && isTargetCell(i, j + 1, k, flags, component))
             {
                 fallback = grid(i, j + 1, k);
@@ -808,7 +809,7 @@ namespace Manta
     {
         if (interpolationType == MONOTONE_CUBIC_HERMITE)
         {
-            throw "InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection";
+            throw std::runtime_error("InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection");
         }
 
         typedef typename GridType::BASETYPE T;

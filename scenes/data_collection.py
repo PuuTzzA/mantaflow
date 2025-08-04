@@ -7,11 +7,12 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from graph_creation import *
 
 class Data_collectior:
     def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], fixed_volume="fixed_volume"):
         self.title = title
-        self.base_dir = Path(base_dir).expanduser().resolve()
+        self.base_dir = Path(base_dir).expanduser().resolve() / self.title
 
         if params is not None:
             self.dim = params["dimension"]
@@ -55,7 +56,7 @@ class Data_collectior:
     def step(self, solver, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3], objects=[]):
         #self.current_frame = math.floor(solver.timeTotal)
         self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
-        self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMaxAbs() * solver.timestep
+        self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMax() * solver.timestep
         self.data["frame_data"][str(self.current_frame).zfill(4)]["dt"] = solver.timestep
 
         for i in range(len(self.trackable_grids)):
@@ -143,64 +144,16 @@ class Data_collectior:
             self.data["results"][grid_name]["minSum"] = min_sum
             self.data["results"][grid_name]["maxSum"] = max_sum
 
-        if (self.export_data):
-            # Convert to numpy arrays
-            cfl_frames = np.array(cfl_frames)
-            cfl_minimum = np.min(cfl_frames)
-            cfl_maximum = np.max(cfl_frames)
-            cfl_mean = np.mean(cfl_frames)
-            cfl_std_dev = np.std(cfl_frames)
-            cfl_median = np.median(cfl_frames)
-
-            has_fixed_volume = len(fixed_volume_frames) > 0
-            if has_fixed_volume:
-                fixed_volume_frames = np.array(fixed_volume_frames)
-                fixed_volume_minimum = np.min(fixed_volume_frames)
-                fixed_volume_maximum = np.max(fixed_volume_frames)
-                fixed_volume_mean = np.mean(fixed_volume_frames)
-                fixed_volume_std_dev = np.std(fixed_volume_frames)
-                fixed_volume_median = np.median(fixed_volume_frames)
-
-            # Create subplots with shared x-axis
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
-
-            # --- Plot CFL ---
-            ax1.plot(cfl_frames, linestyle='-', linewidth=2.5, color='blue', label='CFL', zorder=2)
-            ax1.axhline(cfl_mean, color='purple', linestyle='--', linewidth=1.2, label=f'Mean: {cfl_mean:.2f}', zorder=1)
-            ax1.axhline(cfl_median, color='deeppink', linestyle='--', linewidth=1.2, label=f'Median: {cfl_median:.2f}', zorder=1)
-            ax1.axhline(cfl_minimum, color='darkslategray', linestyle=':', linewidth=1.2, label=f'Min: {cfl_minimum:.2f}', zorder=1)
-            ax1.axhline(cfl_maximum, color='darkslategray', linestyle=':', linewidth=1.2, label=f'Max: {cfl_maximum:.2f}', zorder=1)
-            ax1.set_ylabel("CFL")
-            ax1.set_title(f"CFL Over Time")
-            ax1.legend(loc='best')
-            ax1.grid(True)
-            ax1.ticklabel_format(style='plain', axis='y', useOffset=False)
-
-            # --- Plot Fixed Volume ---
-            if has_fixed_volume:
-                ax2.plot(fixed_volume_frames, linestyle='-', linewidth=2.5, color='red', label='Fixed Volume', zorder=2)
-                ax2.axhline(fixed_volume_mean, color='darkgoldenrod', linestyle='--', linewidth=1.2, label=f'Mean: {fixed_volume_mean:.2f}', zorder=1)
-                ax2.axhline(fixed_volume_median, color='sienna', linestyle='--', linewidth=1.2, label=f'Median: {fixed_volume_median:.2f}', zorder=1)
-                ax2.axhline(fixed_volume_maximum, color='black', linestyle=':', linewidth=1.2, label=f'Min: {fixed_volume_minimum:.2f}', zorder=1)
-                ax2.axhline(fixed_volume_maximum, color='black', linestyle=':', linewidth=1.2, label=f'Max: {fixed_volume_maximum:.2f}', zorder=1)
-                ax2.set_ylabel("Fixed Volume")
-                ax2.set_title("Fixed Volume Over Time")
-                ax2.legend(loc='best')
-                ax2.grid(True)
-                    # Disable scientific notation and offset
-                ax2.ticklabel_format(style='plain', axis='y', useOffset=False)
-
-            # Common X label
-            plt.xlabel("Frame")
-            plt.tight_layout()
-            plt.savefig(self.base_dir / "CFL_and_Volume.png" if has_fixed_volume else "CFL.png", dpi=300)
-
     def finish(self):
         self.computeStats()
         
         if self.export_data:
             with open(self.base_dir / "data.json", "w") as f:
                 json.dump(self.data, f, indent=4)
+
+            interested_fields = [self.trackable_grids[i][0] for i in self.tracked_grids_indeces]
+            create_combined_graph(data_array=[self.data], data_names=[""], interested_fields=interested_fields, 
+                                  title=self.title, include_cfl=True, include_extra_stats=True, export_path=self.base_dir / "graph.png")
 
         if self.export_videos:
             for index in self.tracked_grids_indeces:

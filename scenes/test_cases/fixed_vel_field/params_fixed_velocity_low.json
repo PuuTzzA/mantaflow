@@ -1,10 +1,23 @@
 {
+  "title": "test_params_fixed_vel_field",
+
   "dimension": 2,
   "resolutionX": 100,
   "resolutionY": 100,
-  "resolutionZ": 100,
-  "maxCFL": 10,
-  "max_time": 2000,
-  "dt": 100
+  "resolutionZ": 20,
+
+  "scenario" : "zalesak_rotation",
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 0,
+
+  "exportData": false,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": false,
+
+  "max_time": 500,
+  "maxCFL": 5, 
+  "dt": 20
 }
 
