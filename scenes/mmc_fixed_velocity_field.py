@@ -31,6 +31,9 @@ exportImages = params["exportImages"]
 exportVideos = params["exportVideos"]
 exportVDBs = params["exportVDBs"]
 
+if exportVDBs and (exportImages or exportVideos):
+	raise Exception("Cannot export both VDBs and Images") 
+
 interpolationMethod = params["interpolationMethod"] # only important for tracingMethod == "RK4"
 tracingMethod = params["tracingMethod"] # only important for notCoserving (EE1: Explicit Euler Order 1, EE2: Explicit Euler with MAC cormack, RK$, Runge Kutta 4)
 
@@ -118,13 +121,10 @@ while (s.timeTotal < params["max_time"]):
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
 	if not doConserving:
-		if tracingMethod == "EE1": #Explicit Euler Order 1
-			advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=1) 
-			advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=1) 
-
-		elif tracingMethod == "EE2": #Explicit Euler Order 2
-			advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=2) 
-			advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=2)
+		if tracingMethod.startswith("EE"):
+			order = int(tracingMethod[-1])  # Extracts 1 or 2 from "EE1" or "EE2"
+			advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=order) 
+			advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=order)
 
 		elif tracingMethod == "RK4": #Runge Kutta 4 
 			simpleSLAdvect(flags=flags, vel=vel, grid=testPhi,  interpolationType=interpolationMethod) # 0 = linear, 1 = cubic, 2 = polynomial interpolation, 3 = monotone hermite

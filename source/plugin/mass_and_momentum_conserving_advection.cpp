@@ -165,7 +165,7 @@ namespace Manta
 
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, dt, vel);
-        //Vec3 newPos = pos + dt * vel.getInterpolatedHi(pos, 2);
+        // Vec3 newPos = pos + dt * vel.getInterpolatedHi(pos, 2);
 
         if (isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
         {
@@ -458,17 +458,18 @@ namespace Manta
     Real interpolateMonotoneCubicHermite(Real q0, Real q1, Real q2, Real q3, Real x)
     {
         const Real dx = 1;
+        x = Manta::clamp(x, static_cast<Real>(0), static_cast<Real>(1));
 
         Real m1 = (q2 - q0) / (2 * dx);
         Real m2 = (q3 - q1) / (2 * dx);
 
         Real d1 = (q2 - q1) / dx;
 
-        if (m1 * d1 < 0 || d1 == 0)
+        if (m1 * d1 < 0 || std::abs(d1) < EPSILON)
         {
             m1 = 0;
         }
-        if (m2 * d1 < 0 || d1 == 0)
+        if (m2 * d1 < 0 || std::abs(d1) < EPSILON)
         {
             m2 = 0;
         }
@@ -512,29 +513,63 @@ namespace Manta
         const Real fy = pos[1] - j;
         const Real fz = pos[2] - k;
 
-        Real totalWeight = 0.;
+        std::array<std::array<std::array<Real, 4>, 4>, 4> cube = {}; // [dz][dy][dx]
+        const bool is3D = grid.is3D();
 
-        std::array<Real, 4> arr{};
-
-        for (int dy = -1; dy <= 2; dy++)
+        // Precompute samples into cube[z][y][x]
+        for (int dz = -1; dz <= (is3D ? 2 : -1); dz++)
         {
-            Real fallback = isTargetCell(i, j, k, flags, component) ? grid(i, j, k) : 0.0;
-            if (dy == 2 && isTargetCell(i, j + 1, k, flags, component))
+            int zk = is3D ? k + dz : k;
+            for (int dy = -1; dy <= 2; dy++)
             {
-                fallback = grid(i, j + 1, k);
+                int yj = j + dy;
+
+                // Fallback logic per row (shared for x-samples in this y/z layer)
+                Real fallback = 0.0;
+                bool foundFallback = false;
+                for (int dx = 0; dx <= 1 && !foundFallback; dx++)
+                {
+                    int xi = i + dx;
+                    if (isTargetCell(xi, yj, zk, flags, component))
+                    {
+                        fallback = grid(xi, yj, zk);
+                        foundFallback = true;
+                    }
+                }
+                if (!foundFallback && isTargetCell(i, j, k, flags, component))
+                {
+                    fallback = grid(i, j, k);
+                }
+
+                for (int dx = -1; dx <= 2; dx++)
+                {
+                    int xi = i + dx;
+                    cube[dz + 1][dy + 1][dx + 1] = isTargetCell(xi, yj, zk, flags, component) ? grid(xi, yj, zk) : fallback;
+                }
             }
-
-            Real q0, q1, q2, q3;
-
-            fallback = q1 = isTargetCell(i + 0, j + dy, k, flags, component) ? grid(i + 0, j + dy, k) : fallback;
-            q0 = /*      */ isTargetCell(i - 1, j + dy, k, flags, component) ? grid(i - 1, j + dy, k) : fallback;
-            fallback = q2 = isTargetCell(i + 1, j + dy, k, flags, component) ? grid(i + 1, j + dy, k) : fallback;
-            q3 = /*      */ isTargetCell(i + 2, j + dy, k, flags, component) ? grid(i + 2, j + dy, k) : fallback;
-
-            arr[dy + 1] = interpolateMonotoneCubicHermite(q0, q1, q2, q3, fx);
         }
 
-        return interpolateMonotoneCubicHermite(arr[0], arr[1], arr[2], arr[3], fy);
+        // Interpolation along x
+        std::array<std::array<Real, 4>, 4> xInterp = {}; // [dz][dy]
+        for (int dz = -1; dz <= (is3D ? 2 : -1); ++dz)
+        {
+            for (int dy = -1; dy <= 2; ++dy)
+            {
+                std::array<Real, 4> &s = cube[dz + 1][dy + 1];
+                xInterp[dz + 1][dy + 1] = interpolateMonotoneCubicHermite(s[0], s[1], s[2], s[3], fx);
+            }
+        }
+
+        // Interpolation along y
+        std::array<Real, 4> yInterp = {}; // [dz]
+        for (int dz = -1; dz <= (is3D ? 2 : -1); ++dz)
+        {
+            std::array<Real, 4> &r = xInterp[dz + 1];
+            yInterp[dz + 1] = interpolateMonotoneCubicHermite(r[0], r[1], r[2], r[3], fy);
+        }
+
+        // Interpolation along z (or return 2D result)
+        return is3D ? interpolateMonotoneCubicHermite(yInterp[0], yInterp[1], yInterp[2], yInterp[3], fz) : yInterp[0];
     }
 
     std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doFluid, InterpolationType interpolationType)

@@ -35,8 +35,9 @@ exportVDBs = params["exportVDBs"]
 if exportVDBs and (exportImages or exportVideos):
 	raise Exception("Cannot export both VDBs and Images") 
 
-title = "simple_plume_cfl_20_" + ("conserving" if doConserving else "advectSemiLagrange")
-title = "testtestestesets_volume"
+interpolationMethod = params["interpolationMethod"] # only important for tracingMethod == "RK4"
+tracingMethod = params["tracingMethod"] # only important for notCoserving (EE1: Explicit Euler Order 1, EE2: Explicit Euler with MAC cormack, RK$, Runge Kutta 4)
+
 title = params["title"]
 
 # set time step range
@@ -126,22 +127,22 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 	#dissolveSmoke(flags=flags, density=density, speed=4)
 
 	if not doConserving:
-		#advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect 
-		#advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
-		#advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=1) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
+		if tracingMethod.startswith("EE"):
+			order = int(tracingMethod[-1])  # Extracts 1 or 2 from "EE1" or "EE2"
+			advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect 
+			advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
+			advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 
-		type = 3	
-		simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=type) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
-		simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,interpolationType=type) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
-		simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=type) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+		elif tracingMethod == "RK4":
+			simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+			simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+			simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
 	else:
-		type = 2
 		#simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
-
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=type)
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=type)
-		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=type)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod)
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod)
 
 	if doOpen:
 		resetOutflow(flags=flags,real=density) 
