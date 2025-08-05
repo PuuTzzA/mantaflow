@@ -96,7 +96,7 @@ if (GUI) and not exportVDBs:
 	gui.show( True ) 
 	gui.pause()
 
-data_collector = Data_collectior(title=title ,base_dir=f"../exports/simple_plume_3d/", params=params, export_data=exportData, 
+data_collector = Data_collectior(title=title ,base_dir=f"../exports/test/", params=params, export_data=exportData, 
 								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
 								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], []], tracked_grids_indeces=[0, 2])
 
@@ -139,8 +139,8 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 			simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
 	else:
-		simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
-		#massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod)
+		#simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
+		massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod)
 		massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod)
 

@@ -823,7 +823,8 @@ namespace Manta
         }
     }
 
-    Real clampToMinMax(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff, IndexInt i, IndexInt j, IndexInt k)
+    KERNEL()
+    void knClampToMinMaxDiff(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff)
     {
         Real start = val(i, j, k);
         val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
@@ -832,8 +833,6 @@ namespace Manta
             val(i, j, k) = 0;
         }
         diff(i, j, k) = val(i, j, k) - start;
-        return val(i, j, k) - start;
-        // val(i, j, k) = Manta::clamp(val(i, j, k), 0.f, 1.f);
     }
 
     KERNEL()
@@ -1022,84 +1021,65 @@ namespace Manta
             }
         }
 
-        // Step 7: If higher order interpolation, make clamp and redistribute the clamped quantities
-        static Real sum = 0;
-        static Real sumDistributed = 0;
+        // Step 7: If higher order interpolation, clamp the values and redistribute the through clamping created/destroyed mass
         if (interpolationType != LINIEAR)
         {
-            Real sum_loc = 0;
             tempGrid.clear();
-            FOR_IJK(grid)
+
+            knClampToMinMaxDiff(grid, min, max, tempGrid);
+
+            for (int _ = 0; _ < 1; _++)
             {
-                sum_loc += clampToMinMax(grid, min, max, tempGrid, i, j, k);
-                // temp Grid now has the lost/created mass per cell
-            }
-            if (component == NONE)
-            {
-                sum += sum_loc;
-
-                for (int _ = 0; _ < 1; _++)
-                {
-                    FOR_IJK(grid)
-                    {
-                        if (tempGrid(i, j, k) == 0.)
-                        {
-                            continue; // no mass to distribute
-                        }
-
-                        Vec3 gradient = getGradient(grid, i, j, k);
-                        normalize(gradient);
-                        gradient *= signum(tempGrid(i, j, k));
-
-                        Vec3i target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
-
-                        if (!isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
-                        {
-                            target = Vec3i(i - std::round(gradient.x), j - std::round(gradient.y), k - std::round(gradient.z));
-                        }
-                        if (!isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
-                        {
-                            target = Vec3i(i, j, k);
-                        }
-
-                        Real start = grid(target);
-                        Real amountToRemove = tempGrid(i, j, k);
-                        grid(target) = Manta::clamp(grid(target) - amountToRemove, min(target), max(target));
-
-                        tempGrid(i, j, k) = 0;
-                        tempGrid(target) += amountToRemove + (grid(target) - start);
-
-                        sumDistributed -= (start - grid(target));
-                    }
-                }
-
-                weights.distributeLostMass(grid, tempGrid, min, max, sumDistributed);
-
-                /* FOR_IJK(grid)
-                {
-                    Vec3 pos = Vec3(i, j, k) + offset;
-                    pos = RK4(pos, -dt, vel);
-
-                    std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
-                    getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags_n_plus_one, offset, component, FLUID_ISH);
-
-                    for (const auto &[n, w] : neighboursAndWeights)
-                    {
-                        grid(n) -= w * tempGrid(i, j, k);
-                        sumDistributed -= w * tempGrid(i, j, k);
-                    }
-                } */
-
-                std::cout << "TOTAL CLAMPED STUFF: " << sum << std::endl;
-                std::cout << "TOTAL ANTI-CLAMPED STUFF: " << sumDistributed << std::endl;
                 FOR_IJK(grid)
                 {
-                    if (grid(i, j, k) < 0 && component == NONE)
+                    if (tempGrid(i, j, k) == 0.)
                     {
-                        std::cout << "ASDLFKJASLDFKJASLDFKJ" << grid(i, j, k) << ", new: " << tempGrid(i, j, k) << ", at: (" << i << ", " << j << std::endl;
+                        continue; // no mass to distribute
                     }
+
+                    Vec3 gradient = getGradient(grid, i, j, k);
+                    normalize(gradient);
+                    gradient *= signum(tempGrid(i, j, k));
+
+                    Vec3i target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
+                    if (!isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                    {
+                        target = Vec3i(i, j, k);
+                    }
+
+                    Real massToMove = tempGrid(i, j, k);
+
+                    if (min(target) <= grid(target) - massToMove && grid(target) - massToMove <= max(target))
+                    {
+                        grid(target) -= massToMove;
+                        tempGrid(i, j, k) = 0;
+                        continue;
+                    }
+
+                    Real targetBefore = grid(target);
+                    grid(target) = Manta::clamp(grid(target) - massToMove, min(target), max(target));
+                    Real movedMass = targetBefore - grid(target);
+
+                    massToMove -= movedMass;
+
+                    if (massToMove > EPSILON * EPSILON)
+                    {
+                        gradient *= 2.4; // find the next neighbour
+                        target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
+                        if (isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                        {
+                            targetBefore = grid(target);
+                            grid(target) = Manta::clamp(grid(target) - massToMove, min(target), max(target));
+                            movedMass = targetBefore - grid(target);
+
+                            massToMove -= movedMass;
+                        }
+                    }
+                    tempGrid(i, j, k) = massToMove;
                 }
             }
+
+            weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
         // setOutflowToZero(grid, flags_n_plus_one, component);

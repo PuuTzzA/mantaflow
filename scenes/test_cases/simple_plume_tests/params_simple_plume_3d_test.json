@@ -1,9 +1,9 @@
 {
-  "title": "simple_plume_3d_conserving_test",
+  "title": "testtesttest_8",
 
   "dimension": 2,
-  "resolutionX": 50,
-  "resolutionY": 50,
+  "resolutionX": 100,
+  "resolutionY": 100,
   "resolutionZ": 20,
 
   "doOpen": false,
@@ -12,12 +12,12 @@
   "tracingMethod": "RK4",
   "interpolationMethod": 2,
 
-  "exportData": false,
+  "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 300,
+  "max_time": 150,
   "maxCFL": 2, 
   "dt": 20
 }

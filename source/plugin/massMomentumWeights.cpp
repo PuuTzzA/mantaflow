@@ -147,19 +147,26 @@ namespace Manta
         }
     }
 
+#define EPSILON 1e-9
+
     void MassMomentumWeights::distributeLostMass(Grid<Real> &grid, Grid<Real> &lostMass, Grid<Real> &min, Grid<Real> &max, Real &subractedMass)
     {
         for (int _ = 0; _ < 4; _++)
         {
-            Grid<Real> removedMass(lostMass.getParent());
-
             FOR_IJK(grid)
             {
                 Vec3i cellJ = Vec3i(i, j, k);
+                std::vector<Vec3i> &reverseWeightsCellJ = reverseWeights[index(cellJ)];
 
-                Real weight = 1.0 / (Real)reverseWeights[index(cellJ)].size();
+                Real weight = 1.0 / (Real)reverseWeightsCellJ.size();
+                Real massToMove = lostMass(cellJ);
 
-                for (auto it = reverseWeights[index(cellJ)].begin(); it != reverseWeights[index(cellJ)].end();)
+                if (std::abs(massToMove) < EPSILON)
+                {
+                    continue;
+                }
+
+                for (auto it = reverseWeightsCellJ.begin(); it != reverseWeightsCellJ.end();)
                 {
                     Vec3i cellI = (*it);
 
@@ -170,34 +177,33 @@ namespace Manta
                     {
                         if (_cellJ == cellJ) // found correct weight from cellI -> cellJ
                         {
-                            if (min(cellI) <= grid(cellI) - lostMass(cellJ) * weight && grid(cellI) - lostMass(cellJ) * weight <= max(cellI))
+                            if (min(cellI) <= grid(cellI) - massToMove * weight && grid(cellI) - massToMove * weight <= max(cellI))
                             {
-                                grid(cellI) -= lostMass(cellJ) * weight;
-                                subractedMass -= lostMass(cellJ) * weight;
-
-                                removedMass(cellJ) -= lostMass(cellJ) * weight;
+                                grid(cellI) -= massToMove * weight;
+                                lostMass(cellJ) -= massToMove * weight;
                                 break;
                             }
-                            else
-                            {
-                                Real start = grid(cellI);
-                                grid(cellI) = Manta::clamp(grid(cellI) - lostMass(cellJ) * weight, min(cellI), max(cellI));
 
-                                removedMass(cellJ) -= start - grid(cellI);
+                            Real cellIBefore = grid(cellI);
+                            grid(cellI) = Manta::clamp(grid(cellI) - massToMove * weight, min(cellI), max(cellI));
+                            Real massMoved = cellIBefore - grid(cellI);
+                            lostMass(cellJ) -= massMoved;
 
-                                reverseWeights[index(cellJ)].erase(it);
-                                deleted = true;
-                            }
+                            // if (std::abs(massMoved - massToMove * weight) > 1e-6) // can't fit more mass
+                            //{
+                            reverseWeightsCellJ.erase(it);
+                            deleted = true;
+                            //}
+                            break;
                         }
                     }
+
                     if (!deleted)
                     {
                         it++;
                     }
                 }
             }
-        
-            lostMass.add(removedMass);
         }
     }
 }
