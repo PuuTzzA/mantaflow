@@ -10,7 +10,7 @@ import math
 from graph_creation import *
 
 class Data_collectior:
-    def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], fixed_volume="fixed_volume"):
+    def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], image_grids_indeces=[]):
         self.title = title
         self.base_dir = Path(base_dir).expanduser().resolve() / self.title
 
@@ -27,7 +27,7 @@ class Data_collectior:
         self.export_vdbs = export_vdbs
         self.trackable_grids=trackable_grid_names
         self.tracked_grids_indeces = tracked_grids_indeces
-        self.fixed_volume = fixed_volume
+        self.image_grids_indeces = image_grids_indeces
 
     def init(self):
         #if self.export_data or self.export_images:
@@ -47,7 +47,7 @@ class Data_collectior:
         self.current_frame = 0
         
         if (self.export_images):
-           for index in self.tracked_grids_indeces:
+           for index in self.image_grids_indeces:
             (self.base_dir / f"{self.trackable_grids[index][0]}_frames").mkdir(parents=True, exist_ok=True)
         
         if self.export_vdbs:
@@ -70,7 +70,7 @@ class Data_collectior:
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
 
             for i in range(len(self.trackable_grids)):
-                if i in self.tracked_grids_indeces:
+                if i in self.image_grids_indeces:
                     name = self.trackable_grids[i][0]
                     gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(self.current_frame)).zfill(4)}.png"))
                     
@@ -114,7 +114,6 @@ class Data_collectior:
         self.data["results"]["cfl"]["std_dev"] = cfl_std_dev
         self.data["results"]["cfl"]["median"] = cfl_median
 
-        fixed_volume_frames = []
         for index in self.tracked_grids_indeces:
             grid_name = self.trackable_grids[index][0]
             min_sum   = float("inf")
@@ -133,9 +132,6 @@ class Data_collectior:
                 found_any = True
                 min_sum = min(min_sum, s)
                 max_sum = max(max_sum, s)  
-
-                if grid_name == self.fixed_volume:
-                    fixed_volume_frames.append(s)
 
             if not found_any:
                 continue
@@ -156,7 +152,7 @@ class Data_collectior:
                                   title=self.title, include_cfl=True, include_extra_stats=True, export_path=self.base_dir / "graph.png")
 
         if self.export_videos:
-            for index in self.tracked_grids_indeces:
+            for index in self.image_grids_indeces:
                 name = self.trackable_grids[index][0]
 
 

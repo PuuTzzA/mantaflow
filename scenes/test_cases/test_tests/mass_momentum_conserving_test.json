@@ -1,0 +1,23 @@
+{
+  "title": "___________",
+
+  "dimension": 2,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 20,
+
+  "doOpen": false,
+  "doObstacle": true,
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 1,
+
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+
+  "max_time": 10,
+  "maxCFL": 2, 
+  "dt": 20
+}

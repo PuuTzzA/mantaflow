@@ -4,10 +4,10 @@ from data_collection import *
 import json
 import os
 
-params = {}
+EXPORTS_BASE_DIR = "../exports/test/"
 
-param_path = "../scenes/test_cases/simple_plume_tests/params_simple_plume_3d_test.json"
-#param_path = "../scenes/test_cases/gas/params_gas_low_cfl.json"
+params = {}
+param_path = "../scenes/test_cases/test_tests/mass_momentum_conserving_test.json"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
@@ -96,9 +96,10 @@ if (GUI) and not exportVDBs:
 	gui.show( True ) 
 	gui.pause()
 
-data_collector = Data_collectior(title=title ,base_dir=f"../exports/test/", params=params, export_data=exportData, 
+data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
 								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], []], tracked_grids_indeces=[0, 2])
+								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], []], 
+								 tracked_grids_indeces=[0, 2], image_grids_indeces=[0])
 
 data_collector.init()
 

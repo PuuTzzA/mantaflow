@@ -1,5 +1,5 @@
 {
-  "title": "test_params_fixed_vel_field",
+  "title": "moinmeister",
 
   "dimension": 2,
   "resolutionX": 100,
@@ -11,12 +11,12 @@
   "tracingMethod": "RK4",
   "interpolationMethod": 3,
 
-  "exportData": false,
-  "exportImages": false,
-  "exportVideos": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
   "exportVDBs": false,
 
-  "max_time": 500,
+  "max_time": 10,
   "maxCFL": 5, 
   "dt": 20
 }

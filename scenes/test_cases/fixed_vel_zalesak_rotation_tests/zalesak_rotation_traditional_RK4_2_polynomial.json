@@ -1,0 +1,20 @@
+{
+  "title": "zalesak_rotation_traditional_RK4_2_polynomial",
+  "dimension": 2,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 100,
+  "doOpen": false,
+  "doObstacle": true,
+  "scenario": "zalesak_rotation",
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 2,
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": false,
+  "max_time": 150,
+  "maxCFL": 2,
+  "dt": 20
+}

@@ -19,9 +19,9 @@ namespace Manta
 
     enum InterpolationType
     {
-        LINIEAR,
-        CUBIC_CONVOLUTIONAL, // standart cubic interpolation (less accurate than CUBIC_POLYNOMIAL)
-        CUBIC_POLYNOMIAL, // polynomial interpolation with Lagrange basis functions
+        LINEAR,
+        CUBIC_CONVOLUTIONAL,    // standart cubic interpolation (less accurate than CUBIC_POLYNOMIAL)
+        CUBIC_POLYNOMIAL,       // polynomial interpolation with Lagrange basis functions
         MONOTONE_CUBIC_HERMITE, // Monotone cubic Hermite interpolation (nach Fritsch und Carlson)
     };
 
@@ -31,6 +31,40 @@ namespace Manta
         FLUID_ISH,
         FLUID_STRICT
     };
+
+    inline std::string toString(MACGridComponent component)
+    {
+        switch (component)
+        {
+        case MAC_X:
+            return "MAC_X";
+        case MAC_Y:
+            return "MAC_Y";
+        case MAC_Z:
+            return "MAC_Z";
+        case NONE:
+            return "NONE";
+        default:
+            return "???";
+        }
+    }
+    
+    inline std::string toString(InterpolationType component)
+    {
+        switch (component)
+        {
+        case LINEAR:
+            return "Linear";
+        case CUBIC_CONVOLUTIONAL:
+            return "Cubic Convolutional";
+        case CUBIC_POLYNOMIAL:
+            return "Cubic Polynomial";
+        case MONOTONE_CUBIC_HERMITE:
+            return "Monotone Cubic Hermite";
+        default:
+            return "???";
+        }
+    }
 
     void fillWithOnes(GridBase *grid);
 

@@ -3,7 +3,10 @@ from data_collection import *
 import json
 import sys
 
-param_path = "../scenes/test_cases/fixed_vel_field/params_fixed_velocity_low.json"
+EXPORTS_BASE_DIR = "../exports/test/"
+
+params = {}
+param_path = "../scenes/test_cases/test_tests/fixed_velocity_test.json"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
@@ -104,10 +107,10 @@ if GUI:
 
 	gui.pause()
 
-data_collector = Data_collectior(title=title, base_dir="../exports/fixed_velocity_field/", params=params, 
+data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
 								 export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
 				                 trackable_grid_names=[["testPhi", testPhi], ["testField", testField], ["curl", curl], [], []], 
-				                 tracked_grids_indeces=[0, 1], fixed_volume="testField")
+				                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0, 1])
 
 data_collector.init()
 

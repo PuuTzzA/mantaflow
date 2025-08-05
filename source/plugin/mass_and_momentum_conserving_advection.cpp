@@ -339,14 +339,17 @@ namespace Manta
 
     inline Real cubicPolynomialInterpolationWeight(Real s, int idx)
     {
+        const float oneThird = static_cast<Real>(1) / static_cast<Real>(3);
+        const float oneSixth = static_cast<Real>(1) / static_cast<Real>(6);
+
         if (idx == -1)
-            return -0.333333 * s + 0.5 * s * s - 0.166666 * s * s * s;
+            return - oneThird * s + 0.5 * s * s - oneSixth * s * s * s;
         if (idx == 0)
             return 1.0 - s * s + 0.5 * (s * s * s - s);
         if (idx == 1)
             return s + 0.5 * (s * s - s * s * s);
         if (idx == 2)
-            return 0.166666 * (s * s * s - s);
+            return oneSixth * (s * s * s - s);
         return 0.0;
     }
 
@@ -583,7 +586,7 @@ namespace Manta
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
         {
-        case LINIEAR:
+        case LINEAR:
             getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeights;
             break;
         case CUBIC_POLYNOMIAL:
@@ -690,7 +693,7 @@ namespace Manta
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
         {
-        case LINIEAR:
+        case LINEAR:
             getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeights;
             break;
         case CUBIC_POLYNOMIAL:
@@ -852,6 +855,8 @@ namespace Manta
             throw std::runtime_error("InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection");
         }
 
+        // std::cout << "Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
+
         typedef typename GridType::BASETYPE T;
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
@@ -944,7 +949,7 @@ namespace Manta
 
         // Step 3: clamp gamma
         weights.calculateIntermediateResult(tempGrid, gammaCumulative, minGamma, maxGamma);
-        if (interpolationType != LINIEAR)
+        if (interpolationType != LINEAR)
         {
             knClampToMinMax(tempGrid, minGamma, maxGamma);
         }
@@ -1022,13 +1027,13 @@ namespace Manta
         }
 
         // Step 7: If higher order interpolation, clamp the values and redistribute the through clamping created/destroyed mass
-        if (interpolationType != LINIEAR)
+        if (interpolationType != LINEAR)
         {
             tempGrid.clear();
 
             knClampToMinMaxDiff(grid, min, max, tempGrid);
 
-            for (int _ = 0; _ < 1; _++)
+            for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
             {
                 FOR_IJK(grid)
                 {
@@ -1082,7 +1087,7 @@ namespace Manta
             weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
-        // setOutflowToZero(grid, flags_n_plus_one, component);
+        setOutflowToZero(grid, flags_n_plus_one, component);
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
@@ -1130,7 +1135,7 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = LINIEAR)
+    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = LINEAR)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
@@ -1149,7 +1154,7 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi, int interpolationType = LINIEAR)
+    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi, int interpolationType = LINEAR)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
@@ -1195,7 +1200,7 @@ namespace Manta
             return;
         }
 
-        Vec3 pos = customTrace(Vec3(i, j, k), -dt, vel, flags, offset, component, FLUID_ISH);
+        Vec3 pos = customTrace(Vec3(i, j, k), -dt, vel, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
 
         if (interpolationType != MONOTONE_CUBIC_HERMITE)
         {
@@ -1203,7 +1208,7 @@ namespace Manta
 
             switch (interpolationType)
             {
-            case LINIEAR:
+            case LINEAR:
                 getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
                 break;
             case CUBIC_POLYNOMIAL:
