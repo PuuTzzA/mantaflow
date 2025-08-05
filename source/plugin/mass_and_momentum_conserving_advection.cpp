@@ -82,6 +82,12 @@ namespace Manta
         }
     }
 
+    template <typename T>
+    int signum(T val)
+    {
+        return (T(0) < val) - (val < T(0));
+    }
+
     //! Semi-Lagrange interpolation kernel
     KERNEL()
     void knFillHelper(Grid<Real> &dst)
@@ -1026,10 +1032,46 @@ namespace Manta
             FOR_IJK(grid)
             {
                 sum_loc += clampToMinMax(grid, min, max, tempGrid, i, j, k);
+                // temp Grid now has the lost/created mass per cell
             }
-            if (true || component == NONE)
+            if (component == NONE)
             {
                 sum += sum_loc;
+
+                for (int _ = 0; _ < 1; _++)
+                {
+                    FOR_IJK(grid)
+                    {
+                        if (tempGrid(i, j, k) == 0.)
+                        {
+                            continue; // no mass to distribute
+                        }
+
+                        Vec3 gradient = getGradient(grid, i, j, k);
+                        normalize(gradient);
+                        gradient *= signum(tempGrid(i, j, k));
+
+                        Vec3i target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
+
+                        if (!isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                        {
+                            target = Vec3i(i - std::round(gradient.x), j - std::round(gradient.y), k - std::round(gradient.z));
+                        }
+                        if (!isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                        {
+                            target = Vec3i(i, j, k);
+                        }
+
+                        Real start = grid(target);
+                        Real amountToRemove = tempGrid(i, j, k);
+                        grid(target) = Manta::clamp(grid(target) - amountToRemove, min(target), max(target));
+
+                        tempGrid(i, j, k) = 0;
+                        tempGrid(target) += amountToRemove + (grid(target) - start);
+
+                        sumDistributed -= (start - grid(target));
+                    }
+                }
 
                 weights.distributeLostMass(grid, tempGrid, min, max, sumDistributed);
 
