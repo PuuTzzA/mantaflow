@@ -3,13 +3,14 @@ from data_collection import *
 import json
 import sys
 
-EXPORTS_BASE_DIR = "../exports/fixed_vel_zalesak_rotation/"
 
 params = {}
 param_path = "../scenes/test_cases/test_tests/fixed_velocity_test.json"
+EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
+    EXPORTS_BASE_DIR = "../exports/fixed_vel_zalesak_rotation/"
 
 with open(param_path) as f:
 	params = json.load(f)

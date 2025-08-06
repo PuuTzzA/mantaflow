@@ -9,15 +9,15 @@
   "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
-  "tracingMethod": "RK4",
+  "tracingMethod": "EE1",
   "interpolationMethod": 1,
 
-  "exportData": false,
+  "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 160,
+  "max_time": 50,
   "maxCFL": 2, 
   "dt": 20
 }

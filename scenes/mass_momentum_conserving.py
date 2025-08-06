@@ -4,13 +4,13 @@ from data_collection import *
 import json
 import os
 
-EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_2d_low/"
-
 params = {}
 param_path = "../scenes/test_cases/test_tests/mass_momentum_conserving_test.json"
+EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
+    EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_2d_low/"
 
 with open(param_path) as f:
 	params = json.load(f)

@@ -71,6 +71,10 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         
         frames_sets.append(field_frames)
 
+    #plt.style.use("seaborn-v0_8-deep")
+    plt.style.use("seaborn-v0_8-notebook")
+    #plt.style.use("default")
+
     amount = len(interested_fields) + (1 if include_cfl else 0) + (1 if include_dt else 0)
     fig, ax = plt.subplots(amount, 1, figsize=(12, 4 * amount), sharex=True)
     ax = np.atleast_1d(ax)
@@ -88,7 +92,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
             median = np.median(frames)
 
             data_name = f", {data_names[i]}" if data_names[i] != "" else ""
-            ax[current_ax].plot(frames, linestyle='-', linewidth=2.5, color=COLOR_THEMES[i]["main"], label=f'{key}{data_name}', zorder=2)
+            ax[current_ax].plot(frames, linewidth=2.5, label=f'{key}{data_name}', zorder=2)
             if include_extra_stats:
                 ax[current_ax].axhline(mean, color=COLOR_THEMES[i]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
                 ax[current_ax].axhline(median, color=COLOR_THEMES[i]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
