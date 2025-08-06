@@ -155,7 +155,6 @@ class Data_collectior:
             for index in self.image_grids_indeces:
                 name = self.trackable_grids[index][0]
 
-
                 frames_dir   = self.base_dir / f"{name}_frames"
                 pattern      = f"{name}_%04d.png"       # frame_0001.png, frame_0002.png …
                 fps          = 30                       # playback frame‑rate
@@ -163,11 +162,15 @@ class Data_collectior:
                 bitrate      = "0"                      # Leave "0" for constrained‑quality mode
                 output_file  = self.base_dir / f"{name}.webm"
 
+                # Title overlay (drawtext filter)
+                drawtext_filter = f"drawtext=text='{self.title}':fontsize=24:fontcolor=white:x=10:y=10:borderw=2"
+
                 cmd = [
                     "ffmpeg",
                     "-y",                               # overwrite existing output
                     "-framerate", str(fps),             # input fps
                     "-i", str(frames_dir / pattern),    # numbered‑file pattern
+                    "-vf", drawtext_filter,             # title overlay
                     "-c:v", "libvpx-vp9",               # VP9 video codec
                     "-crf", str(crf),                   # quality target
                     "-b:v", bitrate,                    # needed even when "0"

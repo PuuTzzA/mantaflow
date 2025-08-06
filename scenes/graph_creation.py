@@ -29,7 +29,7 @@ COLOR_THEMES = [
 ]
 
 
-def create_combined_graph(data_array, data_names, interested_fields, title, include_cfl=True, include_dt=True, include_extra_stats=True, export_path="./exports/combinded.png"):
+def create_combined_graph(data_array, data_names, interested_fields, title, include_cfl=True, include_dt=True, include_extra_stats=True, export_path="./exports/combinded.png", figsize=(12,4)):
     """
     Creates and saves a combined multi-line graph showing the evolution of various fields over time.
 
@@ -42,6 +42,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         include_dt (bool): If True, includes the timestep (dt) in the plots.
         include_extra_stats (bool): If True, overlays mean, median, min, and max lines for each dataset.
         export_path (str): File path where the final plot image will be saved.
+        figsize (tuple of number): Size of one individual graph.
     """
     frames_sets = []
 
@@ -76,7 +77,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
     #plt.style.use("default")
 
     amount = len(interested_fields) + (1 if include_cfl else 0) + (1 if include_dt else 0)
-    fig, ax = plt.subplots(amount, 1, figsize=(12, 4 * amount), sharex=True)
+    fig, ax = plt.subplots(amount, 1, figsize=(figsize[0], figsize[1] * amount), sharex=True)
     ax = np.atleast_1d(ax)
 
     current_ax = 0
@@ -94,10 +95,10 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
             data_name = f", {data_names[i]}" if data_names[i] != "" else ""
             ax[current_ax].plot(frames, linewidth=2.5, label=f'{key}{data_name}', zorder=2)
             if include_extra_stats:
-                ax[current_ax].axhline(mean, color=COLOR_THEMES[i]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
-                ax[current_ax].axhline(median, color=COLOR_THEMES[i]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
-                ax[current_ax].axhline(minimum, color=COLOR_THEMES[i]["min"], linestyle=':', linewidth=1.2, label=f'Min{data_name}: {minimum:.2f}', zorder=1)
-                ax[current_ax].axhline(maximum, color=COLOR_THEMES[i]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
+                ax[current_ax].axhline(mean, color=COLOR_THEMES[i % len(COLOR_THEMES)]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
+                ax[current_ax].axhline(median, color=COLOR_THEMES[i % len(COLOR_THEMES)]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
+                ax[current_ax].axhline(minimum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["min"], linestyle=':', linewidth=1.2, label=f'Min{data_name}: {minimum:.2f}', zorder=1)
+                ax[current_ax].axhline(maximum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
             ax[current_ax].set_ylabel(key)
             ax[current_ax].set_title(f"{key} Over Time")
             ax[current_ax].legend(loc='best')
