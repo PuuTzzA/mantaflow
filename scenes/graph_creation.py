@@ -104,7 +104,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
 
     plt.xlabel("Timesteps")
     fig.suptitle(title, fontsize="x-large")
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, .99])
     plt.savefig(export_path, dpi=300)
 
 #NAME = "shear_flow"

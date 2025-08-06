@@ -1,22 +1,18 @@
 {
-  "title": "moinmeister",
-
+  "title": "shear_flow_traditional_RK4_1_cubic",
   "dimension": 2,
   "resolutionX": 100,
   "resolutionY": 100,
-  "resolutionZ": 20,
-
-  "scenario" : "shear_flow",
+  "resolutionZ": 100,
+  "scenario": "shear_flow",
   "doConserving": false,
-  "tracingMethod": "EE1",
+  "tracingMethod": "RK4",
   "interpolationMethod": 1,
-
   "exportData": true,
-  "exportImages": false,
-  "exportVideos": false,
+  "exportImages": true,
+  "exportVideos": true,
   "exportVDBs": false,
-
   "max_time": 300,
-  "maxCFL": 5, 
+  "maxCFL": 5,
   "dt": 20
 }

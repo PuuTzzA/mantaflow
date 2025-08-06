@@ -1,0 +1,19 @@
+{
+  "title": "simple_plume_obstacle_2d_low_traditional_RK4_0_linear",
+  "dimension": 2,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 100,
+  "doOpen": false,
+  "doObstacle": true,
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 0,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 160,
+  "maxCFL": 2,
+  "dt": 20
+}

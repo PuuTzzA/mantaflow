@@ -3,7 +3,7 @@ from data_collection import *
 import json
 import sys
 
-EXPORTS_BASE_DIR = "../exports/test/"
+EXPORTS_BASE_DIR = "../exports/fixed_vel_zalesak_rotation/"
 
 params = {}
 param_path = "../scenes/test_cases/test_tests/fixed_velocity_test.json"
@@ -105,12 +105,12 @@ if GUI:
 	gui = Gui()
 	gui.show( True ) 
 
-	gui.pause()
+	#gui.pause()
 
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
 								 export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
 				                 trackable_grid_names=[["testPhi", testPhi], ["testField", testField], ["curl", curl], [], []], 
-				                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0, 1])
+				                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0, 1], graph_grids=[["testField", "sum"]])
 
 data_collector.init()
 

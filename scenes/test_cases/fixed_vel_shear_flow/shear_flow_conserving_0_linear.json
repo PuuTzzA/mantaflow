@@ -1,0 +1,18 @@
+{
+  "title": "shear_flow_conserving_0_linear",
+  "dimension": 2,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 100,
+  "scenario": "shear_flow",
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 0,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 300,
+  "maxCFL": 5,
+  "dt": 20
+}

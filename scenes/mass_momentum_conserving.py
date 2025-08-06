@@ -4,7 +4,7 @@ from data_collection import *
 import json
 import os
 
-EXPORTS_BASE_DIR = "../exports/test/"
+EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_2d_low/"
 
 params = {}
 param_path = "../scenes/test_cases/test_tests/mass_momentum_conserving_test.json"
@@ -56,7 +56,7 @@ density = s.create(RealGrid)
 pressure = s.create(RealGrid)
 innen0außen1 = s.create(RealGrid)
 curl = s.create(RealGrid)
-velocityMagnitude = s.create(RealGrid)
+velocity_magnitude = s.create(RealGrid)
 
 vel_gamma = s.create(MACGrid)
 density_gamma = s.create(RealGrid)
@@ -96,11 +96,11 @@ gui = None
 if (GUI) and not exportVDBs:
 	gui = Gui()
 	gui.show( True ) 
-	gui.pause()
+	#gui.pause()
 
 data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
 								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], ["vel_magnitude", velocityMagnitude], [], [], []], 
+								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], ["vel_magnitude", velocity_magnitude], [], [], []], 
 								 tracked_grids_indeces=[0, 2, 4], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["fixed_volume", "sum"]])
 
 data_collector.init()
@@ -109,8 +109,8 @@ firstFrame = True
 #main loop
 while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000):
 	
-	computeVelocityMagnitude(dest=velocityMagnitude, vel=vel)
-	maxvel = getMaxVal(grid=velocityMagnitude, flags=flags) # flags param does nothign for now
+	computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
+	maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
 
 	if firstFrame:
 		maxvel = 15     
@@ -157,8 +157,8 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 	
 	# Output
 	calculateCurl(vel=vel, curl=curl, flags=flags)
-	computeVelocityMagnitude(dest=velocityMagnitude, vel=vel)
-	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[density])
+	computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
+	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[density, velocity_magnitude])
 
 	#timings.display()    
 	s.step()

@@ -1,0 +1,19 @@
+{
+  "title": "simple_plume_obstacle_3d_high_conserving_0_linear",
+  "dimension": 3,
+  "resolutionX": 100,
+  "resolutionY": 200,
+  "resolutionZ": 100,
+  "doOpen": true,
+  "doObstacle": true,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 0,
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": true,
+  "max_time": 90,
+  "maxCFL": 30,
+  "dt": 50
+}

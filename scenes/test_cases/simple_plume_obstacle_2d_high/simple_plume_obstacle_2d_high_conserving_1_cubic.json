@@ -1,23 +1,19 @@
 {
-  "title": "okletsgo",
-
+  "title": "simple_plume_obstacle_2d_high_conserving_1_cubic",
   "dimension": 2,
   "resolutionX": 100,
   "resolutionY": 100,
-  "resolutionZ": 20,
-
+  "resolutionZ": 100,
   "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "RK4",
   "interpolationMethod": 1,
-
-  "exportData": false,
-  "exportImages": false,
-  "exportVideos": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
   "exportVDBs": false,
-
   "max_time": 160,
-  "maxCFL": 2, 
+  "maxCFL": 10,
   "dt": 20
 }

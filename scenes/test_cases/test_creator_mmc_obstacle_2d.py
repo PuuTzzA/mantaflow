@@ -4,28 +4,29 @@ from itertools import product
 import shutil
 
 # Base directory to store JSONs
-CONTAINER_DIR = "fixed_vel_shear_flow"
+CONTAINER_DIR = "simple_plume_obstacle_3d_high"
 BASE_DIR = (Path(__file__).parent / CONTAINER_DIR).resolve()
 shutil.rmtree(BASE_DIR, ignore_errors=True)
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Constant settings
-BASE_TITLE = "shear_flow"
-dimension = 2
+BASE_TITLE = "simple_plume_obstacle_3d_high"
+dimension = 3
 resolutionX = 100
-resolutionY = 100
+resolutionY = 200
 resolutionZ = 100
 
-scenario = "shear_flow"
+doOpen = True
+doObstacle = True
 
 exportData = True
-exportImages = True
-exportVideos = True
-exportVDBs = False  # This is the flag we will output as True/False in the printed list
+exportImages = False
+exportVideos = False
+exportVDBs = True  # This is the flag we will output as True/False in the printed list
 
-max_time = 300
-maxCFL = 5
-dt = 20
+max_time = 90
+maxCFL = 30
+dt = 50
 
 # Interpolation method names
 interpolation_method_names = {
@@ -55,7 +56,8 @@ for doConserving in conserving_options:
                 "resolutionX": resolutionX,
                 "resolutionY": resolutionY,
                 "resolutionZ": resolutionZ,
-                "scenario": scenario,
+                "doOpen": doOpen,
+                "doObstacle": doObstacle,
                 "doConserving": True,
                 "tracingMethod": "RK4",  # ignored in this case
                 "interpolationMethod": interp,
@@ -91,7 +93,8 @@ for doConserving in conserving_options:
                     "resolutionX": resolutionX,
                     "resolutionY": resolutionY,
                     "resolutionZ": resolutionZ,
-                    "scenario": scenario,
+                    "doOpen": doOpen,
+                    "doObstacle": doObstacle,
                     "doConserving": False,
                     "tracingMethod": tracing,
                     "interpolationMethod": interp,

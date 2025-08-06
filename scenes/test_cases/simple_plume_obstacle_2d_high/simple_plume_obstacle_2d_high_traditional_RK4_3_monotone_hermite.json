@@ -1,0 +1,19 @@
+{
+  "title": "simple_plume_obstacle_2d_high_traditional_RK4_3_monotone_hermite",
+  "dimension": 2,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 100,
+  "doOpen": false,
+  "doObstacle": true,
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 3,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 160,
+  "maxCFL": 10,
+  "dt": 20
+}
