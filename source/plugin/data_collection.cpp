@@ -157,18 +157,26 @@ namespace Manta
     //! Kernel: Compute max norm of vec grid
     KERNEL(ijk, reduce = max)
     returns(Real maxVal = -std::numeric_limits<Real>::max())
-        Real knCompMaxInFluid(const FlagGrid &flags, const MACGrid &vel)
+        Real knGetMaxVal(const Grid<Real> &grid, const FlagGrid &flags)
     {
-        if (isValidFluid(i, j, k, flags, NONE))
-        {
-            const Real s = normSquare(vel.getCentered(i, j, k));
-            maxVal = std::max(maxVal, s);
-        }
+        maxVal = std::max(maxVal, grid(i, j, k));
     }
 
     PYTHON()
-    Real compMaxInFluid(const FlagGrid &flags, const MACGrid &vel)
+    Real getMaxVal(const Grid<Real> &grid, const FlagGrid &flags)
     {
-        return std::sqrt(knCompMaxInFluid(flags, vel));
+        return knGetMaxVal(grid, flags);
+    }
+
+    KERNEL()
+    void knComputeVelocityMagnitude(Grid<Real> &dest, const MACGrid &vel)
+    {
+        dest(i, j, k) = norm(vel.getCentered(i, j, k));
+    }
+
+    PYTHON()
+    void computeVelocityMagnitude(Grid<Real> &dest, const MACGrid &vel)
+    {
+        knComputeVelocityMagnitude(dest, vel);
     }
 }

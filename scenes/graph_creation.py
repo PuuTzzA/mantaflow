@@ -28,7 +28,21 @@ COLOR_THEMES = [
     }
 ]
 
-def create_combined_graph(data_array, data_names, interested_fields, title, include_cfl=True, include_extra_stats=True, export_path="./exports/combinded.png"):
+
+def create_combined_graph(data_array, data_names, interested_fields, title, include_cfl=True, include_dt=True, include_extra_stats=True, export_path="./exports/combinded.png"):
+    """
+    Creates and saves a combined multi-line graph showing the evolution of various fields over time.
+
+    Parameters:
+        data_array (list of dict): List of datasets, each containing "frame_data" with field values per timestep.
+        data_names (list of str): Names corresponding to each dataset for labeling in the graph legend.
+        interested_fields (list of tuples): List of (field_name, target_key (like sum, max, ...)) pairs to extract from each frame.
+        title (str): The title for the entire figure.
+        include_cfl (bool): If True, includes the CFL field in the plots.
+        include_dt (bool): If True, includes the timestep (dt) in the plots.
+        include_extra_stats (bool): If True, overlays mean, median, min, and max lines for each dataset.
+        export_path (str): File path where the final plot image will be saved.
+    """
     frames_sets = []
 
     for data in data_array:
@@ -40,19 +54,24 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         field_frames = {}
         if include_cfl:
             field_frames["cfl"] = []
-        for interested_field in interested_fields:
-            field_frames[f"{interested_field} Sum"] = []
-
+        if include_dt:
+            field_frames["dt"] = []
+        for interested_field, target in interested_fields:
+            field_frames[f"{interested_field} {target}"] = []
+              
         for key, grid in frames.items():
             if include_cfl:
                 field_frames["cfl"].append(grid["cfl"])
+            
+            if include_dt:
+                field_frames["dt"].append(grid["dt"])
 
-            for interested_field in interested_fields:
-                field_frames[f"{interested_field} Sum"].append(grid[interested_field]["sum"])
+            for interested_field, target in interested_fields:
+                field_frames[f"{interested_field} {target}"].append(grid[interested_field][target])
         
         frames_sets.append(field_frames)
 
-    amount = len(interested_fields) + (1 if include_cfl else 0)
+    amount = len(interested_fields) + (1 if include_cfl else 0) + (1 if include_dt else 0)
     fig, ax = plt.subplots(amount, 1, figsize=(12, 4 * amount), sharex=True)
     ax = np.atleast_1d(ax)
 

@@ -56,10 +56,12 @@ density = s.create(RealGrid)
 pressure = s.create(RealGrid)
 innen0außen1 = s.create(RealGrid)
 curl = s.create(RealGrid)
+velocityMagnitude = s.create(RealGrid)
 
 vel_gamma = s.create(MACGrid)
 density_gamma = s.create(RealGrid)
 innen0außen1_gamma = s.create(RealGrid)
+phiObs = s.create(LevelsetGrid)
 
 #prepare grids
 bWidth=2
@@ -98,8 +100,8 @@ if (GUI) and not exportVDBs:
 
 data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
 								 export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], [], []], 
-								 tracked_grids_indeces=[0, 2], image_grids_indeces=[0])
+								 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], ["vel_magnitude", velocityMagnitude], [], [], []], 
+								 tracked_grids_indeces=[0, 2, 4], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["fixed_volume", "sum"]])
 
 data_collector.init()
 
@@ -107,8 +109,8 @@ firstFrame = True
 #main loop
 while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000):
 	
-	maxvel = vel.getMax()
-	#maxvel = compMaxInFluid(flags, vel)
+	computeVelocityMagnitude(dest=velocityMagnitude, vel=vel)
+	maxvel = getMaxVal(grid=velocityMagnitude, flags=flags) # flags param does nothign for now
 
 	if firstFrame:
 		maxvel = 15     
@@ -119,14 +121,13 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 	print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxvel: {maxvel}")
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
-
-
 	if s.timeTotal<3000:
 		source.applyToGrid(grid=density, value=1)
 
 	# optionally, dissolve smoke
-	#dissolveSmoke(flags=flags, density=density, speed=4)
+	# dissolveSmoke(flags=flags, density=density, speed=4)
 
+	#Advection
 	if not doConserving:
 		if tracingMethod.startswith("EE"):
 			order = int(tracingMethod[-1])  # Extracts 1 or 2 from "EE1" or "EE2"
@@ -148,13 +149,15 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 1000)
 	if doOpen:
 		resetOutflow(flags=flags,real=density) 
 
+	# Pressure Solve
 	setWallBcs(flags=flags, vel=vel)    
 	addBuoyancy(density=density, vel=vel, gravity=vec3(0,-4e-3,0), flags=flags)
 
 	solvePressure(flags=flags, vel=vel, pressure=pressure)
 	
+	# Output
 	calculateCurl(vel=vel, curl=curl, flags=flags)
-
+	computeVelocityMagnitude(dest=velocityMagnitude, vel=vel)
 	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[density])
 
 	#timings.display()    

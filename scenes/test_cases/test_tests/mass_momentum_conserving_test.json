@@ -1,5 +1,5 @@
 {
-  "title": "___________",
+  "title": "okletsgo",
 
   "dimension": 2,
   "resolutionX": 100,
@@ -8,16 +8,16 @@
 
   "doOpen": false,
   "doObstacle": true,
-  "doConserving": false,
+  "doConserving": true,
   "tracingMethod": "RK4",
   "interpolationMethod": 1,
 
   "exportData": true,
-  "exportImages": true,
-  "exportVideos": true,
+  "exportImages": false,
+  "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 10,
+  "max_time": 100,
   "maxCFL": 2, 
   "dt": 20
 }

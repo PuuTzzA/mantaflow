@@ -10,7 +10,7 @@ import math
 from graph_creation import *
 
 class Data_collectior:
-    def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], image_grids_indeces=[]):
+    def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], image_grids_indeces=[], graph_grids=[]):
         self.title = title
         self.base_dir = Path(base_dir).expanduser().resolve() / self.title
 
@@ -28,6 +28,7 @@ class Data_collectior:
         self.trackable_grids=trackable_grid_names
         self.tracked_grids_indeces = tracked_grids_indeces
         self.image_grids_indeces = image_grids_indeces
+        self.graph_grids = graph_grids
 
     def init(self):
         #if self.export_data or self.export_images:
@@ -147,9 +148,8 @@ class Data_collectior:
             with open(self.base_dir / "data.json", "w") as f:
                 json.dump(self.data, f, indent=4)
 
-            interested_fields = [self.trackable_grids[i][0] for i in self.tracked_grids_indeces]
-            create_combined_graph(data_array=[self.data], data_names=[""], interested_fields=interested_fields, 
-                                  title=self.title, include_cfl=True, include_extra_stats=True, export_path=self.base_dir / "graph.png")
+            create_combined_graph(data_array=[self.data], data_names=[""], interested_fields=self.graph_grids, 
+                                  title=self.title, include_cfl=True, include_dt=True, include_extra_stats=True, export_path=self.base_dir / "graph.png")
 
         if self.export_videos:
             for index in self.image_grids_indeces:
