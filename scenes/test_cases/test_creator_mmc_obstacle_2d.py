@@ -12,9 +12,9 @@ BASE_DIR.mkdir(parents=True, exist_ok=True)
 # Constant settings
 BASE_TITLE = "simple_plume_obstacle_3d_high"
 dimension = 3
-resolutionX = 100
-resolutionY = 200
-resolutionZ = 100
+resolutionX = 90
+resolutionY = 180
+resolutionZ = 90
 
 doOpen = True
 doObstacle = True
@@ -25,7 +25,7 @@ exportVideos = False
 exportVDBs = True  # This is the flag we will output as True/False in the printed list
 
 max_time = 90
-maxCFL = 30
+maxCFL = 20
 dt = 50
 
 # Interpolation method names

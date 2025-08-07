@@ -343,7 +343,7 @@ namespace Manta
         const float oneSixth = static_cast<Real>(1) / static_cast<Real>(6);
 
         if (idx == -1)
-            return - oneThird * s + 0.5 * s * s - oneSixth * s * s * s;
+            return -oneThird * s + 0.5 * s * s - oneSixth * s * s * s;
         if (idx == 0)
             return 1.0 - s * s + 0.5 * (s * s * s - s);
         if (idx == 1)
@@ -829,12 +829,13 @@ namespace Manta
     KERNEL()
     void knClampToMinMaxDiff(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff)
     {
-        Real start = val(i, j, k);
-        val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
         if (min(i, j, k) == std::numeric_limits<Real>::max())
         {
-            val(i, j, k) = 0;
+            diff(i, j, k) = 0;
+            return;
         }
+        Real start = val(i, j, k);
+        val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
         diff(i, j, k) = val(i, j, k) - start;
     }
 
@@ -868,12 +869,6 @@ namespace Manta
 
         Grid<Real> min(parent);
         Grid<Real> max(parent);
-
-        Grid<Real> minGamma(parent);
-        Grid<Real> maxGamma(parent);
-
-        knInitializeMinMax(min, max);
-        knInitializeMinMax(minGamma, maxGamma);
 
         int bnd = 0;
         // Step 1: Backwards step
@@ -948,10 +943,11 @@ namespace Manta
         }
 
         // Step 3: clamp gamma
-        weights.calculateIntermediateResult(tempGrid, gammaCumulative, minGamma, maxGamma);
+        knInitializeMinMax(min, max);
+        weights.calculateIntermediateResult(tempGrid, gammaCumulative, min, max);
         if (interpolationType != LINEAR)
         {
-            knClampToMinMax(tempGrid, minGamma, maxGamma);
+            knClampToMinMax(tempGrid, min, max);
         }
         gammaCumulative.swap(tempGrid);
         FOR_IJK_BND(grid, bnd)
@@ -993,6 +989,7 @@ namespace Manta
 
         // Step 5: intermediate Result
         tempGrid.clear();
+        knInitializeMinMax(min, max);
         weights.calculateIntermediateResult(tempGrid, grid, min, max);
         grid.swap(tempGrid);
 
@@ -1037,7 +1034,7 @@ namespace Manta
             {
                 FOR_IJK(grid)
                 {
-                    if (tempGrid(i, j, k) == 0.)
+                    if (!isSampleableFluid(i, j, k, flags_n_plus_one, component) || tempGrid(i, j, k) < EPSILON * EPSILON)
                     {
                         continue; // no mass to distribute
                     }

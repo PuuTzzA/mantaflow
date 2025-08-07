@@ -3,7 +3,6 @@ from pathlib import Path
 
 # Constants
 BASEDIR = (Path(__file__).parent.parent / "exports/").resolve()
-FILENAME = "testField.webm"
 
 videos_zalesak_rotation = [
     '/fixed_vel_zalesak_rotation/zalesak_rotation_conserving_0_linear/',
@@ -17,7 +16,45 @@ videos_zalesak_rotation = [
     '/fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_3_monotone_hermite/',
 ]
 
-videos = videos_zalesak_rotation
+videos_shear_flow = [
+    '/fixed_vel_shear_flow/shear_flow_conserving_0_linear',
+    '/fixed_vel_shear_flow/shear_flow_conserving_1_cubic',
+    '/fixed_vel_shear_flow/shear_flow_conserving_2_polynomial',
+    '/fixed_vel_shear_flow/shear_flow_traditional_EE1',
+    '/fixed_vel_shear_flow/shear_flow_traditional_EE2',
+    '/fixed_vel_shear_flow/shear_flow_traditional_RK4_0_linear',
+    '/fixed_vel_shear_flow/shear_flow_traditional_RK4_1_cubic',
+    '/fixed_vel_shear_flow/shear_flow_traditional_RK4_2_polynomial',
+    '/fixed_vel_shear_flow/shear_flow_traditional_RK4_3_monotone_hermite',
+]
+
+videos_plume_2d_low = [
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_conserving_0_linear',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_conserving_1_cubic',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_conserving_2_polynomial',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_traditional_EE1',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_traditional_EE2',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_traditional_RK4_0_linear',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_traditional_RK4_1_cubic',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_traditional_RK4_2_polynomial',
+    '/simple_plume_obstacle_2d_low/simple_plume_obstacle_2d_low_traditional_RK4_3_monotone_hermite',
+]
+
+videos_plume_2d_high = [
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_conserving_0_linear',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_conserving_1_cubic',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_conserving_2_polynomial',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_EE1',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_EE2',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_0_linear',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_1_cubic',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_2_polynomial',
+    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_3_monotone_hermite',
+]
+
+videos = videos_plume_2d_high
+FILENAME = "testField.webm" # for fixed vel
+FILENAME = "density.webm" # for plume
 
 # Resolve full paths
 input_paths = []

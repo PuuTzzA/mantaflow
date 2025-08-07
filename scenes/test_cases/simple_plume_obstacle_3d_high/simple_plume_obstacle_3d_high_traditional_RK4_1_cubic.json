@@ -1,9 +1,9 @@
 {
   "title": "simple_plume_obstacle_3d_high_traditional_RK4_1_cubic",
   "dimension": 3,
-  "resolutionX": 100,
-  "resolutionY": 200,
-  "resolutionZ": 100,
+  "resolutionX": 90,
+  "resolutionY": 180,
+  "resolutionZ": 90,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": false,
@@ -14,6 +14,6 @@
   "exportVideos": false,
   "exportVDBs": true,
   "max_time": 90,
-  "maxCFL": 30,
+  "maxCFL": 20,
   "dt": 50
 }

@@ -149,7 +149,7 @@ namespace Manta
 
 #define EPSILON 1e-9
 
-    void MassMomentumWeights::distributeLostMass(Grid<Real> &grid, Grid<Real> &lostMass, Grid<Real> &min, Grid<Real> &max, Real &subractedMass)
+    void MassMomentumWeights::distributeLostMass(Grid<Real> &grid, Grid<Real> &lostMass, Grid<Real> &min, Grid<Real> &max)
     {
         for (int _ = 0; _ < 4; _++)
         {

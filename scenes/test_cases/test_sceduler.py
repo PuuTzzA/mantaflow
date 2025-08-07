@@ -80,7 +80,7 @@ FIXED_VEL_SHEAR_FLOW_PATHS = [
     ['../scenes/test_cases/fixed_vel_shear_flow/shear_flow_traditional_RK4_3_monotone_hermite.json', False]
 ]
 
-""" for param, requiresVDB in SIMPLE_PLUME_OBSTACLE_2D_LOW_PATHS:
+for param, requiresVDB in SIMPLE_PLUME_OBSTACLE_3D_HIGH_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -88,9 +88,9 @@ FIXED_VEL_SHEAR_FLOW_PATHS = [
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
- """
 
-for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
+
+""" for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -98,3 +98,4 @@ for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param])
+ """

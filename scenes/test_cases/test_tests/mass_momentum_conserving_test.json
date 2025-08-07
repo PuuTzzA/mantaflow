@@ -1,23 +1,23 @@
 {
-  "title": "okletsgo",
+  "title": "okletsgo_6",
 
-  "dimension": 2,
-  "resolutionX": 100,
+  "dimension": 3,
+  "resolutionX": 50,
   "resolutionY": 100,
-  "resolutionZ": 20,
+  "resolutionZ": 50,
 
-  "doOpen": false,
+  "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
-  "tracingMethod": "EE1",
+  "tracingMethod": "RK4",
   "interpolationMethod": 1,
 
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
-  "exportVDBs": false,
+  "exportVDBs": true,
 
-  "max_time": 50,
-  "maxCFL": 2, 
+  "max_time": 100,
+  "maxCFL": 30, 
   "dt": 20
 }
