@@ -1,23 +1,23 @@
 {
-  "title": "ee1_test",
+  "title": "asdf",
 
-  "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
-  "resolutionZ": 50,
+  "dimension": 3,
+  "resolutionX": 70,
+  "resolutionY": 140,
+  "resolutionZ": 70,
 
-  "doOpen": false,
+  "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "EE1",
   "interpolationMethod": 1,
 
-  "exportData": false,
+  "exportData": true,
   "exportImages": false,
   "exportVideos": false,
-  "exportVDBs": false,
+  "exportVDBs": true,
 
   "max_time": 100,
-  "maxCFL": 2, 
+  "maxCFL": 16, 
   "dt": 20
 }

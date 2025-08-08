@@ -597,6 +597,12 @@ namespace Manta
             break;
         }
 
+        Vec3 newPosss = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
+
+        std::vector<std::tuple<Vec3i, Real>> veccc{};
+        getCorrectInterpolationStencilWithWeights(veccc, newPosss, flags, offset, component, FLUID_ISH);
+        return veccc;
+
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, -dt, vel);
 
@@ -703,6 +709,12 @@ namespace Manta
             getCorrectInterpolationStencilWithWeights = getInterpolationStencilWithWeightsCubicConvolutional;
             break;
         }
+
+        Vec3 newPosss = customTrace(pos, dt, vel, flags, offset, component, FLUID_ISH);
+
+        std::vector<std::tuple<Vec3i, Real>> veccc{};
+        getCorrectInterpolationStencilWithWeights(veccc, newPosss, flags, offset, component, FLUID_ISH);
+        return veccc;
 
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, dt, vel);
