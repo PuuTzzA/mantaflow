@@ -107,7 +107,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while (s.timeTotal < params["max_time"] and data_collector.current_frame < 100):
+while s.timeTotal < params["max_time"] : #and data_collector.current_frame < 50:
 	
 	computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
 	maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
@@ -158,7 +158,8 @@ while (s.timeTotal < params["max_time"] and data_collector.current_frame < 100):
 	# Output
 	calculateCurl(vel=vel, curl=curl, flags=flags)
 	computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
-	data_collector.step(solver=s, flags=flags, vel=vel, gui=gui, objects=[density, velocity_magnitude])
+	maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
+	data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density, velocity_magnitude])
 
 	timings.display()    
 	s.step()

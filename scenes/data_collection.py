@@ -54,10 +54,10 @@ class Data_collectior:
         if self.export_vdbs:
             (self.base_dir / "vdbs").mkdir(parents=True, exist_ok=True)
 
-    def step(self, solver, flags, vel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3], objects=[]):
+    def step(self, solver, flags, maxVel, gui=None, windowSize=[800, 800], camPos=[0, 0, -1.3], objects=[]):
         #self.current_frame = math.floor(solver.timeTotal)
         self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
-        self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = vel.getMax() * solver.timestep
+        self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = maxVel * solver.timestep
         self.data["frame_data"][str(self.current_frame).zfill(4)]["dt"] = solver.timestep
 
         for i in range(len(self.trackable_grids)):
