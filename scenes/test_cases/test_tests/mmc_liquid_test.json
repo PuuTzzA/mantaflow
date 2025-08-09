@@ -1,0 +1,23 @@
+{
+  "title": "asdf",
+
+  "dimension": 2,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 70,
+
+  "doOpen": true,
+  "layout": "dam",
+  "doConserving": true,
+  "interpolationMethod": 0,
+  "doParticleLevelSet": true,
+
+  "exportData": false,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": false,
+
+  "max_time": 100,
+  "maxCFL": 2, 
+  "dt": 20
+}

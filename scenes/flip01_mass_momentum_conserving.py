@@ -4,42 +4,30 @@ import json
 import sys
 
 params = {}
-
-param_path = "../scenes/test_cases/simple_plume_tests/params_simple_plume_3d_test.json"
-param_path = "../scenes/test_cases/liquid/params_low_cfl.json"
+param_path = "../scenes/test_cases/test_tests/mmc_liquid_test.json"
+EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
+    EXPORTS_BASE_DIR = "../exports/mmc_liquid/"
 
 with open(param_path) as f:
 	params = json.load(f)
 
+
 LEVEL = 0
-if False:
-	doOpen = False
-	doObstacle = False
-	doConserving = True
-	doParticleLevelSet = False
+doOpen = params["doOpen"]
+doConserving = params["doConserving"]
+doParticleLevelSet = params["doParticleLevelSet"]
+interpolationMethod = params["interpolationMethod"]
 
-	exportData = False
-	exportImages = False
-	exportVideos = False
-	exportVDBs = False if GUI else True
-	exportVDBs = False
-else:
-	doOpen = params["doOpen"]
-	doObstacle = params["doObstacle"]
-	doConserving = params["doConserving"]
-	doParticleLevelSet = params["doParticleLevelSet"]
+exportData = params["exportData"]
+exportImages = params["exportImages"]
+exportVideos = params["exportVideos"]
+exportVDBs = params["exportVDBs"]
 
-	exportData = params["exportData"]
-	exportImages = params["exportImages"]
-	exportVideos = params["exportVideos"]
-	exportVDBs = params["exportVDBs"]
+layout = 0 if params["layout"] == "dam" else 1 # 0=dam break, 1=falling drop
 
-layout = 0 # 0=dam break, 1=falling drop
-
-title = "testestestste"
 title = params["title"]
 
 # solver params
@@ -50,9 +38,9 @@ if (dim==2):
 s = Solver(name='main', gridSize = gs, dim=dim)
 
 # Adaptive time stepping
-s.cfl         = params["maxCFL"] 
+s.cfl         = params["maxCFL"]
+s.timestep    = params["dt"]
 s.frameLength = params["dt"]     
-s.timestep    = s.frameLength 
 s.timestepMin = 0.001 
 s.timestepMax = 20000
 
@@ -142,6 +130,11 @@ fluidbox.applyToGrid(grid=flags_n_plus_one, value=FlagFluid, respectFlags=flags_
 if layout == 1:
 	fb2.applyToGrid(grid=flags_n_plus_one, value=FlagFluid, respectFlags=flags_n_plus_one)
 
+fillWithOnes( grid=vel_gamma )
+fillLevelsetWithOnes( grid=innen1außen0, flags=flags_n, phi=phi_fluid, level=LEVEL )
+fillWithOnes( grid=innen1außen0_gamma )
+fillWithOnes( grid=phi_gamma )
+
 if (GUI):
 	gui = Gui()
 	gui.show()
@@ -171,26 +164,30 @@ if (GUI):
 # Data collection and exportation
 data_collector = None
 if layout == 0:
-	data_collector = Data_collectior(title=title ,base_dir=f"../exports/{title}/", params=params, export_data=exportData, 
+	data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
 									export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-									trackable_grid_names=[["phi_fluid", phi_fluid], [], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], tracked_grids_indeces=[0, 3])
+									trackable_grid_names=[["phi_fluid", phi_fluid], [], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], 
+									tracked_grids_indeces=[0, 3], image_grids_indeces=[0], graph_grids=[["fixed_volume", "max"]])
 
 if layout == 1:
-	data_collector = Data_collectior(title=title ,base_dir=f"../exports/{title}/", params=params, export_data=exportData, 
+	data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
 									export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-									trackable_grid_names=[["phi_fluid", phi_fluid], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], tracked_grids_indeces=[0, 2, 4])
+									trackable_grid_names=[["phi_fluid", phi_fluid], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], 
+									tracked_grids_indeces=[0, 2], image_grids_indeces=[0], graph_grids=[["fixed_volume", "max"]])
 
 data_collector.init()
 
 firstFrame = True
 #main loop
 while (s.timeTotal < params["max_time"]):
+	computeVelocityMagnitude(dest=curl, vel=vel)
+	maxvel = getMaxVal(grid=curl, flags=flags_n) # flags param does nothign for now
+
 	if firstFrame:
-		fillWithOnes( grid=vel_gamma )
-		fillLevelsetWithOnes( grid=innen1außen0, flags=flags_n, phi=phi_fluid, level=LEVEL )
-		fillWithOnes( grid=innen1außen0_gamma )
-		fillWithOnes( grid=phi_gamma )
+		maxvel = 15     
 		firstFrame = False
+
+	s.adaptTimestep(maxvel)
 
 	print(f"cfl number?: {vel.getMaxAbs() * s.timestep}, timestep: {s.timestep}")
 	mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
@@ -222,7 +219,7 @@ while (s.timeTotal < params["max_time"]):
 		extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
 
 		if not doParticleLevelSet:
-			simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=0, all=True) # 0 = Trilinear, 1 = Catmull Rom (doesn't work well at high CFL because of negative weights)
+			simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=2, all=True) # 0 = Trilinear, 1 = cubic convolutional, 2 = polynomial, 3 = monotone hermite
 			#advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
 			#reinitializeLevelset( phi=phi_fluid, flags=flags_n )
 
@@ -236,10 +233,9 @@ while (s.timeTotal < params["max_time"]):
 			if layout == 0:
 				pushOutofObs(parts=level_set_particles, flags=flags_n, phiObs=phiObs, thresh=0.5*0.5, ptype=particle_pT)
 			
-			#simpleSLAdvection( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid ) # don't use!! it only advects inside fluid
+			#simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=2, all=True) # 0 = Trilinear, 1 = cubic convolutional, 2 = polynomial, 3 = monotone hermite
 			advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
 			#massMomentumConservingAdvect( flags=flags_n, vel=vel, grid=phi_fluid, gammaCumulative=phi_gamma)
-
 
 			correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
 			reinitializeLevelset( phi=phi_fluid, flags=flags_n )
@@ -253,8 +249,8 @@ while (s.timeTotal < params["max_time"]):
 			setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
 		# Advect grid quantities using the custom conserving advection scheme.
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma, phi=phi_fluid)
-		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid)
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
+		massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid                  , interpolationType=interpolationMethod)
 		
 		flags_n.copyFrom(flags_n_plus_one)
 		
@@ -271,9 +267,13 @@ while (s.timeTotal < params["max_time"]):
 	if doOpen:
 		resetOutflow( flags=flags_n)
 		
-	calculateCurl(vel=vel, curl=curl, flags=flags_n)
 
-	data_collector.step(solver=s, flags=flags_n, vel=vel, gui=gui, objects=[flags_n])
+	# Data Collection
+	computeVelocityMagnitude(dest=curl, vel=vel)
+	maxVel = getMaxVal(grid=curl, flags=flags_n) # flags param does nothign for now
+	calculateCurl(vel=vel, curl=curl, flags=flags_n)
+	data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
+
 	s.step()
 
 data_collector.finish()

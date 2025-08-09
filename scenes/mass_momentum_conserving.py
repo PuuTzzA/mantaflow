@@ -107,10 +107,13 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] : #and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
+
+    if tracingMethod == "EE1":
+        maxvel = vel.getMax()
 
     if firstFrame:
         maxvel = 15     
@@ -163,6 +166,11 @@ while s.timeTotal < params["max_time"] : #and data_collector.current_frame < 70:
     calculateCurl(vel=vel, curl=curl, flags=flags)
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
+
+    if tracingMethod == "EE1":
+        maxvel = vel.getMax()
+        storeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
+
     data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density, velocity_magnitude])
 
     timings.display()    

@@ -179,4 +179,16 @@ namespace Manta
     {
         knComputeVelocityMagnitude(dest, vel);
     }
+
+    KERNEL()
+    void knStoreVelocityMagnitude(Grid<Real> &dest, const MACGrid &vel)
+    {
+        dest(i, j, k) = norm(vel(i, j, k));
+    }
+
+    PYTHON()
+    void storeVelocityMagnitude(Grid<Real> &dest, const MACGrid &vel)
+    {
+        knStoreVelocityMagnitude(dest, vel);
+    }
 }
