@@ -67,9 +67,9 @@ data_plume_3d_high = [
     '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_RK4_3_monotone_hermite',
 ]
 
-data = data_zalesak_rotation
-interested_fields = [["testField", "sum"]] # for fixed vel Field
-#interested_fields = [["fixed_volume", "sum"]] # for plume
+data = data_plume_3d_high
+#interested_fields = [["testField", "sum"]] # for fixed vel Field
+interested_fields = [["fixed_volume", "sum"]] # for plume
 
 # Resolve full paths
 input_paths = []
@@ -88,7 +88,7 @@ for d in data:
 
 # Create combined Graph
 title = f"combined_{FILENAME.removesuffix(".json")}"
-title = "combined_without_EE"
+#itle = "combined_without_EE"
 output_path = input_paths[0].parent.parent / f"{title}.png"
 
 create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 

@@ -852,7 +852,7 @@ namespace Manta
     }
 
     KERNEL()
-    void setOutflowToZero(Grid<Real> &grid, const FlagGrid &flags, MACGridComponent c)
+    void knSetOutflowToZero(Grid<Real> &grid, const FlagGrid &flags, MACGridComponent c)
     {
         if (isSampleableFluid(i, j, k, flags, c) && !isValidFluid(i, j, k, flags, c))
         {
@@ -1096,7 +1096,7 @@ namespace Manta
             weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
-        setOutflowToZero(grid, flags_n_plus_one, component);
+        knSetOutflowToZero(grid, flags_n_plus_one, component);
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
@@ -1139,8 +1139,8 @@ namespace Manta
             fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType);
         }
 
-        knGrids2MAC(grid, velX, velY, velZ, flags);
-        knGrids2MAC(gammaCumulative, gammaX, gammaY, gammaZ, flags);
+        knGrids2MAC(grid, velX, velY, velZ);
+        knGrids2MAC(gammaCumulative, gammaX, gammaY, gammaZ);
     }
 
     PYTHON()
@@ -1186,6 +1186,34 @@ namespace Manta
     // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
     // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
     // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+
+    PYTHON()
+    void setOutflowToZero(const FlagGrid *flags, GridBase *grid)
+    {
+        Manta::FluidSolver *parent = flags->getParent();
+        Real dt = parent->getDt();
+
+        if (grid->getType() & GridBase::TypeReal)
+        {
+            knSetOutflowToZero(*((Grid<Real> *)grid), *flags, NONE);
+        }
+        else if (grid->getType() & GridBase::TypeMAC)
+        {
+            Grid<Real> gridX(parent);
+            Grid<Real> gridY(parent);
+            Grid<Real> gridZ(parent);
+
+            knMAC2Grids(*((MACGrid *)grid), gridX, gridY, gridZ);
+
+            knSetOutflowToZero(gridX, *flags, NONE);
+            knSetOutflowToZero(gridY, *flags, NONE);
+            knSetOutflowToZero(gridZ, *flags, NONE);
+
+            knGrids2MAC(*((MACGrid *)grid), gridX, gridY, gridZ);
+        }
+        else
+            errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");
+    }
 
     KERNEL(points)
     void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i gs)
@@ -1277,7 +1305,7 @@ namespace Manta
         knSimpleSLAdvect(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType, all);
         knSimpleSLAdvect(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType, all);
 
-        knGrids2MAC(grid, newGridX, newGridY, newGridZ, flags);
+        knGrids2MAC(grid, newGridX, newGridY, newGridZ);
     }
 
     PYTHON()

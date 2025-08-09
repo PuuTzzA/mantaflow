@@ -1,23 +1,23 @@
 {
   "title": "asdf",
 
-  "dimension": 3,
-  "resolutionX": 70,
-  "resolutionY": 140,
+  "dimension": 2,
+  "resolutionX": 100,
+  "resolutionY": 100,
   "resolutionZ": 70,
 
   "doOpen": true,
   "doObstacle": true,
-  "doConserving": true,
+  "doConserving": false,
   "tracingMethod": "EE1",
-  "interpolationMethod": 1,
+  "interpolationMethod": 0,
 
-  "exportData": true,
+  "exportData": false,
   "exportImages": false,
   "exportVideos": false,
-  "exportVDBs": true,
+  "exportVDBs": false,
 
   "max_time": 100,
-  "maxCFL": 16, 
+  "maxCFL": 2, 
   "dt": 20
 }

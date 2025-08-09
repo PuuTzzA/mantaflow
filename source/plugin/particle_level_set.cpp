@@ -864,6 +864,6 @@ namespace Manta
         knFillLocked(flags, locked, velY, MAC_Y);
         extrapolateComponentFSM(velY, phi, locked, steps, gs, MAC_Y);
 
-        knGrids2MAC(vel, velX, velY, velZ, flags);
+        knGrids2MAC(vel, velX, velY, velZ);
     }
 }

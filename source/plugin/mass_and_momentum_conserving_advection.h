@@ -82,7 +82,7 @@ namespace Manta
     }
 
     KERNEL()
-    void knGrids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ, const FlagGrid &flags)
+    void knGrids2MAC(MACGrid &vel, Grid<Real> &velX, Grid<Real> &velY, Grid<Real> &velZ)
     {
         vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
     }

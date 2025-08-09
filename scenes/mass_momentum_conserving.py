@@ -107,7 +107,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] : #and data_collector.current_frame < 70:
 	
 	computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
 	maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
@@ -134,6 +134,10 @@ while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
 			advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect 
 			advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 			advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
+
+			setOutflowToZero(flags=flags, grid=density)
+			setOutflowToZero(flags=flags, grid=innen0außen1)
+			setOutflowToZero(flags=flags, grid=vel)
 
 		elif tracingMethod == "RK4":
 			simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
