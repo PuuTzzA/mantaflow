@@ -79,7 +79,19 @@ data_redistro_test = [
     '/test_redistribution/8_alle_nachbarn_drei_layer',
 ]
 
-data = data_redistro_test
+data_redistro_test_2 = [
+    #'/test_redistribution_2/0_no_redistro',
+    #'/test_redistribution_2/1_nur_weights',
+    #'/test_redistribution_2/2_alle_nb_ein_layer',
+    '/test_redistribution_2/3_alle_nb_zwei_layer_cossim',
+    '/test_redistribution_2/4_alle_nb_zwei_layer_fixed_number_one',
+    '/test_redistribution_2/5_alle_nb_zwei_layer_fixed_number_one_plus_weights',
+    '/test_redistribution_2/6_alle_nb_drei_layer_fixed_number_one',
+    '/test_redistribution_2/7_alle_nb_drei_layer_fixed_number_one_plus_weights',
+    '/test_redistribution_2/8_alle_nb_vier_layer_fixed_number_one',
+]
+
+data = data_redistro_test_2
 #interested_fields = [["testField", "sum"]] # for fixed vel Field
 interested_fields = [["fixed_volume", "sum"]] # for plume
 
@@ -100,7 +112,7 @@ for d in data:
 
 # Create combined Graph
 title = f"combined_{FILENAME.removesuffix(".json")}"
-#title = "combined_nur_die_allerbesten"
+title = "combined_data_3"
 output_path = input_paths[0].parent.parent / f"{title}.png"
 
 create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 

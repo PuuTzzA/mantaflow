@@ -1042,7 +1042,7 @@ namespace Manta
 
             knClampToMinMaxDiff(grid, min, max, tempGrid);
 
-            for (int _ = 0; _ < 3; _++) // one iteration enough, afterward 0 improvement
+            for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
             {
                 FOR_IJK(grid)
                 {
@@ -1071,9 +1071,20 @@ namespace Manta
                         }
                     }
 
+                    Vec3 roundedGrad(std::round(gradient.x), std::round(gradient.y), std::round(gradient.z));
+
                     std::sort(neighbors.begin(), neighbors.end(),
                               [&](const Vec3 &a, const Vec3 &b)
                               {
+                                  // Check if a or b matches the rounded gradient exactly
+                                  bool aIsClosestFirstLayer = (a.x == roundedGrad.x && a.y == roundedGrad.y && a.z == roundedGrad.z);
+                                  bool bIsClosestFirstLayer = (b.x == roundedGrad.x && b.y == roundedGrad.y && b.z == roundedGrad.z);
+
+                                  if (aIsClosestFirstLayer && !bIsClosestFirstLayer)
+                                      return true; // a goes first
+                                  if (bIsClosestFirstLayer && !aIsClosestFirstLayer)
+                                      return false; // b goes first
+
                                   float simA = dot(a, gradient) / norm(a);
                                   float simB = dot(b, gradient) / norm(b);
 
@@ -1088,9 +1099,6 @@ namespace Manta
                     Real mass_to_move = tempGrid(i, j, k);
                     for (const auto &n : neighbors)
                     {
-                        // n.offset is the neighbor vector
-                        // n.similarity is its similarity to the gradient
-                        // Do your neighbor processing here
                         if (std::abs(mass_to_move) > EPSILON * EPSILON)
                         {
                             Vec3i target = Vec3i(i + n.x, j + n.y, k + n.z);
@@ -1110,65 +1118,6 @@ namespace Manta
                         }
                     }
                     tempGrid(i, j, k) = mass_to_move;
-
-                    continue;
-
-                    Vec3i target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
-                    if (!isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
-                    {
-                        target = Vec3i(i, j, k);
-                    }
-
-                    Real massToMove = tempGrid(i, j, k);
-
-                    if (min(target) <= grid(target) - massToMove && grid(target) - massToMove <= max(target))
-                    {
-                        grid(target) -= massToMove;
-                        tempGrid(i, j, k) = 0;
-                        continue;
-                    }
-
-                    Real targetBefore = grid(target);
-                    grid(target) = Manta::clamp(grid(target) - massToMove, min(target), max(target));
-                    Real movedMass = targetBefore - grid(target);
-
-                    massToMove -= movedMass;
-
-                    if (std::abs(massToMove) > EPSILON * EPSILON)
-                    {
-                        Real xx = gradient.x + signum(gradient.x) * 0.25;
-                        Real yy = gradient.y + signum(gradient.y) * 0.25;
-                        Real zz = gradient.z + signum(gradient.z) * 0.25;
-                        xx = Manta::clamp(xx, static_cast<Real>(-1), static_cast<Real>(1));
-                        yy = Manta::clamp(yy, static_cast<Real>(-1), static_cast<Real>(1));
-                        zz = Manta::clamp(zz, static_cast<Real>(-1), static_cast<Real>(1));
-
-                        target = Vec3i(i + std::round(xx), j + std::round(yy), k + std::round(zz));
-                        if (isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
-                        {
-                            targetBefore = grid(target);
-                            grid(target) = Manta::clamp(grid(target) - massToMove, min(target), max(target));
-                            movedMass = targetBefore - grid(target);
-
-                            massToMove -= movedMass;
-                        }
-                    }
-
-                    if (std::abs(massToMove) > EPSILON * EPSILON)
-                    {
-                        gradient *= 2.4; // find the next neighbour
-                        target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
-                        if (isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
-                        {
-                            targetBefore = grid(target);
-                            grid(target) = Manta::clamp(grid(target) - massToMove, min(target), max(target));
-                            movedMass = targetBefore - grid(target);
-
-                            massToMove -= movedMass;
-                        }
-                    }
-
-                    tempGrid(i, j, k) = massToMove;
                 }
             }
 

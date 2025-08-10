@@ -6,7 +6,7 @@ import os
 
 params = {}
 param_path = "../scenes/test_cases/test_tests/mass_momentum_conserving_test.json"
-EXPORTS_BASE_DIR = "../exports/test_redistribution/"
+EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
