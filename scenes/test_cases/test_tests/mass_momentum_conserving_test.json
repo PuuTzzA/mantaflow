@@ -1,20 +1,20 @@
 {
-  "title": "asdf",
+  "title": "8_alle_nachbarn_drei_layer",
 
   "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
+  "resolutionX": 70,
+  "resolutionY": 70,
   "resolutionZ": 70,
 
-  "doOpen": true,
+  "doOpen": false,
   "doObstacle": true,
-  "doConserving": false,
+  "doConserving": true,
   "tracingMethod": "EE1",
-  "interpolationMethod": 0,
+  "interpolationMethod": 1,
 
-  "exportData": false,
-  "exportImages": false,
-  "exportVideos": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
   "exportVDBs": false,
 
   "max_time": 100,

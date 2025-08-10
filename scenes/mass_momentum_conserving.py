@@ -6,7 +6,7 @@ import os
 
 params = {}
 param_path = "../scenes/test_cases/test_tests/mass_momentum_conserving_test.json"
-EXPORTS_BASE_DIR = "../exports/test/"
+EXPORTS_BASE_DIR = "../exports/test_redistribution/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
@@ -107,7 +107,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] :# and data_collector.current_frame < 70:
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now

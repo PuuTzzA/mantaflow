@@ -1042,11 +1042,11 @@ namespace Manta
 
             knClampToMinMaxDiff(grid, min, max, tempGrid);
 
-            for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
+            for (int _ = 0; _ < 3; _++) // one iteration enough, afterward 0 improvement
             {
                 FOR_IJK(grid)
                 {
-                    if (!isSampleableFluid(i, j, k, flags_n_plus_one, component) || tempGrid(i, j, k) < EPSILON * EPSILON)
+                    if (!isSampleableFluid(i, j, k, flags_n_plus_one, component) || std::abs(tempGrid(i, j, k)) < EPSILON * EPSILON)
                     {
                         continue; // no mass to distribute
                     }
@@ -1054,6 +1054,64 @@ namespace Manta
                     Vec3 gradient = getGradient(grid, i, j, k);
                     normalize(gradient);
                     gradient *= signum(tempGrid(i, j, k));
+
+                    // new stuff
+                    int neighborRadius = 3; // configurable cube/square radius
+                    std::vector<Vec3> neighbors;
+                    for (int dz = grid.is3D() ? -neighborRadius : 0; dz <= grid.is3D() ? neighborRadius : 0; ++dz)
+                    {
+                        for (int dy = -neighborRadius; dy <= neighborRadius; ++dy)
+                        {
+                            for (int dx = -neighborRadius; dx <= neighborRadius; ++dx)
+                            {
+                                if (dx == 0 && dy == 0 && dz == 0)
+                                    continue; // skip self
+                                neighbors.push_back({static_cast<Real>(dx), static_cast<Real>(dy), static_cast<Real>(dz)});
+                            }
+                        }
+                    }
+
+                    std::sort(neighbors.begin(), neighbors.end(),
+                              [&](const Vec3 &a, const Vec3 &b)
+                              {
+                                  float simA = dot(a, gradient) / norm(a);
+                                  float simB = dot(b, gradient) / norm(b);
+
+                                  if (simA == simB)
+                                  {
+                                      // Tie-breaker: shorter Euclidean distance first
+                                      return norm(a) < norm(b);
+                                  }
+                                  return simA > simB; // descending similarity
+                              });
+
+                    Real mass_to_move = tempGrid(i, j, k);
+                    for (const auto &n : neighbors)
+                    {
+                        // n.offset is the neighbor vector
+                        // n.similarity is its similarity to the gradient
+                        // Do your neighbor processing here
+                        if (std::abs(mass_to_move) > EPSILON * EPSILON)
+                        {
+                            Vec3i target = Vec3i(i + n.x, j + n.y, k + n.z);
+
+                            if (isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                            {
+                                Real targetBefore = grid(target);
+                                grid(target) = Manta::clamp(grid(target) - mass_to_move, min(target), max(target));
+                                Real movedMass = targetBefore - grid(target);
+
+                                mass_to_move -= movedMass;
+                            }
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    tempGrid(i, j, k) = mass_to_move;
+
+                    continue;
 
                     Vec3i target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
                     if (!isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
@@ -1076,7 +1134,27 @@ namespace Manta
 
                     massToMove -= movedMass;
 
-                    if (massToMove > EPSILON * EPSILON)
+                    if (std::abs(massToMove) > EPSILON * EPSILON)
+                    {
+                        Real xx = gradient.x + signum(gradient.x) * 0.25;
+                        Real yy = gradient.y + signum(gradient.y) * 0.25;
+                        Real zz = gradient.z + signum(gradient.z) * 0.25;
+                        xx = Manta::clamp(xx, static_cast<Real>(-1), static_cast<Real>(1));
+                        yy = Manta::clamp(yy, static_cast<Real>(-1), static_cast<Real>(1));
+                        zz = Manta::clamp(zz, static_cast<Real>(-1), static_cast<Real>(1));
+
+                        target = Vec3i(i + std::round(xx), j + std::round(yy), k + std::round(zz));
+                        if (isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                        {
+                            targetBefore = grid(target);
+                            grid(target) = Manta::clamp(grid(target) - massToMove, min(target), max(target));
+                            movedMass = targetBefore - grid(target);
+
+                            massToMove -= movedMass;
+                        }
+                    }
+
+                    if (std::abs(massToMove) > EPSILON * EPSILON)
                     {
                         gradient *= 2.4; // find the next neighbour
                         target = Vec3i(i + std::round(gradient.x), j + std::round(gradient.y), k + std::round(gradient.z));
@@ -1089,11 +1167,12 @@ namespace Manta
                             massToMove -= movedMass;
                         }
                     }
+
                     tempGrid(i, j, k) = massToMove;
                 }
             }
 
-            weights.distributeLostMass(grid, tempGrid, min, max);
+            // weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
         knSetOutflowToZero(grid, flags_n_plus_one, component);

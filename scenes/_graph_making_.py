@@ -67,7 +67,19 @@ data_plume_3d_high = [
     '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_RK4_3_monotone_hermite',
 ]
 
-data = data_plume_3d_high
+data_redistro_test = [
+    #'/test_redistribution/0_gar_nix',
+    '/test_redistribution/1_ein_nachbar',
+    '/test_redistribution/2_zwei_nachbarn',
+    '/test_redistribution/3_drei_nachbarn',
+    '/test_redistribution/4_drei_nachbarn_plus_weights',
+    '/test_redistribution/5_alle_nachbarn',
+    '/test_redistribution/6_alle_nachbarn_3_iter',
+    '/test_redistribution/7_alle_nachbarn_zwei_layers',
+    '/test_redistribution/8_alle_nachbarn_drei_layer',
+]
+
+data = data_redistro_test
 #interested_fields = [["testField", "sum"]] # for fixed vel Field
 interested_fields = [["fixed_volume", "sum"]] # for plume
 
@@ -88,7 +100,7 @@ for d in data:
 
 # Create combined Graph
 title = f"combined_{FILENAME.removesuffix(".json")}"
-#itle = "combined_without_EE"
+#title = "combined_nur_die_allerbesten"
 output_path = input_paths[0].parent.parent / f"{title}.png"
 
 create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 

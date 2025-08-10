@@ -52,7 +52,19 @@ videos_plume_2d_high = [
     '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_3_monotone_hermite',
 ]
 
-videos = videos_plume_2d_high
+videos_redistro_test = [
+    '/test_redistribution/0_gar_nix',
+    '/test_redistribution/1_ein_nachbar',
+    '/test_redistribution/2_zwei_nachbarn',
+    '/test_redistribution/3_drei_nachbarn',
+    '/test_redistribution/4_drei_nachbarn_plus_weights',
+    '/test_redistribution/5_alle_nachbarn',
+    '/test_redistribution/6_alle_nachbarn_3_iter',
+    '/test_redistribution/7_alle_nachbarn_zwei_layers',
+    '/test_redistribution/8_alle_nachbarn_drei_layer',
+]
+
+videos = videos_redistro_test
 FILENAME = "testField.webm" # for fixed vel
 FILENAME = "density.webm" # for plume
 
