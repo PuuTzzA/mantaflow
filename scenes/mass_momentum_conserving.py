@@ -10,7 +10,7 @@ EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_3d_high/"
+    EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_3d_high_highres/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -107,7 +107,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] :# and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
@@ -116,7 +116,7 @@ while s.timeTotal < params["max_time"] :# and data_collector.current_frame < 70:
         maxvel = vel.getMax()
 
     if firstFrame:
-        maxvel = 15     
+        maxvel = 20     
         firstFrame = False
 
     s.adaptTimestep(maxvel)
@@ -171,7 +171,7 @@ while s.timeTotal < params["max_time"] :# and data_collector.current_frame < 70:
         maxvel = vel.getMax()
         storeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
 
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density, velocity_magnitude])
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density])
 
     timings.display()    
     s.step()

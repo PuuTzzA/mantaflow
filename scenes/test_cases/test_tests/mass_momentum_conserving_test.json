@@ -1,20 +1,20 @@
 {
-  "title": "8_alle_nb_vier_layer_fixed_number_one",
+  "title": "redistro_test_pos_singum_1_lay",
 
   "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
+  "resolutionX": 50,
+  "resolutionY": 50,
   "resolutionZ": 70,
 
-  "doOpen": false,
+  "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "EE1",
-  "interpolationMethod": 1,
+  "interpolationMethod": 0,
 
-  "exportData": true,
-  "exportImages": true,
-  "exportVideos": true,
+  "exportData": false,
+  "exportImages": false,
+  "exportVideos": false,
   "exportVDBs": false,
 
   "max_time": 120,

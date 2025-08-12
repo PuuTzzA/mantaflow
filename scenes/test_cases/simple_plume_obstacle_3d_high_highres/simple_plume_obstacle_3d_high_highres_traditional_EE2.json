@@ -1,0 +1,19 @@
+{
+  "title": "simple_plume_obstacle_3d_high_highres_traditional_EE2",
+  "dimension": 3,
+  "resolutionX": 128,
+  "resolutionY": 256,
+  "resolutionZ": 128,
+  "doOpen": true,
+  "doObstacle": true,
+  "doConserving": false,
+  "tracingMethod": "EE2",
+  "interpolationMethod": -1,
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": true,
+  "max_time": 90,
+  "maxCFL": 30,
+  "dt": 50
+}

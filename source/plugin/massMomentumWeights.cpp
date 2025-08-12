@@ -129,6 +129,7 @@ namespace Manta
 
     void MassMomentumWeights::calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src, Grid<Real> &min, Grid<Real> &max)
     {
+        dest.clear();
         FOR_IJK(dest)
         {
             Vec3i cellI = Vec3i(i, j, k);

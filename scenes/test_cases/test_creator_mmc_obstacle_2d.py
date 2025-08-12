@@ -4,17 +4,17 @@ from itertools import product
 import shutil
 
 # Base directory to store JSONs
-CONTAINER_DIR = "simple_plume_obstacle_3d_low"
+CONTAINER_DIR = "simple_plume_obstacle_3d_high_highres"
 BASE_DIR = (Path(__file__).parent / CONTAINER_DIR).resolve()
 shutil.rmtree(BASE_DIR, ignore_errors=True)
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Constant settings
-BASE_TITLE = "simple_plume_obstacle_3d_low"
+BASE_TITLE = "simple_plume_obstacle_3d_high_highres"
 dimension = 3
-resolutionX = 90
-resolutionY = 180
-resolutionZ = 90
+resolutionX = 128
+resolutionY = 256
+resolutionZ = 128
 
 doOpen = True
 doObstacle = True
@@ -25,7 +25,7 @@ exportVideos = False
 exportVDBs = True  # This is the flag we will output as True/False in the printed list
 
 max_time = 90
-maxCFL = 7
+maxCFL = 30
 dt = 50
 
 # Interpolation method names

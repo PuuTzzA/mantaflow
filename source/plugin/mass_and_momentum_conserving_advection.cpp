@@ -597,11 +597,13 @@ namespace Manta
             break;
         }
 
-        Vec3 newPosss = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
-
-        std::vector<std::tuple<Vec3i, Real>> veccc{};
-        getCorrectInterpolationStencilWithWeights(veccc, newPosss, flags, offset, component, FLUID_ISH);
-        return veccc;
+        if (!doFluid)
+        {
+            Vec3 newPoss = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
+            std::vector<std::tuple<Vec3i, Real>> vec{};
+            getCorrectInterpolationStencilWithWeights(vec, newPoss, flags, offset, component, FLUID_ISH);
+            return vec;
+        }
 
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, -dt, vel);
@@ -631,7 +633,7 @@ namespace Manta
             break;
         }
 
-        if (component != NONE && doFluid)
+        if (component != NONE)
         {
             std::vector<std::tuple<Vec3i, Real>> resultVec1{};
             std::vector<std::tuple<Vec3i, Real>> resultVec2{};
@@ -671,7 +673,7 @@ namespace Manta
         Vec3 direction = newPos - pos;
         Real totalDistance = norm(direction);
 
-        if (totalDistance < 1e-9)
+        if (totalDistance < EPSILON)
         {
             return {};
         }
@@ -710,52 +712,10 @@ namespace Manta
             break;
         }
 
-        Vec3 newPosss = customTrace(pos, dt, vel, flags, offset, component, FLUID_ISH);
-
-        std::vector<std::tuple<Vec3i, Real>> veccc{};
-        getCorrectInterpolationStencilWithWeights(veccc, newPosss, flags, offset, component, FLUID_ISH);
-        return veccc;
-
-        pos += offset;
-        Vec3 newPos = rungeKutta4(pos, dt, vel);
-
-        std::vector<std::tuple<Vec3i, Real>> resultVec{};
-        resultVec.reserve(4);
-
-        if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
-        {
-            return resultVec;
-        }
-
-        // Fallback, try finding the closest surface point
-        std::vector<std::tuple<Vec3i, Real>> testResultVec{};
-        testResultVec.reserve(4);
-
-        Vec3 current = pos;
-        Vec3 direction = newPos - pos;
-        Real totalDistance = norm(direction);
-
-        if (totalDistance < 1e-9)
-        {
-            return {};
-        }
-
-        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
-        for (int i = 0; i <= numSearchSteps; ++i)
-        {
-            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
-            current = pos + t * direction;
-
-            if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
-            {
-                resultVec = testResultVec;
-            }
-            else
-            {
-                return resultVec;
-            }
-        }
-        return {};
+        Vec3 newPos = customTrace(pos, dt, vel, flags, offset, component, FLUID_ISH);
+        std::vector<std::tuple<Vec3i, Real>> vec{};
+        getCorrectInterpolationStencilWithWeights(vec, newPos, flags, offset, component, FLUID_ISH);
+        return vec;
     }
 
     std::vector<std::tuple<Vec3i, Real>> getClosestSurfacePoint(Vec3 originalPos, const Grid<Real> &phi, Vec3 offset, const FlagGrid &flags, MACGridComponent component)
@@ -1000,7 +960,6 @@ namespace Manta
         }
 
         // Step 5: intermediate Result
-        tempGrid.clear();
         knInitializeMinMax(min, max);
         weights.calculateIntermediateResult(tempGrid, grid, min, max);
         grid.swap(tempGrid);
@@ -1042,6 +1001,21 @@ namespace Manta
 
             knClampToMinMaxDiff(grid, min, max, tempGrid);
 
+            int neighborRadius = 3; // configurable cube/square radius
+            std::vector<Vec3> neighbors;
+            for (int dz = grid.is3D() ? -neighborRadius : 0; dz <= grid.is3D() ? neighborRadius : 0; ++dz)
+            {
+                for (int dy = -neighborRadius; dy <= neighborRadius; ++dy)
+                {
+                    for (int dx = -neighborRadius; dx <= neighborRadius; ++dx)
+                    {
+                        if (dx == 0 && dy == 0 && dz == 0)
+                            continue; // skip self
+                        neighbors.push_back({static_cast<Real>(dx), static_cast<Real>(dy), static_cast<Real>(dz)});
+                    }
+                }
+            }
+
             for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
             {
                 FOR_IJK(grid)
@@ -1054,22 +1028,6 @@ namespace Manta
                     Vec3 gradient = getGradient(grid, i, j, k);
                     normalize(gradient);
                     gradient *= signum(tempGrid(i, j, k));
-
-                    // new stuff
-                    int neighborRadius = 3; // configurable cube/square radius
-                    std::vector<Vec3> neighbors;
-                    for (int dz = grid.is3D() ? -neighborRadius : 0; dz <= grid.is3D() ? neighborRadius : 0; ++dz)
-                    {
-                        for (int dy = -neighborRadius; dy <= neighborRadius; ++dy)
-                        {
-                            for (int dx = -neighborRadius; dx <= neighborRadius; ++dx)
-                            {
-                                if (dx == 0 && dy == 0 && dz == 0)
-                                    continue; // skip self
-                                neighbors.push_back({static_cast<Real>(dx), static_cast<Real>(dy), static_cast<Real>(dz)});
-                            }
-                        }
-                    }
 
                     Vec3 roundedGrad(std::round(gradient.x), std::round(gradient.y), std::round(gradient.z));
 

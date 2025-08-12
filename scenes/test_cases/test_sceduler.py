@@ -56,6 +56,18 @@ SIMPLE_PLUME_OBSTACLE_3D_HIGH_PATHS = [
     #['../scenes/test_cases/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_RK4_3_monotone_hermite.json', True]
 ]
 
+SIMPLE_PLUME_OBSTACLE_3D_HIGH_HIGHRES_PATHS = [
+    ['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_conserving_0_linear.json', True],
+    #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_conserving_1_cubic.json', True],
+    #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_conserving_2_polynomial.json', True],
+    #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_EE1.json', True],
+    ##['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_EE2.json', True],
+    #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_0_linear.json', True],
+    ##['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_1_cubic.json', True],
+    #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_2_polynomial.json', True],
+    ##['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_3_monotone_hermite.json', True],
+]
+
 SIMPLE_PLUME_OBSTACLE_3D_LOW_PATHS = [
     ['../scenes/test_cases/simple_plume_obstacle_3d_low/simple_plume_obstacle_3d_low_conserving_0_linear.json', True],
     ['../scenes/test_cases/simple_plume_obstacle_3d_low/simple_plume_obstacle_3d_low_conserving_1_cubic.json', True],
@@ -92,7 +104,7 @@ FIXED_VEL_SHEAR_FLOW_PATHS = [
     ['../scenes/test_cases/fixed_vel_shear_flow/shear_flow_traditional_RK4_3_monotone_hermite.json', False]
 ]
 
-for param, requiresVDB in SIMPLE_PLUME_OBSTACLE_3D_HIGH_PATHS:
+for param, requiresVDB in SIMPLE_PLUME_OBSTACLE_3D_HIGH_HIGHRES_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
