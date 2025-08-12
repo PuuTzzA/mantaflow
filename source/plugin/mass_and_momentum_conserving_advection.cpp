@@ -204,7 +204,7 @@ namespace Manta
                 break;
             }
         }
-        return pos;
+        return lastKnowFluidPos;
     }
 
     // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
@@ -289,7 +289,7 @@ namespace Manta
             tot += w001 + w011 + w101 + w111;
         }
 
-        if (tot < 0.2)
+        if (tot < EPSILON)
         {
             // Fallback: Find the single closest valid cell and give it a weight of 1.
             // This is essentially a nearest-neighbor lookup, which is very stable.
@@ -620,7 +620,7 @@ namespace Manta
         return is3D ? interpolateMonotoneCubicHermite(yInterp[0], yInterp[1], yInterp[2], yInterp[3], fz) : yInterp[0];
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doFluid, InterpolationType interpolationType)
+    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -636,7 +636,7 @@ namespace Manta
             break;
         }
 
-        if (!doFluid)
+        if (!doLiquid)
         {
             Vec3 newPoss = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
             std::vector<std::tuple<Vec3i, Real>> vec{};
@@ -1255,7 +1255,7 @@ namespace Manta
     }
 
     KERNEL()
-    void knSimpleSLAdvect(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doFluid, InterpolationType interpolationType, bool all)
+    void knSimpleSLAdvect(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, bool all)
     {
         if (all ? !isNotObstacle(i, j, k, flags, component) : !isSampleableFluid(i, j, k, flags, component))
         {
