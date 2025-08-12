@@ -289,9 +289,48 @@ namespace Manta
             tot += w001 + w011 + w101 + w111;
         }
 
-        if (tot < 1e-5)
+        if (tot < 0.2)
         {
-            return false;
+            // Fallback: Find the single closest valid cell and give it a weight of 1.
+            // This is essentially a nearest-neighbor lookup, which is very stable.
+            int best_i = -1, best_j = -1, best_k = -1;
+            Real min_dist_sq = std::numeric_limits<Real>::max();
+
+            for (int dz = 0; dz <= (flags.is3D() ? 1 : 0); ++dz)
+            {
+                for (int dy = 0; dy <= 1; ++dy)
+                {
+                    for (int dx = 0; dx <= 1; ++dx)
+                    {
+                        int ni = i + dx;
+                        int nj = j + dy;
+                        int nk = k + dz;
+
+                        if (isTargetCell(ni, nj, nk, flags, component))
+                        {
+                            Vec3 neighbor_pos(ni, nj, nk);
+                            Real dist_sq = normSquare(pos - neighbor_pos);
+                            if (dist_sq < min_dist_sq)
+                            {
+                                min_dist_sq = dist_sq;
+                                best_i = ni;
+                                best_j = nj;
+                                best_k = nk;
+                            }
+                        }
+                    }
+                }
+            }
+            if (best_i != -1)
+            {
+                result.push_back({Vec3i{best_i, best_j, best_k}, 1.0});
+                return true;
+            }
+            else
+            {
+                throw std::runtime_error("Linear interpolation on point with no valid neighbors.");
+                return false; // No valid neighbors found at all.
+            }
         }
 
         w000 /= tot;

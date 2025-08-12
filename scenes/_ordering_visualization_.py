@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 # Parameters
 r_max = 2
-gradient = np.array([3.0, 1.0])
+gradient = np.array([2., 1.])
 gradient /= np.linalg.norm(gradient)
 
 # Generate neighbor offsets
