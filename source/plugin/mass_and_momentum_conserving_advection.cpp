@@ -328,8 +328,8 @@ namespace Manta
             }
             else
             {
-                throw std::runtime_error("Linear interpolation on point with no valid neighbors.");
                 return false; // No valid neighbors found at all.
+                throw std::runtime_error("Linear interpolation on point with no valid neighbors.");
             }
         }
 
@@ -1334,7 +1334,7 @@ namespace Manta
     }
 
     PYTHON()
-    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false)
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();

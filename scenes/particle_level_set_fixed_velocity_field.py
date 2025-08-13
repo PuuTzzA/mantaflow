@@ -60,6 +60,10 @@ curl = s.create(RealGrid)
 testPhiGamma = s.create(RealGrid)
 testFieldGamma = s.create(RealGrid)
 
+level_set_particles = s.create(BasicParticleSystem)
+particle_radii      = level_set_particles.create(PdataReal)
+particle_pT         = level_set_particles.create(PdataInt)
+
 # prepare grids
 bWidth=2
 flags.initDomain( boundaryWidth=bWidth )
@@ -101,19 +105,22 @@ fillWithOnes( grid=testPhiGamma )
 fillWithOnes( grid=testFieldGamma )
 setVelocityField(vel=vel, flags=flags, functionName=scenario)
 
-#Data Colleciton and Export
-if GUI:
-    gui = Gui()
-    gui.show( True ) 
-
-    #gui.pause()
-
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
                                  export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
                                  trackable_grid_names=[["testPhi", testPhi], ["testField", testField], ["curl", curl], [], []], 
                                  tracked_grids_indeces=[0, 1], image_grids_indeces=[0, 1], graph_grids=[["testField", "sum"]])
 
 data_collector.init()
+
+
+sampleLevelsetBorderWithParticles( phi=testPhi, flags=flags, particles=level_set_particles, radii=particle_radii)
+
+#Data Colleciton and Export
+if GUI:
+    gui = Gui()
+    gui.show( True ) 
+
+    gui.pause()
 
 maxvel = vel.getMax()
 s.adaptTimestep(maxvel)
@@ -124,28 +131,22 @@ while (s.timeTotal < params["max_time"]):
     print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxVel: {maxvel}")
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
-    if not doConserving:
-        if tracingMethod.startswith("EE"):
-            order = int(tracingMethod[-1])  # Extracts 1 or 2 from "EE1" or "EE2"
-            advectSemiLagrange(flags=flags, vel=vel, grid=testPhi,   order=order) 
-            advectSemiLagrange(flags=flags, vel=vel, grid=testField, order=order)
+    ################################
 
-        elif tracingMethod == "RK4": #Runge Kutta 4 
-            simpleSLAdvect(flags=flags, vel=vel, grid=testPhi,  interpolationType=interpolationMethod) # 0 = linear, 1 = cubic, 2 = polynomial interpolation, 3 = monotone hermite
-            simpleSLAdvect(flags=flags, vel=vel, grid=testField,interpolationType=interpolationMethod) # 0 = linear, 1 = cubic, 2 = polynomial interpolation, 3 = monotone hermite 
+    advectParticleLevelSet( phi=testPhi, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags )
 
-    else:
-        print(data_collector.current_frame)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma    ,interpolationType=interpolationMethod)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod)
+    if (data_collector.current_frame % 30 == 0):
+        pass
+        #reseedParticles(phi=testPhi, flags=flags, particles=level_set_particles, radii=particle_radii )
+
+    setFlagsFromParticleLevelset( phi=testPhi, flags=flags, level=0 )
 
     #timings.display()    
     computeVelocityMagnitude(dest=curl, vel=vel)
     maxVel = getMaxVal(grid=curl, flags=flags) # flags param does nothign for now
     calculateCurl(vel=vel, curl=curl, flags=flags)
 
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[])
-
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[])   
     s.step()
 
 data_collector.finish()

@@ -48,7 +48,7 @@ namespace Manta
             return "???";
         }
     }
-    
+
     inline std::string toString(InterpolationType component)
     {
         switch (component)
@@ -86,6 +86,8 @@ namespace Manta
     {
         vel(i, j, k) = Vec3(velX(i, j, k), velY(i, j, k), velZ(i, j, k));
     }
+
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false);
 
     void advectParticlesForward(BasicParticleSystem *particles, const MACGrid *vel, const FlagGrid *flags);
 }

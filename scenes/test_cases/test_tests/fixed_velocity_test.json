@@ -11,12 +11,12 @@
   "tracingMethod": "EE1",
   "interpolationMethod": 1,
 
-  "exportData": true,
+  "exportData": false,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 10,
+  "max_time": 1000,
   "maxCFL": 5, 
   "dt": 20
 }

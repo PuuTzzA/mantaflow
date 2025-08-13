@@ -127,6 +127,10 @@ public:
 	inline bool isBubble(IndexInt idx) const { DEBUG_ONLY(checkPartIndex(idx)); return (mData[idx].flag & PBUBBLE); }
 	inline bool isFoam(IndexInt idx) const { DEBUG_ONLY(checkPartIndex(idx)); return (mData[idx].flag & PFOAM); }
 	inline bool isTracer(IndexInt idx) const { DEBUG_ONLY(checkPartIndex(idx)); return (mData[idx].flag & PTRACER); }
+	inline bool isInside(IndexInt idx) const { return (mData[idx].flag & PINSIDE); }
+	inline bool isOutside(IndexInt idx) const { return (mData[idx].flag & POUTSIDE); }
+	inline bool isEscaped(IndexInt idx) const { return (mData[idx].flag & PESCAPED); }
+	inline bool isDeleted(IndexInt idx) const { return (mData[idx].flag & PDELETE); }
 
 	//! update status
 	inline void setStatus(IndexInt idx, const int status) { DEBUG_ONLY(checkPartIndex(idx)); mData[idx].flag = status; }

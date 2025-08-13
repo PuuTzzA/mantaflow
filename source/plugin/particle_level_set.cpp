@@ -9,6 +9,8 @@
 #include <array>
 #include <cstdlib>
 #include <random>
+#include <queue>
+#include <assert.h>
 
 namespace Manta
 {
@@ -18,28 +20,125 @@ namespace Manta
         return;                                      \
     }
 
-#define DISCRETIZATION 10
-#define POSITIVE_SEED_CUTOFF .1f
-#define NEGATIVE_SEED_CUTOFF -3.f
-#define POSITIVE_MAX_RADIUS .1f
-#define NEGATIVE_MAX_RADIUS 3.f
-#define MAX_PARTICLES_PER_CELL (DISCRETIZATION * DISCRETIZATION) * 1.5
-#define MIN_PARTICLES_PER_CELL DISCRETIZATION * 2
+#define POSITIVE_SEED_CUTOFF 3.0f  // 3 * dx
+#define NEGATIVE_SEED_CUTOFF -3.0f // 3 * dx
+#define MIN_RADIUS 0.1f            // .1 * min(dx, dy, dz)
+#define MAX_RADIUS 0.5f            // .5 * min(dx, dy, dz)
+
+#define DISCRETIZATION 4 // particles per spatial dimension
+
 #define ESCAPE_CONDITION 1 // a particle counts as escaped, if it is further than ESCAPE_CONDITION * radius on the wrong side
 
-    KERNEL(points)
-    void knSetParticleRadii(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const Grid<Real> &phi)
-    {
-        skipDelted(particles);
-        radii[idx] = std::abs(phi.getInterpolatedHi(particles[idx].pos, 2));
+    // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
+    // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
+    // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
+    // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
+    // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
 
-        if (particles[idx].flag & ParticleBase::PINSIDE)
+    Real calcGradMagnitude(Grid<Real> &phi, int i, int j, int k, Real sng, const FlagGrid &flags)
+    {
+        Real dx = 1.0;
+
+        // Backward differences
+        Real dPhiDx_minus = 0.0, dPhiDy_minus = 0.0, dPhiDz_minus = 0.0;
+        if (!flags.isObstacle(i - 1, j, k))
+            dPhiDx_minus = (phi(i, j, k) - phi(i - 1, j, k)) / dx;
+        if (!flags.isObstacle(i, j - 1, k))
+            dPhiDy_minus = (phi(i, j, k) - phi(i, j - 1, k)) / dx;
+        if (phi.is3D() && !flags.isObstacle(i, j, k - 1))
+            dPhiDz_minus = (phi(i, j, k) - phi(i, j, k - 1)) / dx;
+
+        // Forward differences
+        Real dPhiDx_plus = 0.0, dPhiDy_plus = 0.0, dPhiDz_plus = 0.0;
+        if (!flags.isObstacle(i + 1, j, k))
+            dPhiDx_plus = (phi(i + 1, j, k) - phi(i, j, k)) / dx;
+        if (!flags.isObstacle(i, j + 1, k))
+            dPhiDy_plus = (phi(i, j + 1, k) - phi(i, j, k)) / dx;
+        if (phi.is3D() && !flags.isObstacle(i, j, k + 1))
+            dPhiDz_plus = (phi(i, j, k + 1) - phi(i, j, k)) / dx;
+
+        // Godunov scheme
+        Real grad_x_sq = 0.0, grad_y_sq = 0.0, grad_z_sq = 0.0;
+
+        if (sng > 0.0)
         {
-            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(NEGATIVE_MAX_RADIUS));
+            grad_x_sq = std::max(std::pow(std::max(dPhiDx_minus, static_cast<Real>(0.0)), static_cast<Real>(2)),
+                                 std::pow(std::min(dPhiDx_plus, static_cast<Real>(0.0)), static_cast<Real>(2)));
+            grad_y_sq = std::max(std::pow(std::max(dPhiDy_minus, static_cast<Real>(0.0)), static_cast<Real>(2)),
+                                 std::pow(std::min(dPhiDy_plus, static_cast<Real>(0.0)), static_cast<Real>(2)));
+            grad_z_sq = std::max(std::pow(std::max(dPhiDz_minus, static_cast<Real>(0.0)), static_cast<Real>(2)),
+                                 std::pow(std::min(dPhiDz_plus, static_cast<Real>(0.0)), static_cast<Real>(2)));
         }
-        else if (particles[idx].flag & ParticleBase::POUTSIDE)
+        else if (sng < 0.0)
         {
-            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(POSITIVE_MAX_RADIUS));
+            grad_x_sq = std::max(std::pow(std::min(dPhiDx_minus, static_cast<Real>(0.0)), static_cast<Real>(2)),
+                                 std::pow(std::max(dPhiDx_plus, static_cast<Real>(0.0)), static_cast<Real>(2)));
+            grad_y_sq = std::max(std::pow(std::min(dPhiDy_minus, static_cast<Real>(0.0)), static_cast<Real>(2)),
+                                 std::pow(std::max(dPhiDy_plus, static_cast<Real>(0.0)), static_cast<Real>(2)));
+            grad_z_sq = std::max(std::pow(std::min(dPhiDz_minus, static_cast<Real>(0.0)), static_cast<Real>(2)),
+                                 std::pow(std::max(dPhiDz_plus, static_cast<Real>(0.0)), static_cast<Real>(2)));
+        }
+        // else if sng == 0.0: leave all grad_*_sq at zero.
+
+        return std::sqrt(grad_x_sq + grad_y_sq + grad_z_sq);
+    }
+
+    KERNEL(bnd = 1)
+    void knReinitializeLevelset(Grid<Real> &phi, Grid<Real> &phiOld, Real dt_pseudo, const FlagGrid &flags)
+    {
+        if (flags.isObstacle(i, j, k))
+        {
+            return;
+        }
+
+        Real p = phiOld(i, j, k);
+        Real sng = p / std::sqrt(p * p + 1 * 1); // smooth sng function
+
+        Real gradientMagnitude = calcGradMagnitude(phiOld, i, j, k, sng, flags); // use this bc some kind of hyperbolic stuff and the cental difference is unstable
+
+        phi(i, j, k) = phiOld(i, j, k) - dt_pseudo * sng * (gradientMagnitude - 1);
+    }
+
+    PYTHON()
+    void reinitializeLevelset(Grid<Real> &phi, const FlagGrid &flags)
+    {
+        Grid<Real> phiOld(phi.getParent());
+        Real dt_pseudo = 0.3;
+        for (int __ = 0; __ < 10; __++)
+        {
+            phiOld.copyFrom(phi);
+            knReinitializeLevelset(phi, phiOld, dt_pseudo, flags);
+        }
+    }
+
+    // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
+    // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
+    // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
+    // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
+    // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
+
+    void addParticlesToCell(int i, int j, int k, Real phi, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, bool is3D, Real randomness = 0.5)
+    {
+        Real step = 1. / DISCRETIZATION;
+
+        int alsdi = 0;
+
+        for (int dk = 0; dk < (is3D ? DISCRETIZATION : 1); dk++)
+        {
+            for (int di = 0; di < DISCRETIZATION; di++)
+            {
+                for (int dj = 0; dj < DISCRETIZATION; dj++)
+                {
+                    Real randi = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
+                    Real randj = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
+                    Real randk = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
+
+                    Vec3 pos = Vec3(i + (0.5 + di) * step + randi, j + (0.5 + dj) * step + randj, k + (0.5 + dk) * step + randk);
+
+                    particles.addBuffered(pos, phi > 0 ? ParticleBase::POUTSIDE : ParticleBase::PINSIDE);
+                    alsdi++;
+                }
+            }
         }
     }
 
@@ -48,64 +147,75 @@ namespace Manta
     {
         skipDelted(particles);
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::normal_distribution<> d(0.0, .4); // d(mean, standart deviation)
+        Real randomNum = static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX);
 
-        radii[idx] = std::abs(d(gen));
-
-        if (particles[idx].flag & ParticleBase::PINSIDE)
-        {
-            radii[idx] *= std::abs(NEGATIVE_SEED_CUTOFF);
-            radii[idx] = -1. * Manta::clamp(radii[idx], 0.f, std::abs(NEGATIVE_SEED_CUTOFF));
-        }
-        else if (particles[idx].flag & ParticleBase::POUTSIDE)
-        {
-            radii[idx] *= std::abs(POSITIVE_SEED_CUTOFF);
-            radii[idx] = Manta::clamp(radii[idx], 0.f, std::abs(POSITIVE_SEED_CUTOFF));
-        }
+        randomNum = randomNum * (std::abs(particles.isInside(idx) ? NEGATIVE_SEED_CUTOFF : POSITIVE_SEED_CUTOFF) - MIN_RADIUS) + MIN_RADIUS;
+        radii[idx] = (particles.isInside(idx) ? -1. : 1.) * randomNum;
     }
 
-    Vec3 calcNormal2D(const Grid<Real> &phi, int i, int j, int k, const FlagGrid &flags, Real eps = (Real)1e-12)
+    Vec3 calcNormal(const Grid<Real> &phi, int i, int j, int k, const FlagGrid &flags, Real eps = (Real)1e-12)
     {
-        // TODO verstehen, von ChatGPT
-        const Real dx = 1.0; // Gitterabstand (anpassen falls nötig)
+        // Compute normalized gradient (unit normal) of phi in 3D
+        // Uses central differences where possible, else one-sided differences.
 
-        Real dPhiDx_m = 0.0, dPhiDx_p = 0.0;
-        Real dPhiDy_m = 0.0, dPhiDy_p = 0.0;
+        Vec3i gs = flags.getParent()->getGridSize();
+        Real dx = 1.0;
 
-        if (!flags.isObstacle(i - 1, j, k))
-            dPhiDx_m = (phi(i, j, k) - phi(i - 1, j, k)) / dx;
+        auto valid = [&](int ii, int jj, int kk)
+        {
+            bool inBounds = 0 <= i && i < gs.x && 0 <= j && j < gs.y && 0 <= k && k < gs.z;
+            return inBounds && !flags.isObstacle(ii, jj, kk);
+        };
 
-        if (!flags.isObstacle(i + 1, j, k))
-            dPhiDx_p = (phi(i + 1, j, k) - phi(i, j, k)) / dx;
+        Real dphix = 0.0, dphiy = 0.0, dphiz = 0.0;
 
-        if (!flags.isObstacle(i, j - 1, k))
-            dPhiDy_m = (phi(i, j, k) - phi(i, j - 1, k)) / dx;
+        // ----- X derivative -----
+        if (valid(i - 1, j, k) && valid(i + 1, j, k))
+        {
+            dphix = (phi(i + 1, j, k) - phi(i - 1, j, k)) * 0.5 / dx; // central
+        }
+        else if (valid(i + 1, j, k))
+        { // forward
+            dphix = (phi(i + 1, j, k) - phi(i, j, k)) / dx;
+        }
+        else if (valid(i - 1, j, k))
+        { // backward
+            dphix = (phi(i, j, k) - phi(i - 1, j, k)) / dx;
+        }
 
-        if (!flags.isObstacle(i, j + 1, k))
-            dPhiDy_p = (phi(i, j + 1, k) - phi(i, j, k)) / dx;
+        // ----- Y derivative -----
+        if (valid(i, j - 1, k) && valid(i, j + 1, k))
+        {
+            dphiy = (phi(i, j + 1, k) - phi(i, j - 1, k)) * 0.5 / dx; // central
+        }
+        else if (valid(i, j + 1, k))
+        {
+            dphiy = (phi(i, j + 1, k) - phi(i, j, k)) / dx;
+        }
+        else if (valid(i, j - 1, k))
+        {
+            dphiy = (phi(i, j, k) - phi(i, j - 1, k)) / dx;
+        }
 
-        // ---------- Ableitung wählen: zentral wenn möglich, sonst einseitig --
-        Real dPhiDx = 0.0, dPhiDy = 0.0;
+        if (phi.is3D())
+        {
+            // ----- Z derivative -----
+            if (valid(i, j, k - 1) && valid(i, j, k + 1))
+            {
+                dphiz = (phi(i, j, k + 1) - phi(i, j, k - 1)) * 0.5 / dx; // central
+            }
+            else if (valid(i, j, k + 1))
+            {
+                dphiz = (phi(i, j, k + 1) - phi(i, j, k)) / dx;
+            }
+            else if (valid(i, j, k - 1))
+            {
+                dphiz = (phi(i, j, k) - phi(i, j, k - 1)) / dx;
+            }
+        }
 
-        if (!flags.isObstacle(i - 1, j, k) && !flags.isObstacle(i + 1, j, k))
-            dPhiDx = (phi(i + 1, j, k) - phi(i - 1, j, k)) * 0.5 / dx;
-        else if (!flags.isObstacle(i + 1, j, k))
-            dPhiDx = dPhiDx_p;
-        else if (!flags.isObstacle(i - 1, j, k))
-            dPhiDx = dPhiDx_m;
-
-        if (!flags.isObstacle(i, j - 1, k) && !flags.isObstacle(i, j + 1, k))
-            dPhiDy = (phi(i, j + 1, k) - phi(i, j - 1, k)) * 0.5 / dx;
-        else if (!flags.isObstacle(i, j + 1, k))
-            dPhiDy = dPhiDy_p;
-        else if (!flags.isObstacle(i, j - 1, k))
-            dPhiDy = dPhiDy_m;
-
-        // ---------- Normieren ------------------------------------------------
-        const Real len = std::sqrt(dPhiDx * dPhiDx + dPhiDy * dPhiDy) + eps;
-        return Vec3(dPhiDx / len, dPhiDy / len, 0);
+        Real len = std::sqrt(dphix * dphix + dphiy * dphiy + dphiz * dphiz) + eps;
+        return Vec3(dphix / len, dphiy / len, dphiz / len);
     }
 
     KERNEL(points)
@@ -116,169 +226,41 @@ namespace Manta
         Vec3 pos = particles.getPos(idx);
 
         Real lambda = 1;
-        Vec3 newPos = pos + lambda * (radii[idx] - phi.getInterpolatedHi(pos, 2)) * calcNormal2D(phi, std::floor(pos.x), std::floor(pos.y), std::floor(pos.z), flags);
+        Vec3 newPos = pos + lambda * (radii[idx] - phi.getInterpolatedHi(pos, 2)) * calcNormal(phi, std::floor(pos.x), std::floor(pos.y), std::floor(pos.z), flags);
 
         particles.setPos(idx, newPos);
     }
 
-    PYTHON()
-    void sampleLevelsetBorderWithParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, Real randomness = 0.5)
+    KERNEL(points)
+    void knSetParticleRadii(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const Grid<Real> &phi)
     {
-        Real step = 1. / DISCRETIZATION;
-        FOR_IJK_BND(flags, 0)
-        {
-            if (flags.isObstacle(i, j, k))
-            {
-                continue;
-            }
-            if (0 < phi(i, j, k) && phi(i, j, k) < POSITIVE_SEED_CUTOFF)
-            {
-                for (int di = 0; di < DISCRETIZATION; di++)
-                {
-                    for (int dj = 0; dj < DISCRETIZATION; dj++)
-                    {
-                        Real randi = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
-                        Real randj = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
+        skipDelted(particles);
 
-                        Vec3 pos = Vec3(i + (0.5 + di) * step + randi, j + (0.5 + dj) * step + randj, 0.5);
-                        particles.addBuffered(pos, ParticleBase::POUTSIDE);
-                    }
-                }
-            }
-            else if (NEGATIVE_SEED_CUTOFF < phi(i, j, k) && phi(i, j, k) <= 0)
-            {
-                for (int di = 0; di < DISCRETIZATION; di++)
-                {
-                    for (int dj = 0; dj < DISCRETIZATION; dj++)
-                    {
-                        Real randi = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
-                        Real randj = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * step * randomness;
+        Real phiIdx = std::abs(phi.getInterpolatedHi(particles[idx].pos, 2));
 
-                        Vec3 pos = Vec3(i + (0.5 + di) * step + randi, j + (0.5 + dj) * step + randj, 0.5);
-                        particles.addBuffered(pos, ParticleBase::PINSIDE);
-                    }
-                }
-            }
-        }
-        particles.insertBufferedParticles();
+        radii[idx] = Manta::clamp(std::abs(phiIdx), MIN_RADIUS, MAX_RADIUS);
+    }
 
-        knSetTargetPhi(particles, radii); // store phi_target in radii for now, later the actual radii
-
-        for (int __ = 0; __ < 10; __++)
-        {
-            knAttractionStep(particles, radii, phi, flags);
-        }
-
+    PYTHON()
+    void reinitializeRadii(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const Grid<Real> &phi)
+    {
         knSetParticleRadii(particles, radii, phi);
     }
 
-    KERNEL()
-    void testXX(BasicParticleSystem &particles, Grid<Real> &g, Grid<Real> &phi)
+    // PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET
+    // PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET
+    // PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET
+    // PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET
+    // PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET
+    // PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET PARTICLE LEVEL SET
+
+    inline Real particleSphere(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, IndexInt idx, Vec3 x)
     {
-        g(i, j, k) = 0;
-        // phi(i, j, k) = phi(i, j, k) == 0.f ? 0. : 1.;
-        return;
-    }
-    inline Real particleSphere(int flag, Real radius, Vec3 particlePosition, Vec3 x);
-
-    KERNEL()
-    void testXXY(BasicParticleSystem &particles, Grid<Real> &g, Grid<Real> &phi, std::vector<IndexInt> vector, ParticleDataImpl<Real> &radii)
-    {
-        g(i, j, k) = std::numeric_limits<Real>::max();
-
-        for (auto idx : vector)
-        {
-            g(i, j, k) = std::min(phi(i, j, k), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + .5, j + .5, k + .5)));
-        }
-        // phi(i, j, k) = phi(i, j, k) == 0.f ? 0. : 1.;
-        return;
-    }
-
-    PYTHON()
-    void testSeedParticles(Grid<Real> &phi, const FlagGrid &flags, Grid<Real> &g, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, Real cutoff = 3., Real randomness = 0.05)
-    {
-        testXX(particles, g, (Grid<Real> &)phi);
-
-        std::vector<IndexInt> escapees{};
-
-        for (IndexInt idx = 0, max = particles.size(); idx < max; idx++)
-        {
-            Vec3 pos = particles[idx].pos;
-            Real phiAtPos = ((Grid<Real> &)phi).getInterpolatedHi(pos, 2);
-
-            if (particles[idx].flag & ParticleBase::PDELETE)
-            {
-                continue; // delted
-            }
-
-            int i = std::floor(pos.x);
-            int j = std::floor(pos.y);
-            int k = 0;
-
-            /* if (particles[idx].flag & (phiAtPos < 0 ? ParticleBase::PINSIDE : ParticleBase::POUTSIDE))
-            {
-                continue; // on the right side
-            } */
-
-            bool isInside = (phiAtPos <= 0);
-            if ((isInside && (particles[idx].flag & ParticleBase::PINSIDE)) ||
-                (!isInside && (particles[idx].flag & ParticleBase::POUTSIDE)))
-            {
-                continue; // on the right side
-            }
-
-            if (std::abs(phiAtPos) < ESCAPE_CONDITION * radii[idx])
-            {
-                particles[idx].flag &= ~ParticleBase::PESCAPED;
-                continue; // particle still not far enough on wrong side
-            }
-
-            particles[idx].flag |= ParticleBase::PESCAPED;
-            if (particles[idx].flag & ParticleBase::PINSIDE)
-            {
-                // Particles that should be inside but are outside
-                // g(i, j, k) = 1;
-
-                // std::cout << radii[idx] << " radius" << std::endl;
-
-                /*                 if (((Grid<Real> &)phi)(i, j, k) == 0)
-                                {
-                                    std::cout << "ijk: " << i << ", " << j << ", " << k << " phi is 0" << std::endl;
-                                    g(i, j, k) = 1;
-                                } */
-                if (particleSphere(particles[idx].flag, radii[idx], pos, Vec3(i + .5, j + .5, k + .5)) < phi(i, j, k))
-                {
-                    // CODE A
-                    // g(i, j, k) = std::min(phi(i, j, k), particleSphere(particles[idx].flag, radii[idx], pos, Vec3(i + .5, j + .5, k + .5)));
-
-                    // CODE B, Part 1
-                    escapees.push_back(idx);
-                }
-            }
-        }
-
-        // CODE B, Part 2
-        FOR_IJK(g)
-        {
-            g(i, j, k) = std::numeric_limits<Real>::max();
-
-            for (auto idx : escapees)
-            {
-                g(i, j, k) = std::min(std::min(g(i, j, k), phi(i, j, k)), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + .5, j + .5, k + .5)));
-            }
-        }
-
-        // testXXY(particles, g, phi, escapees, radii);
-    }
-
-    inline Real particleSphere(int flag, Real radius, Vec3 particlePosition, Vec3 x)
-    {
-        Real sp = flag & ParticleBase::PINSIDE ? -1. : 1.;
-        return sp * (radius - norm(x - particlePosition));
+        return (particles.isInside(idx) ? -1.0 : 1.0) * (radii[idx] - norm(x - particles[idx].pos));
     }
 
     KERNEL()
-    void knCorrectOmegas(Grid<Real> &originalPhi, Grid<Real> &omega, std::vector<IndexInt> &escapedParticles, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, bool useMin)
+    void knConstructOmega(Grid<Real> &originalPhi, Grid<Real> &omega, std::vector<IndexInt> &escapedParticles, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, bool useMin)
     {
         omega(i, j, k) = useMin ? std::numeric_limits<Real>::max() : -std::numeric_limits<Real>::max();
 
@@ -286,11 +268,11 @@ namespace Manta
         {
             if (useMin)
             {
-                omega(i, j, k) = std::min(std::min(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + 0.5, j + 0.5, k + 0.5)));
+                omega(i, j, k) = std::min(std::min(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles, radii, idx, Vec3(i + 0.5, j + 0.5, k + 0.5)));
             }
             else
             {
-                omega(i, j, k) = std::max(std::max(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles[idx].flag, radii[idx], particles[idx].pos, Vec3(i + 0.5, j + 0.5, k + 0.5)));
+                omega(i, j, k) = std::max(std::max(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles, radii, idx, Vec3(i + 0.5, j + 0.5, k + 0.5)));
             }
         }
     }
@@ -300,7 +282,6 @@ namespace Manta
     {
         if (flags.isObstacle(i, j, k))
         {
-            phi(i, j, k) = 1;
             return;
         }
         phi(i, j, k) = std::abs(omegaPlus(i, j, k)) <= std::abs(omegaMinus(i, j, k)) ? omegaPlus(i, j, k) : omegaMinus(i, j, k);
@@ -315,34 +296,28 @@ namespace Manta
 
         for (IndexInt idx = 0, max = particles.size(); idx < max; idx++)
         {
+            if (particles.isDeleted(idx))
+            {
+                continue;
+            }
+
             Vec3 pos = particles[idx].pos;
             Real phiAtPos = phi.getInterpolatedHi(pos, 2);
 
-            if (particles[idx].flag & ParticleBase::PDELETE)
-            {
-                continue; // delted
-            }
-
-            /* if (particles[idx].flag & (phiAtPos < 0 ? ParticleBase::PINSIDE : ParticleBase::POUTSIDE))
-            {
-                continue; // on the right side
-            } */
-
             bool isInside = (phiAtPos <= 0);
-            if ((isInside && (particles[idx].flag & ParticleBase::PINSIDE)) ||
-                (!isInside && (particles[idx].flag & ParticleBase::POUTSIDE)))
+            if ((isInside && particles.isInside(idx)) || (!isInside && particles.isOutside(idx)))
             {
+                particles[idx].flag &= ~ParticleBase::PESCAPED;
                 continue; // on the right side
             }
 
             if (std::abs(phiAtPos) < ESCAPE_CONDITION * radii[idx])
             {
-                particles[idx].flag &= ~ParticleBase::PESCAPED;
                 continue; // particle still not far enough on wrong side
             }
 
             particles[idx].flag |= ParticleBase::PESCAPED;
-            if (particles[idx].flag & ParticleBase::PINSIDE)
+            if (particles.isInside(idx))
             {
                 // Particles that should be inside but are outside
                 negativeEscaped.push_back(idx);
@@ -365,166 +340,187 @@ namespace Manta
 
         Grid<Real> omegaPlus(phi.getParent());
         Grid<Real> omegaMinus(phi.getParent());
+        knConstructOmega(phi, omegaPlus, positiveEscaped, particles, radii, false);
+        knConstructOmega(phi, omegaMinus, negativeEscaped, particles, radii, true);
 
-        knCorrectOmegas(phi, omegaPlus, positiveEscaped, particles, radii, false);
-        knCorrectOmegas(phi, omegaMinus, negativeEscaped, particles, radii, true);
+        // Step 3: combine omage+ and omega-
         knCombineOmegas(omegaPlus, omegaMinus, phi, flags);
-        return;
     }
 
-    Real calcGradMagnitude(Grid<Real> &phi, int i, int j, int k, Real sng, const FlagGrid &flags)
+    struct ParticleHeapEntry
     {
-        // TODO: UNDERSTAND AND LOOK OVER THIS ALGORITHM (this one was made by google aistudio)
-
-        // --- Calculate directional derivatives, respecting obstacles ---
-        Real dx = 1.;
-        // Backward difference in x (dPhi/dx-)
-        Real dPhiDx_minus = 0.0;
-        if (!flags.isObstacle(i - 1, j, k))
+        Real metric;
+        IndexInt idx;
+        bool operator<(const ParticleHeapEntry &other) const
         {
-            dPhiDx_minus = (phi(i, j, k) - phi(i - 1, j, k)) / dx;
+            return metric < other.metric; // reverse: largest on top
         }
+    };
 
-        // Forward difference in x (dPhi/dx+)
-        Real dPhiDx_plus = 0.0;
-        if (!flags.isObstacle(i + 1, j, k))
-        {
-            dPhiDx_plus = (phi(i + 1, j, k) - phi(i, j, k)) / dx;
-        }
-
-        // Backward difference in y (dPhi/dy-)
-        Real dPhiDy_minus = 0.0;
-        if (!flags.isObstacle(i, j - 1, k))
-        {
-            dPhiDy_minus = (phi(i, j, k) - phi(i, j - 1, k)) / dx;
-        }
-
-        // Forward difference in y (dPhi/dy+)
-        Real dPhiDy_plus = 0.0;
-        if (!flags.isObstacle(i, j + 1, k))
-        {
-            dPhiDy_plus = (phi(i, j + 1, k) - phi(i, j, k)) / dx;
-        }
-
-        // --- The Godunov scheme part is identical to before ---
-        // It now operates on derivatives that are zeroed out at obstacle boundaries.
-
-        Real grad_x_sq = 0.0;
-        Real grad_y_sq = 0.0;
-
-        if (sng > 0.0)
-        {
-            grad_x_sq = std::max(std::pow(std::max(dPhiDx_minus, 0.0f), 2), std::pow(std::min(dPhiDx_plus, 0.0f), 2));
-            grad_y_sq = std::max(std::pow(std::max(dPhiDy_minus, 0.0f), 2), std::pow(std::min(dPhiDy_plus, 0.0f), 2));
-        }
-        else if (sng < 0.0)
-        {
-            grad_x_sq = std::max(std::pow(std::min(dPhiDx_minus, 0.0f), 2), std::pow(std::max(dPhiDx_plus, 0.0f), 2));
-            grad_y_sq = std::max(std::pow(std::min(dPhiDy_minus, 0.0f), 2), std::pow(std::max(dPhiDy_plus, 0.0f), 2));
-        }
-        // If s is exactly 0, the gradient remains 0.
-
-        return std::sqrt(grad_x_sq + grad_y_sq);
-    }
-
-    KERNEL(bnd = 1)
-    void knReinitializeLevelset(Grid<Real> &phi, Grid<Real> &phiOld, Real dt_pseudo, const FlagGrid &flags)
-    {
-        if (flags.isObstacle(i, j, k))
-        {
-            return;
-        }
-
-        Real p = phiOld(i, j, k);
-        Real sng = p / std::sqrt(p * p + 1 * 1); // smooth sng function
-
-        phi(i, j, k) = phiOld(i, j, k) - dt_pseudo * sng * (calcGradMagnitude(phiOld, i, j, k, sng, flags) - 1);
-    }
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
+    // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
 
     PYTHON()
-    void reinitializeLevelset(Grid<Real> &phi, const FlagGrid &flags)
+    void sampleLevelsetBorderWithParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii)
     {
-        Grid<Real> phiOld(phi.getParent());
-        Real dt_pseudo = 0.5;
-        for (int __ = 0; __ < 10; __++)
+        FOR_IJK_BND(flags, 0)
         {
-            phiOld.copyFrom(phi);
-            knReinitializeLevelset(phi, phiOld, dt_pseudo, flags);
-        }
-    }
-
-    PYTHON()
-    void reinitializeRadii(BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, const Grid<Real> &phi)
-    {
-        knSetParticleRadii(particles, radii, phi);
-    }
-
-    PYTHON()
-    //! you always need to run reinitializeRadii after this
-    void reseedParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, Real randomness = 0.5)
-    {
-        Grid<Real> counterGrid(phi.getParent());
-
-        int deletedParticles = 0;
-        int addedParticles = 0;
-
-        // Delete Out of bounds particles or overcrowded particles
-        for (IndexInt idx = 0, max = particles.size(); idx < max; idx++)
-        {
-            if (particles[idx].flag & ParticleBase::PESCAPED)
-            {
-                continue; // don't delete escaped particles
-                particles.kill(idx);
-                continue;
-            }
-            int i = std::floor(particles[idx].pos[0]);
-            int j = std::floor(particles[idx].pos[1]);
-            int k = std::floor(particles[idx].pos[2]);
-
             if (flags.isObstacle(i, j, k))
             {
                 continue;
             }
-
-            if (!(NEGATIVE_SEED_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_SEED_CUTOFF))
+            if (NEGATIVE_SEED_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_SEED_CUTOFF)
             {
-                particles.kill(idx);
-                ++deletedParticles;
-            }
-
-            if (++counterGrid(i, j, k) > MAX_PARTICLES_PER_CELL)
-            {
-                particles.kill(idx);
-                ++deletedParticles;
+                addParticlesToCell(i, j, k, phi(i, j, k), particles, radii, phi.is3D());
             }
         }
 
-        // Insert new particles in cells where there are not enough particles
+        particles.insertBufferedParticles();
+        knSetTargetPhi(particles, radii); // store phi_target in radii for now, later the actual radii
+
+        for (int __ = 0; __ < 10; __++)
+        {
+            knAttractionStep(particles, radii, phi, flags);
+        }
+
+        knSetParticleRadii(particles, radii, phi);
+    }
+
+    PYTHON()
+    void advectParticleLevelSet(Grid<Real> *phi, BasicParticleSystem *particles, ParticleDataImpl<Real> *radii, const MACGrid *vel, const FlagGrid *flags)
+    {
+        // Time integration
+        simpleSLAdvect(flags, vel, phi, 2, true);
+        advectParticlesForward(particles, vel, flags);
+
+        // Error correction
+        correctErrorsWithParticles(*phi, *particles, *radii, *flags);
+
+        // Reinitialization
+        reinitializeLevelset(*phi, *flags);
+        correctErrorsWithParticles(*phi, *particles, *radii, *flags);
+
+        // Adjust Radii
+        knSetParticleRadii(*particles, *radii, *phi);
+    }
+
+    PYTHON()
+    void reseedParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii)
+    {
+        Vec3i gs = phi.getParent()->getGridSize();
+        std::vector<std::vector<IndexInt>> particlesInEachCell(gs.x * gs.y * gs.z);
+        IndexInt strideZ = gs.z > 1 ? (gs.x * gs.y) : 0;
+        IndexInt particlesPerCell = DISCRETIZATION * DISCRETIZATION * (phi.is3D() ? DISCRETIZATION : 1);
+
+        int deletedParticles = 0;
+        int addedParticles = 0;
+
+        auto index = [&](IndexInt x, IndexInt y, IndexInt z)
+        {
+            return (IndexInt)x + (IndexInt)gs.x * y + (IndexInt)strideZ * z;
+        };
+
+        // Step 1: delete particles from not-important regions and count not-escaped particles in border-regions
+        for (IndexInt idx = 0, max = particles.size(); idx < particles.size(); idx++)
+        {
+            if (particles.isDeleted(idx))
+            {
+                continue;
+            }
+
+            if (particles.isEscaped(idx))
+            {
+                continue; // don't delete escaped particles
+            }
+
+            int i = std::floor(particles[idx].pos[0]);
+            int j = std::floor(particles[idx].pos[1]);
+            int k = std::floor(particles[idx].pos[2]);
+
+            // Negative particle too far inside the fluid
+            if (particles.isInside(idx) && phi.getInterpolatedHi(particles.getPos(idx), 2) < NEGATIVE_SEED_CUTOFF)
+            {
+                particles.kill(idx);
+                deletedParticles++;
+                continue;
+            }
+
+            // Positive particle too far outside the fluid
+            if (particles.isOutside(idx) && phi.getInterpolatedHi(particles.getPos(idx), 2) > POSITIVE_SEED_CUTOFF)
+            {
+                particles.kill(idx);
+                deletedParticles++;
+                continue;
+            }
+
+            particlesInEachCell[index(i, j, k)].push_back(idx);
+        }
+
+        // Step 2: Delete particles from cells that have to many.
+        FOR_IJK(phi)
+        {
+            std::vector<IndexInt> &particleIndexList = particlesInEachCell[index(i, j, k)];
+
+            if ((int)particleIndexList.size() > particlesPerCell)
+            {
+                std::priority_queue<ParticleHeapEntry> heap;
+
+                // Build initial heap of desired size
+                for (IndexInt idx : particleIndexList)
+                {
+                    Real metric = (particles.isOutside(idx) ? 1.0 : -1.0) * phi.getInterpolatedHi(particles.getPos(idx), 2) - radii[idx];
+
+                    heap.push({metric, idx});
+                }
+
+                // Kill the "worst" perfoming particles, i.e. top-of-heap particles
+                while ((int)heap.size() > particlesPerCell)
+                {
+                    deletedParticles++;
+                    particles.kill(heap.top().idx);
+                    heap.pop();
+                    deletedParticles++;
+                }
+            }
+        }
+
+        // Step 3: insert particles to cells that don't have enough
         FOR_IJK(phi)
         {
             if (flags.isObstacle(i, j, k))
             {
                 continue;
             }
-            if (!(NEGATIVE_SEED_CUTOFF < phi(i, j, k) && phi(i, j, k) < POSITIVE_SEED_CUTOFF))
-            {
-                continue;
-            }
-            for (int _ = 0; _ < MIN_PARTICLES_PER_CELL - counterGrid(i, j, k); ++_)
-            {
-                ++addedParticles;
-                Real randi = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * randomness;
-                Real randj = (static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) - 0.5) * randomness;
 
-                Vec3 pos = Vec3(i + 0.5 + randi, j + 0.5 + randj, 0.5);
-                particles.addBuffered(pos, phi(i, j, k) < 0 ? ParticleBase::PINSIDE : ParticleBase::POUTSIDE);
+            if (NEGATIVE_SEED_CUTOFF <= phi(i, j, k) && phi(i, j, k) <= POSITIVE_SEED_CUTOFF && particlesInEachCell[index(i, j, k)].size() < particlesPerCell)
+            {
+                for (int _ = 0; _ < particlesPerCell - particlesInEachCell[index(i, j, k)].size(); _++)
+                {
+                    Real randi = static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX);
+                    Real randj = static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX);
+                    Real randz = phi.is3D() ? static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX) : 0.0;
+
+                    Vec3 pos = Vec3(i + randi, j + randj, k + randz);
+
+                    particles.addBuffered(pos, phi(i, j, k) > 0 ? ParticleBase::POUTSIDE : ParticleBase::PINSIDE);
+                    addedParticles++;
+                }
             }
         }
         particles.insertBufferedParticles();
+        knSetParticleRadii(particles, radii, phi);
 
-        // std::cout << "Deleted " << deletedParticles << " particles." << std::endl;
-        // std::cout << "Created " << addedParticles << " particles." << std::endl;
+        std::cout << "Deleted " << deletedParticles << " particles." << std::endl;
+        std::cout << "Created " << addedParticles << " particles." << std::endl;
     }
+
+    // OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS
+    // OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS
+    // OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS
+    // OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS
+    // OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS OTHER FUNCTIONS
 
     KERNEL()
     void knSetFlagsFromParticleLevelset(const Grid<Real> &phi, FlagGrid &flags, Real level)
@@ -585,7 +581,11 @@ namespace Manta
         knMarkPhiFromFlagGrid(phi, flags);
     }
 
-    // Fast Sweeping March extrapolation
+    // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
+    // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
+    // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
+    // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
+    // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
 
     KERNEL()
     void knFillLocked(const FlagGrid &flags, Grid<int> &locked, Grid<Real> &velComponent, MACGridComponent component)
