@@ -168,7 +168,7 @@ namespace Manta
         return knGetMaxVal(grid, flags);
     }
 
-    KERNEL()
+    KERNEL(bnd=2)
     void knComputeVelocityMagnitude(Grid<Real> &dest, const MACGrid &vel)
     {
         dest(i, j, k) = norm(vel.getCentered(i, j, k));

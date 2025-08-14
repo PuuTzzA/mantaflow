@@ -111,6 +111,179 @@ namespace Manta
         }
     }
 
+    // ---------- helpers: safe sampling & WENO5 1D derivative ----------
+    inline Real safePhiSample(const Grid<Real> &phi, const FlagGrid &flags,
+                              int i, int j, int k, int di, int dj, int dk)
+    {
+        const int I = i + di, J = j + dj, K = k + dk;
+        if (!phi.isInBounds(Vec3i(I, J, K), 0) || flags.isObstacle(I, J, K))
+            return phi(i, j, k);
+        return phi(I, J, K);
+    }
+
+    // Compute WENO5 left/right-biased derivatives at cell center
+    inline void weno5Derivatives1D(const Grid<Real> &phi, const FlagGrid &flags,
+                                   int i, int j, int k, Real dx,
+                                   int ax, // 0=x, 1=y, 2=z
+                                   Real &Dm, Real &Dp)
+    {
+        auto S = [&](int s) -> Real
+        {
+            int di = (ax == 0) ? s : 0;
+            int dj = (ax == 1) ? s : 0;
+            int dk = (ax == 2) ? s : 0;
+            return safePhiSample(phi, flags, i, j, k, di, dj, dk);
+        };
+
+        const Real v_m3 = S(-3), v_m2 = S(-2), v_m1 = S(-1), v_0 = S(0),
+                   v_p1 = S(+1), v_p2 = S(+2), v_p3 = S(+3);
+
+        bool poorStencil =
+            (v_m3 == v_0 && v_m2 == v_0 && v_m1 == v_0) ||
+            (v_p3 == v_0 && v_p2 == v_0 && v_p1 == v_0);
+
+        if (poorStencil || dx <= 0)
+        {
+            Real back = (v_0 - v_m1) / (dx > 0 ? dx : 1.0);
+            Real forw = (v_p1 - v_0) / (dx > 0 ? dx : 1.0);
+            Dm = back;
+            Dp = forw;
+            return;
+        }
+
+        auto weno_minus = [&](Real vm2, Real vm1, Real v0, Real vp1, Real vp2) -> Real
+        {
+            Real p0 = (2.0 * vm2 - 7.0 * vm1 + 11.0 * v0) / 6.0;
+            Real p1 = (-1.0 * vm1 + 5.0 * v0 + 2.0 * vp1) / 6.0;
+            Real p2 = (2.0 * v0 + 5.0 * vp1 - 1.0 * vp2) / 6.0;
+
+            Real b0 = (13.0 / 12.0) * ((vm2 - 2.0 * vm1 + v0) * (vm2 - 2.0 * vm1 + v0)) +
+                      (1.0 / 4.0) * ((3.0 * vm2 - 4.0 * vm1 + v0) * (3.0 * vm2 - 4.0 * vm1 + v0));
+            Real b1 = (13.0 / 12.0) * ((vm1 - 2.0 * v0 + vp1) * (vm1 - 2.0 * v0 + vp1)) +
+                      (1.0 / 4.0) * ((vm1 - vp1) * (vm1 - vp1));
+            Real b2 = (13.0 / 12.0) * ((v0 - 2.0 * vp1 + vp2) * (v0 - 2.0 * vp1 + vp2)) +
+                      (1.0 / 4.0) * ((v0 - 4.0 * vp1 + 3.0 * vp2) * (v0 - 4.0 * vp1 + 3.0 * vp2));
+
+            const Real eps = (Real)1e-6;
+            const Real g0 = 0.1, g1 = 0.6, g2 = 0.3;
+            Real a0 = g0 / ((eps + b0) * (eps + b0));
+            Real a1 = g1 / ((eps + b1) * (eps + b1));
+            Real a2 = g2 / ((eps + b2) * (eps + b2));
+            Real sum = a0 + a1 + a2;
+
+            return (a0 * p0 + a1 * p1 + a2 * p2) / sum;
+        };
+
+        auto weno_plus = [&](Real vm2, Real vm1, Real v0, Real vp1, Real vp2) -> Real
+        {
+            Real q0 = (-1.0 * vm2 + 5.0 * vm1 + 2.0 * v0) / 6.0;
+            Real q1 = (2.0 * vm1 + 5.0 * v0 - 1.0 * vp1) / 6.0;
+            Real q2 = (11.0 * v0 - 7.0 * vp1 + 2.0 * vp2) / 6.0;
+
+            Real b0 = (13.0 / 12.0) * ((vm2 - 2.0 * vm1 + v0) * (vm2 - 2.0 * vm1 + v0)) +
+                      (1.0 / 4.0) * ((vm2 - 4.0 * vm1 + 3.0 * v0) * (vm2 - 4.0 * vm1 + 3.0 * v0));
+            Real b1 = (13.0 / 12.0) * ((vm1 - 2.0 * v0 + vp1) * (vm1 - 2.0 * v0 + vp1)) +
+                      (1.0 / 4.0) * ((vm1 - vp1) * (vm1 - vp1));
+            Real b2 = (13.0 / 12.0) * ((v0 - 2.0 * vp1 + vp2) * (v0 - 2.0 * vp1 + vp2)) +
+                      (1.0 / 4.0) * ((3.0 * v0 - 4.0 * vp1 + vp2) * (3.0 * v0 - 4.0 * vp1 + vp2));
+
+            const Real eps = (Real)1e-6;
+            const Real g0 = 0.1, g1 = 0.6, g2 = 0.3;
+            Real a0 = g0 / ((eps + b0) * (eps + b0));
+            Real a1 = g1 / ((eps + b1) * (eps + b1));
+            Real a2 = g2 / ((eps + b2) * (eps + b2));
+            Real sum = a0 + a1 + a2;
+
+            return (a0 * q0 + a1 * q1 + a2 * q2) / sum;
+        };
+
+        Real phi_imh_minus = weno_minus(v_m3, v_m2, v_m1, v_0, v_p1);
+        Real phi_iph_minus = weno_minus(v_m2, v_m1, v_0, v_p1, v_p2);
+        Real phi_imh_plus = weno_plus(v_p2, v_p1, v_0, v_m1, v_m2);
+        Real phi_iph_plus = weno_plus(v_p3, v_p2, v_p1, v_0, v_m1);
+
+        Dm = (phi_iph_minus - phi_imh_minus) / dx;
+        Dp = (phi_iph_plus - phi_imh_plus) / dx;
+    }
+
+    inline void weno5DerivativesXYZ(const Grid<Real> &phi, const FlagGrid &flags,
+                                    int i, int j, int k, Real dx,
+                                    Real &Dmx, Real &Dpx,
+                                    Real &Dmy, Real &Dpy,
+                                    Real &Dmz, Real &Dpz)
+    {
+        weno5Derivatives1D(phi, flags, i, j, k, dx, 0, Dmx, Dpx);
+        weno5Derivatives1D(phi, flags, i, j, k, dx, 1, Dmy, Dpy);
+        if (phi.is3D())
+            weno5Derivatives1D(phi, flags, i, j, k, dx, 2, Dmz, Dpz);
+        else
+        {
+            Dmz = Dpz = 0.0;
+        }
+    }
+
+    inline Real gradMagGodunovWENO5(const Grid<Real> &phi, int i, int j, int k,
+                                    Real sng, const FlagGrid &flags, Real dx)
+    {
+        Real Dmx, Dpx, Dmy, Dpy, Dmz, Dpz;
+        weno5DerivativesXYZ(phi, flags, i, j, k, dx, Dmx, Dpx, Dmy, Dpy, Dmz, Dpz);
+
+        Real gx2 = 0, gy2 = 0, gz2 = 0;
+        if (sng > 0.0)
+        {
+            gx2 = std::max((std::max(Dmx, (Real)0.0)) * (std::max(Dmx, (Real)0.0)),
+                           (std::min(Dpx, (Real)0.0)) * (std::min(Dpx, (Real)0.0)));
+            gy2 = std::max((std::max(Dmy, (Real)0.0)) * (std::max(Dmy, (Real)0.0)),
+                           (std::min(Dpy, (Real)0.0)) * (std::min(Dpy, (Real)0.0)));
+            gz2 = std::max((std::max(Dmz, (Real)0.0)) * (std::max(Dmz, (Real)0.0)),
+                           (std::min(Dpz, (Real)0.0)) * (std::min(Dpz, (Real)0.0)));
+        }
+        else if (sng < 0.0)
+        {
+            gx2 = std::max((std::min(Dmx, (Real)0.0)) * (std::min(Dmx, (Real)0.0)),
+                           (std::max(Dpx, (Real)0.0)) * (std::max(Dpx, (Real)0.0)));
+            gy2 = std::max((std::min(Dmy, (Real)0.0)) * (std::min(Dmy, (Real)0.0)),
+                           (std::max(Dpy, (Real)0.0)) * (std::max(Dpy, (Real)0.0)));
+            gz2 = std::max((std::min(Dmz, (Real)0.0)) * (std::min(Dmz, (Real)0.0)),
+                           (std::max(Dpz, (Real)0.0)) * (std::max(Dpz, (Real)0.0)));
+        }
+
+        return std::sqrt(gx2 + gy2 + gz2);
+    }
+
+    // ---------- kernel ----------
+    KERNEL(bnd = 3) // WENO5 needs ±3 halo
+    void knReinitializeLevelsetWENO(Grid<Real> &phi, Grid<Real> &phiOld,
+                                    Real dt_pseudo, const FlagGrid &flags)
+    {
+        if (flags.isObstacle(i, j, k))
+            return;
+
+        const Real dx = 1.0;
+        const Real p0 = phiOld(i, j, k);
+
+        const Real eps = dx;
+        const Real sng = p0 / std::sqrt(p0 * p0 + eps * eps);
+
+        const Real gradMag = gradMagGodunovWENO5(phiOld, i, j, k, sng, flags, dx);
+
+        phi(i, j, k) = phiOld(i, j, k) - dt_pseudo * sng * (gradMag - (Real)1.0);
+    }
+
+    PYTHON()
+    void reinitializeLevelsetWENO(Grid<Real> &phi, const FlagGrid &flags)
+    {
+        Grid<Real> phiOld(phi.getParent());
+        const Real dt_pseudo = 0.3;
+        const int iters = 10;
+
+        for (int n = 0; n < iters; ++n)
+        {
+            phiOld.copyFrom(phi);
+            knReinitializeLevelset(phi, phiOld, dt_pseudo, flags);
+        }
+    }
+
     // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
     // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
     // PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES PARTICLES
@@ -260,19 +433,17 @@ namespace Manta
     }
 
     KERNEL()
-    void knConstructOmega(Grid<Real> &originalPhi, Grid<Real> &omega, std::vector<IndexInt> &escapedParticles, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, bool useMin)
+    void knUpdateOmega(Grid<Real> &omega, std::vector<IndexInt> &escapedParticles, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii, bool useMin)
     {
-        omega(i, j, k) = useMin ? std::numeric_limits<Real>::max() : -std::numeric_limits<Real>::max();
-
         for (auto idx : escapedParticles)
         {
             if (useMin)
             {
-                omega(i, j, k) = std::min(std::min(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles, radii, idx, Vec3(i + 0.5, j + 0.5, k + 0.5)));
+                omega(i, j, k) = std::min(omega(i, j, k), particleSphere(particles, radii, idx, Vec3(i + 0.5, j + 0.5, k + 0.5)));
             }
             else
             {
-                omega(i, j, k) = std::max(std::max(originalPhi(i, j, k), omega(i, j, k)), particleSphere(particles, radii, idx, Vec3(i + 0.5, j + 0.5, k + 0.5)));
+                omega(i, j, k) = std::max(omega(i, j, k), particleSphere(particles, radii, idx, Vec3(i + 0.5, j + 0.5, k + 0.5)));
             }
         }
     }
@@ -340,8 +511,11 @@ namespace Manta
 
         Grid<Real> omegaPlus(phi.getParent());
         Grid<Real> omegaMinus(phi.getParent());
-        knConstructOmega(phi, omegaPlus, positiveEscaped, particles, radii, false);
-        knConstructOmega(phi, omegaMinus, negativeEscaped, particles, radii, true);
+        omegaPlus.copyFrom(phi);
+        omegaMinus.copyFrom(phi);
+
+        knUpdateOmega(omegaPlus, positiveEscaped, particles, radii, false);
+        knUpdateOmega(omegaMinus, negativeEscaped, particles, radii, true);
 
         // Step 3: combine omage+ and omega-
         knCombineOmegas(omegaPlus, omegaMinus, phi, flags);
@@ -580,6 +754,15 @@ namespace Manta
     {
         knMarkPhiFromFlagGrid(phi, flags);
     }
+
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
+
+    
+
 
     // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
     // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION

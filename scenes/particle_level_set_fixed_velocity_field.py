@@ -135,7 +135,7 @@ while (s.timeTotal < params["max_time"]):
 
     advectParticleLevelSet( phi=testPhi, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags )
 
-    if (data_collector.current_frame % 30 == 0):
+    if (data_collector.current_frame % 300 == 0):
         pass
         #reseedParticles(phi=testPhi, flags=flags, particles=level_set_particles, radii=particle_radii )
 

@@ -153,7 +153,7 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
-    Vec3 customTrace(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    Vec3 customTraceOld(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
         std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
         switch (targetCellType)
@@ -194,6 +194,79 @@ namespace Manta
         {
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
+
+            if (isTargetCell(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, component))
+            {
+                lastKnowFluidPos = current;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return lastKnowFluidPos;
+    }
+
+    Vec3 customTrace(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    {
+        std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
+        switch (targetCellType)
+        {
+        case NOT_OBSTACLE:
+            isTargetCell = isNotObstacle;
+            break;
+        case FLUID_ISH:
+            isTargetCell = isSampleableFluid;
+            break;
+        case FLUID_STRICT:
+            isTargetCell = isValidFluid;
+            break;
+        }
+
+        const Real MAX_LOCAL_CFL = 5;
+
+        pos += offset;
+        Vec3 startVel = vel.getInterpolatedHi(pos, 2);
+        Real localCFL = norm(startVel) * dt;
+        const int steps = Manta::clamp((int)std::ceil(localCFL / MAX_LOCAL_CFL), 1, 15);
+        const Real smallDt = dt / steps;
+
+        Vec3 newPos = pos;
+        Vec3 oldNewPos = pos;
+
+        for (int step = 0; step < steps; step++)
+        {
+            newPos = rungeKutta4(oldNewPos, smallDt, vel);
+
+            if (!isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
+            {
+                break;
+            }
+
+            oldNewPos = newPos;
+        }
+
+        if (isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
+        {
+            return newPos;
+        }
+
+        // Fallback, try finding the closest surface point
+        Vec3 current;
+        Vec3 direction = newPos - oldNewPos;
+        Real totalDistance = norm(direction);
+        Vec3 lastKnowFluidPos = oldNewPos;
+
+        if (totalDistance < EPSILON)
+        {
+            return oldNewPos;
+        }
+
+        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
+        for (int i = 0; i <= numSearchSteps; i++)
+        {
+            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
+            current = oldNewPos + t * direction;
 
             if (isTargetCell(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, component))
             {
@@ -1070,6 +1143,24 @@ namespace Manta
 
                     Vec3 roundedGrad(std::round(gradient.x), std::round(gradient.y), std::round(gradient.z));
 
+                    Real mass_to_move = tempGrid(i, j, k);
+
+                    // try closest first, for early exit
+                    Vec3i firstTarget = Vec3i(i + roundedGrad.x, j + roundedGrad.y, k + roundedGrad.z);
+                    if (isSampleableFluid(firstTarget.x, firstTarget.y, firstTarget.z, flags_n_plus_one, component))
+                    {
+                        Real targetBefore = grid(firstTarget);
+                        grid(firstTarget) = Manta::clamp(grid(firstTarget) - mass_to_move, min(firstTarget), max(firstTarget));
+                        Real movedMass = targetBefore - grid(firstTarget);
+
+                        mass_to_move -= movedMass;
+                    }
+
+                    if (std::abs(mass_to_move) < EPSILON * EPSILON)
+                    {
+                        continue;
+                    }
+
                     std::sort(neighbors.begin(), neighbors.end(),
                               [&](const Vec3 &a, const Vec3 &b)
                               {
@@ -1093,7 +1184,6 @@ namespace Manta
                                   return simA > simB; // descending similarity
                               });
 
-                    Real mass_to_move = tempGrid(i, j, k);
                     for (const auto &n : neighbors)
                     {
                         if (std::abs(mass_to_move) > EPSILON * EPSILON)

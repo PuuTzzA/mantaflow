@@ -10,7 +10,7 @@ EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_3d_high_highres/"
+    EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_3d_high_highres_local_cfl(5)/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -112,7 +112,7 @@ while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
 
-    if tracingMethod == "EE1":
+    if doConserving == False and tracingMethod == "EE1":
         maxvel = vel.getMax()
 
     if firstFrame:
@@ -167,7 +167,7 @@ while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
 
-    if tracingMethod == "EE1":
+    if doConserving == False and tracingMethod == "EE1":
         maxvel = vel.getMax()
         storeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
 

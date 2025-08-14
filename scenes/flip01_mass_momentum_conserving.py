@@ -188,7 +188,7 @@ while (s.timeTotal < params["max_time"]):
 
     s.adaptTimestep(maxvel)
 
-    print(f"cfl number?: {vel.getMaxAbs() * s.timestep}, timestep: {s.timestep}")
+    print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}")
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
     if not doConserving:
@@ -215,7 +215,8 @@ while (s.timeTotal < params["max_time"]):
 
     else:
         vel_extrapolated.copyFrom(vel)
-        extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+        #extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+        extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
 
         if not doParticleLevelSet:
             simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=2, all=True) # 0 = Trilinear, 1 = cubic convolutional, 2 = polynomial, 3 = monotone hermite
@@ -225,23 +226,6 @@ while (s.timeTotal < params["max_time"]):
             setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
         else:
-            """             advectParticlesForward( particles=level_set_particles, vel=vel_extrapolated, flags=flags_n)
-                        #level_set_particles.advectInGrid(flags=flags_n, vel=vel_extrapolated, integrationMode=IntRK4, deleteInObstacle=False )
-
-                        level_set_particles.projectOutOfBnd(flags=flags_n, bnd=bWidth + 1, plane='xXyYzZ', ptype=particle_pT)
-                        if layout == 0:
-                            pushOutofObs(parts=level_set_particles, flags=flags_n, phiObs=phiObs, thresh=0.5*0.5, ptype=particle_pT)
-                        
-                        #simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=2, all=True) # 0 = Trilinear, 1 = cubic convolutional, 2 = polynomial, 3 = monotone hermite
-                        advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
-                        #massMomentumConservingAdvect( flags=flags_n, vel=vel, grid=phi_fluid, gammaCumulative=phi_gamma)
-
-                        correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
-                        reinitializeLevelset( phi=phi_fluid, flags=flags_n )
-                        correctErrorsWithParticles( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, flags=flags_n )
-
-                        reinitializeRadii( particles=level_set_particles, radii=particle_radii, phi=phi_fluid )
-            """            
             advectParticleLevelSet( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, vel=vel_extrapolated, flags=flags_n )
 
             if (data_collector.current_frame % 20 == 0):
@@ -251,9 +235,15 @@ while (s.timeTotal < params["max_time"]):
             setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
 
         # Advect grid quantities using the custom conserving advection scheme.
-        massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
-        massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid                  , interpolationType=interpolationMethod)
+        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
+        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid                  , interpolationType=interpolationMethod)
         
+        #advectSemiLagrange( flags=flags_n_plus_one, vel=vel_extrapolated, grid=innen1außen0, order=1 )
+        #advectSemiLagrange( flags=flags_n_plus_one, vel=vel_extrapolated, grid=vel, order=1 )
+
+        simpleSLAdvect(flags=flags_n_plus_one, vel=vel, grid=innen1außen0,interpolationType=2, all=True) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+        simpleSLAdvect(flags=flags_n_plus_one, vel=vel, grid=vel,         interpolationType=2, all=True) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+
         flags_n.copyFrom(flags_n_plus_one)
         
         # Apply grid-based forces (gravity)

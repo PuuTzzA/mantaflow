@@ -6,11 +6,11 @@
   "resolutionY": 50,
   "resolutionZ": 70,
 
-  "doOpen": true,
+  "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "EE1",
-  "interpolationMethod": 0,
+  "interpolationMethod": 2,
 
   "exportData": false,
   "exportImages": false,
