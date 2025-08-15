@@ -62,7 +62,7 @@ SIMPLE_PLUME_OBSTACLE_3D_HIGH_HIGHRES_PATHS = [
     ['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_conserving_2_polynomial.json', True],
     #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_EE1.json', True],
     #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_EE2.json', True],
-    #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_0_linear.json', True],
+    ['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_0_linear.json', True],
     #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_1_cubic.json', True],
     ['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_2_polynomial.json', True],
     #['../scenes/test_cases/simple_plume_obstacle_3d_high_highres/simple_plume_obstacle_3d_high_highres_traditional_RK4_3_monotone_hermite.json', True],

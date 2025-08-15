@@ -223,20 +223,30 @@ namespace Manta
             break;
         }
 
-        const Real MAX_LOCAL_CFL = 5;
+        const Real MAX_LOCAL_CFL = 4;
 
         pos += offset;
-        Vec3 startVel = vel.getInterpolatedHi(pos, 2);
-        Real localCFL = norm(startVel) * dt;
-        const int steps = Manta::clamp((int)std::ceil(localCFL / MAX_LOCAL_CFL), 1, 15);
-        const Real smallDt = dt / steps;
-
         Vec3 newPos = pos;
         Vec3 oldNewPos = pos;
 
-        for (int step = 0; step < steps; step++)
+        Real signDt = signum(dt);
+        Real timeLeft = std::fabs(dt);
+
+        while (timeLeft > EPSILON)
         {
-            newPos = rungeKutta4(oldNewPos, smallDt, vel);
+            Vec3 localVel = vel.getInterpolatedHi(oldNewPos, 2);
+            Real localCFL = norm(localVel) * timeLeft;
+
+            Real steps = std::max(localCFL / MAX_LOCAL_CFL, (Real)EPSILON);
+
+            Real localDt = std::min(timeLeft, timeLeft / steps);
+
+            if (norm(localVel) < EPSILON)
+            {
+                localDt = timeLeft;
+            }
+
+            newPos = rungeKutta4(oldNewPos, signDt * localDt, vel);
 
             if (!isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
             {
@@ -244,6 +254,7 @@ namespace Manta
             }
 
             oldNewPos = newPos;
+            timeLeft -= localDt;
         }
 
         if (isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
@@ -1424,7 +1435,7 @@ namespace Manta
     }
 
     PYTHON()
-    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all)
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();
