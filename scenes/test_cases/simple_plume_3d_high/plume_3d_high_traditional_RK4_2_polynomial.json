@@ -1,19 +1,20 @@
 {
-  "title": "simple_plume_obstacle_3d_high_highres_conserving_2_polynomial",
+  "title": "plume_3d_high_traditional_RK4_2_polynomial",
   "dimension": 3,
   "resolutionX": 128,
   "resolutionY": 256,
   "resolutionZ": 128,
   "doOpen": true,
   "doObstacle": true,
-  "doConserving": true,
+  "doConserving": false,
   "tracingMethod": "RK4",
   "interpolationMethod": 2,
+  "tracingFunction": 0,
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
   "max_time": 90,
-  "maxCFL": 30,
+  "maxCFL": 40,
   "dt": 50
 }

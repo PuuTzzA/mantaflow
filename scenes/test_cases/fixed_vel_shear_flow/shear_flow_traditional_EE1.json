@@ -1,8 +1,8 @@
 {
   "title": "shear_flow_traditional_EE1",
   "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
+  "resolutionX": 128,
+  "resolutionY": 128,
   "resolutionZ": 100,
   "scenario": "shear_flow",
   "doConserving": false,

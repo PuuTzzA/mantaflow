@@ -566,7 +566,7 @@ namespace Manta
     void advectParticleLevelSet(Grid<Real> *phi, BasicParticleSystem *particles, ParticleDataImpl<Real> *radii, const MACGrid *vel, const FlagGrid *flags)
     {
         // Time integration
-        simpleSLAdvect(flags, vel, phi, 2, true);
+        simpleSLAdvect(flags, vel, phi, 2, true, NORMAL);
         advectParticlesForward(particles, vel, flags);
 
         // Error correction

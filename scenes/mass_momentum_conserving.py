@@ -10,7 +10,7 @@ EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/simple_plume_obstacle_3d_high_highres_local_cfl(4)/"
+    EXPORTS_BASE_DIR = "../exports/final/simple_plume_3d_high"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -37,6 +37,7 @@ if exportVDBs and (exportImages or exportVideos):
 
 interpolationMethod = params["interpolationMethod"] # only important for tracingMethod == "RK4" or doConserving ==  true
 tracingMethod = params["tracingMethod"] # only important for notCoserving (EE1: Explicit Euler Order 1, EE2: Explicit Euler with MAC cormack, RK$, Runge Kutta 4)
+tracingFunction = params["tracingFunction"] # only for RK4 or doConserving, 0 = NORMAL, 1 = LOCAL_CFL
 
 title = params["title"]
 
@@ -143,15 +144,15 @@ while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
             setOutflowToZero(flags=flags, grid=vel)
 
         elif tracingMethod == "RK4":
-            simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
-            simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
-            simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+            simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=interpolationMethod, tracingMethod=tracingFunction) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+            simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,interpolationType=interpolationMethod, tracingMethod=tracingFunction) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+            simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=interpolationMethod, tracingMethod=tracingFunction) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
     else:
         #simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod, tracingMethod=tracingFunction)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod, tracingMethod=tracingFunction)
 
     if doOpen:
         resetOutflow(flags=flags,real=density) 

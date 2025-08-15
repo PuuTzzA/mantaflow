@@ -8,9 +8,10 @@
 
   "doOpen": false,
   "doObstacle": true,
-  "doConserving": true,
-  "tracingMethod": "EE1",
+  "doConserving": false,
+  "tracingMethod": "RK4",
   "interpolationMethod": 2,
+  "tracingFunction":1,
 
   "exportData": false,
   "exportImages": false,

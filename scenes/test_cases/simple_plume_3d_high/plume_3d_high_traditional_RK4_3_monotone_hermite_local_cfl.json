@@ -1,5 +1,5 @@
 {
-  "title": "simple_plume_obstacle_3d_high_highres_traditional_RK4_2_polynomial",
+  "title": "plume_3d_high_traditional_RK4_3_monotone_hermite_local_cfl",
   "dimension": 3,
   "resolutionX": 128,
   "resolutionY": 256,
@@ -8,12 +8,13 @@
   "doObstacle": true,
   "doConserving": false,
   "tracingMethod": "RK4",
-  "interpolationMethod": 2,
+  "interpolationMethod": 3,
+  "tracingFunction": 1,
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
   "max_time": 90,
-  "maxCFL": 30,
+  "maxCFL": 40,
   "dt": 50
 }

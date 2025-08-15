@@ -153,7 +153,7 @@ namespace Manta
         return pos + (dt / 6.) * (k1 + 2. * k2 + 2. * k3 + k4);
     }
 
-    Vec3 customTraceOld(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    Vec3 customTrace(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
         std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
         switch (targetCellType)
@@ -207,7 +207,7 @@ namespace Manta
         return lastKnowFluidPos;
     }
 
-    Vec3 customTrace(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
+    Vec3 customTraceLocalCFL(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
         std::function<bool(IndexInt, IndexInt, IndexInt, const FlagGrid &, MACGridComponent)> isTargetCell;
         switch (targetCellType)
@@ -704,7 +704,7 @@ namespace Manta
         return is3D ? interpolateMonotoneCubicHermite(yInterp[0], yInterp[1], yInterp[2], yInterp[3], fz) : yInterp[0];
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType)
+    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, TracingMethod tracingMethod)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -722,9 +722,19 @@ namespace Manta
 
         if (!doLiquid)
         {
-            Vec3 newPoss = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
+            Vec3 newPos;
+
+            switch (tracingMethod)
+            {
+            case NORMAL:
+                newPos = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
+                break;
+            case LOCAL_CFL:
+                newPos = customTraceLocalCFL(pos, -dt, vel, flags, offset, component, FLUID_ISH);
+            }
+
             std::vector<std::tuple<Vec3i, Real>> vec{};
-            getCorrectInterpolationStencilWithWeights(vec, newPoss, flags, offset, component, FLUID_ISH);
+            getCorrectInterpolationStencilWithWeights(vec, newPos, flags, offset, component, FLUID_ISH);
             return vec;
         }
 
@@ -819,7 +829,7 @@ namespace Manta
         return {};
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType)
+    std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -835,7 +845,15 @@ namespace Manta
             break;
         }
 
-        Vec3 newPos = customTrace(pos, dt, vel, flags, offset, component, FLUID_ISH);
+        Vec3 newPos;
+        switch (tracingMethod)
+        {
+        case NORMAL:
+            newPos = customTrace(pos, dt, vel, flags, offset, component, FLUID_ISH);
+            break;
+        case LOCAL_CFL:
+            newPos = customTraceLocalCFL(pos, dt, vel, flags, offset, component, FLUID_ISH);
+        }
         std::vector<std::tuple<Vec3i, Real>> vec{};
         getCorrectInterpolationStencilWithWeights(vec, newPos, flags, offset, component, FLUID_ISH);
         return vec;
@@ -944,7 +962,7 @@ namespace Manta
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType)
+    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod)
     {
         if (interpolationType == MONOTONE_CUBIC_HERMITE)
         {
@@ -974,7 +992,7 @@ namespace Manta
                 continue;
             }
 
-            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType);
+            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod);
 
             if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
             {
@@ -1009,7 +1027,7 @@ namespace Manta
             {
                 Real amountToDistribute = 1 - beta(i, j, k);
 
-                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType);
+                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod);
 
                 if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
                 {
@@ -1141,7 +1159,7 @@ namespace Manta
                     }
                 }
             }
-            
+
             for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
             {
                 FOR_IJK(grid)
@@ -1234,7 +1252,7 @@ namespace Manta
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
 
-    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> *phi, InterpolationType interpolationType)
+    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> *phi, InterpolationType interpolationType, TracingMethod tracingMethod)
     {
         Grid<Real> velX(parent);
         Grid<Real> velY(parent);
@@ -1257,15 +1275,15 @@ namespace Manta
 
         if (!water)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType, tracingMethod);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType, tracingMethod);
         }
         else
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod);
         }
 
         knGrids2MAC(grid, velX, velY, velZ);
@@ -1273,15 +1291,15 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = LINEAR)
+    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = LINEAR, int tracingMethod = NORMAL)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags->getParent(), *flags, *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), nullptr, NONE, (InterpolationType)interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags->getParent(), *flags, *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), nullptr, NONE, (InterpolationType)interpolationType, (TracingMethod)tracingMethod);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false, nullptr, (InterpolationType)interpolationType);
+            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false, nullptr, (InterpolationType)interpolationType, (TracingMethod)tracingMethod);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
@@ -1296,11 +1314,11 @@ namespace Manta
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE, (InterpolationType)interpolationType);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE, (InterpolationType)interpolationType, NORMAL);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi, (InterpolationType)interpolationType);
+            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi, (InterpolationType)interpolationType, NORMAL);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
@@ -1359,14 +1377,24 @@ namespace Manta
     }
 
     KERNEL()
-    void knSimpleSLAdvect(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, bool all)
+    void knSimpleSLAdvect(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, bool all, TracingMethod tracingMethod)
     {
         if (all ? !isNotObstacle(i, j, k, flags, component) : !isSampleableFluid(i, j, k, flags, component))
         {
             return;
         }
 
-        Vec3 pos = customTrace(Vec3(i, j, k), -dt, vel, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+        Vec3 pos;
+
+        switch (tracingMethod)
+        {
+        case NORMAL:
+            pos = customTrace(Vec3(i, j, k), -dt, vel, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+            break;
+        case LOCAL_CFL:
+            pos = customTraceLocalCFL(Vec3(i, j, k), -dt, vel, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+            break;
+        }
 
         if (interpolationType != MONOTONE_CUBIC_HERMITE)
         {
@@ -1410,7 +1438,7 @@ namespace Manta
         }
     }
 
-    void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType, bool all)
+    void fnSimpleSLAdcetMAC(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType, bool all, TracingMethod tracingMethod)
     {
         Grid<Real> gridX(parent);
         Grid<Real> gridY(parent);
@@ -1430,15 +1458,15 @@ namespace Manta
         Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
         Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
 
-        knSimpleSLAdvect(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType, all);
-        knSimpleSLAdvect(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType, all);
-        knSimpleSLAdvect(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType, all);
+        knSimpleSLAdvect(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType, all, tracingMethod);
+        knSimpleSLAdvect(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType, all, tracingMethod);
+        knSimpleSLAdvect(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType, all, tracingMethod);
 
         knGrids2MAC(grid, newGridX, newGridY, newGridZ);
     }
 
     PYTHON()
-    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false)
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false, int tracingMethod = NORMAL)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();
@@ -1447,12 +1475,12 @@ namespace Manta
         {
             Grid<Real> newGrid(parent);
             Vec3 offset = Vec3(0.5, 0.5, 0.5);
-            knSimpleSLAdvect(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType, all);
+            knSimpleSLAdvect(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType, all, (TracingMethod)tracingMethod);
             ((Grid<Real> *)grid)->swap(newGrid);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnSimpleSLAdcetMAC(*flags, *vel, *((MACGrid *)grid), parent, dt, (InterpolationType)interpolationType, all);
+            fnSimpleSLAdcetMAC(*flags, *vel, *((MACGrid *)grid), parent, dt, (InterpolationType)interpolationType, all, (TracingMethod)tracingMethod);
         }
         else
             errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");
