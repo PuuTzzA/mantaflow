@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 # Parameters
 r_max = 2
-gradient = np.array([2., 1.])
+gradient = np.array([1., 0.])
 gradient /= np.linalg.norm(gradient)
 
 # Generate neighbor offsets
@@ -12,7 +12,8 @@ for dx in range(-r_max, r_max + 1):
     for dy in range(-r_max, r_max + 1):
         if dx == 0 and dy == 0:
             continue
-        neighbors.append(np.array([dx, dy]))
+        if np.sqrt(dx**2 + dy**2) <= r_max + 0.5:
+            neighbors.append(np.array([dx, dy]))
 
 #cosine similarity
 def similarity(o):

@@ -1134,11 +1134,14 @@ namespace Manta
                     {
                         if (dx == 0 && dy == 0 && dz == 0)
                             continue; // skip self
-                        neighbors.push_back({static_cast<Real>(dx), static_cast<Real>(dy), static_cast<Real>(dz)});
+                        if (std::sqrt(dx * dx + dy * dy + dz * dz) <= neighborRadius + 0.5)
+                        {
+                            neighbors.push_back({static_cast<Real>(dx), static_cast<Real>(dy), static_cast<Real>(dz)});
+                        }
                     }
                 }
             }
-
+            
             for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
             {
                 FOR_IJK(grid)
