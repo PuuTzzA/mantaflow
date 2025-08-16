@@ -106,7 +106,7 @@ FIXED_VEL_SHEAR_FLOW_PATHS = [
     ['../scenes/test_cases/fixed_vel_shear_flow/shear_flow_traditional_RK4_3_monotone_hermite.json', False]
 ]
 
-for param, requiresVDB in SIMPLE_PLUME_3D_HIGHRES:
+for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
