@@ -48,12 +48,12 @@ SIMPLE_PLUME_OBSTACLE_2D_HIGH_PATHS = [
 ]
 
 SIMPLE_PLUME_3D_HIGH = [
-    ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_0_linear.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_0_linear_local_cfl.json', True],
+    #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_0_linear.json', True],
+    #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_0_linear_local_cfl.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_1_cubic.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_1_cubic_local_cfl.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial_local_cfl.json', True],
+    #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial.json', True],
+    #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial_local_cfl.json', True],
     ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_EE1.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_EE2.json', True],
     ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_RK4_0_linear.json', True],
@@ -109,7 +109,7 @@ FIXED_VEL_SHEAR_FLOW_PATHS = [
     ['../scenes/test_cases/fixed_vel_shear_flow/shear_flow_traditional_RK4_3_monotone_hermite.json', False]
 ]
 
-for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
+for param, requiresVDB in SIMPLE_PLUME_3D_HIGHRES:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
