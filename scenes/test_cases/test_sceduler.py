@@ -12,8 +12,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
-PATH_TO_MANTA = "/home/tputzer/Documents/BA/mantaflow/manta/"
-PATH_TO_MANTA_VDB = "/home/tputzer/Documents/BA/mantaflow/mantaVDB/"
+#PATH_TO_MANTA = "/home/tputzer/Documents/BA/mantaflow/manta/"
+#PATH_TO_MANTA_VDB = "/home/tputzer/Documents/BA/mantaflow/mantaVDB/"
+
+PATH_TO_MANTA = Path("../../manta").expanduser().resolve()
+PATH_TO_MANTA_VDB = Path("../../mantaVDB").expanduser().resolve()
 
 #---------------------------------------------------------------------------------
 
