@@ -24,7 +24,7 @@ exportImages = False
 exportVideos = False
 exportVDBs = True  # This is the flag we will output as True/False in the printed list
 
-max_time = 140
+max_time = 150
 maxCFL = 50
 dt = 6
 
