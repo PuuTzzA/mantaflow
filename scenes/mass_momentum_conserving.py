@@ -42,11 +42,11 @@ tracingFunction = params["tracingFunction"] # only for RK4 or doConserving, 0 = 
 title = params["title"]
 
 # set time step range
-s.cfl         = params["maxCFL"]
-s.timestep    = params["dt"]
 s.frameLength = params["dt"]     
-s.timestepMin = 0.001 
-s.timestepMax = 20000
+s.cfl         = params["maxCFL"]
+s.timestep    = s.frameLength
+s.timestepMin = 0.1 
+s.timestepMax = s.frameLength
 
 timings = Timings()
 
@@ -65,7 +65,7 @@ innen0außen1_gamma = s.create(RealGrid)
 phiObs = s.create(LevelsetGrid)
 
 #prepare grids
-bWidth=2
+bWidth=1
 flags.initDomain(boundaryWidth=bWidth) 
 flags.fillGrid()
 
@@ -73,7 +73,7 @@ if doOpen:
     setOpenBound(flags, bWidth,'xXYzZ',FlagOutflow|FlagEmpty) 
 
 if doObstacle:
-    obsPos = vec3(0.5, 0.55, 0.5)
+    obsPos = vec3(0.5, 0.5, 0.5)
     obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
     obsSize = 0.11
 
@@ -85,7 +85,7 @@ if doObstacle:
     flags.fillGrid()
     obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
 
-source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.14, z=gs*vec3(0, 0.04, 0))
+source = s.create(Cylinder, center=gs*vec3(0.5,0.075,0.5), radius=res*0.15, z=gs*vec3(0, 0.028, 0))
 
 source.applyToGrid(grid=innen0außen1, value=1)
 fillWithOnes( grid=density_gamma )

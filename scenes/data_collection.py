@@ -46,6 +46,7 @@ class Data_collectior:
         self.data["frame_data"] = {}
 
         self.current_frame = 0
+        self.last_framerate_frame = -1
         
         if (self.export_images):
            for index in self.image_grids_indeces:
@@ -78,11 +79,12 @@ class Data_collectior:
                 gui.nextRealGrid()
                 gui.update()
         
-        if self.export_vdbs:
+        if self.export_vdbs and (self.last_framerate_frame != solver.frame):
             # note: when saving pdata fields, they must be accompanied by and listed before their parent pp
-            save( name=str(self.base_dir / "vdbs" / f"{self.title}_{self.current_frame}.vdb"), objects=objects )
+            save( name=str(self.base_dir / "vdbs" / f"{self.title}_{solver.frame}.vdb"), objects=objects )
 
         self.current_frame += 1
+        self.last_framerate_frame = solver.frame
 
     def computeStats(self):
         frames = self.data["frame_data"]

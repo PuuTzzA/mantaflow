@@ -24,9 +24,9 @@ exportImages = False
 exportVideos = False
 exportVDBs = True  # This is the flag we will output as True/False in the printed list
 
-max_time = 90
+max_time = 120
 maxCFL = 40
-dt = 50
+dt = 4
 
 # Interpolation method names
 interpolation_method_names = {

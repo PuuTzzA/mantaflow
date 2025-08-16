@@ -14,7 +14,7 @@
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
-  "max_time": 90,
+  "max_time": 120,
   "maxCFL": 40,
-  "dt": 50
+  "dt": 4
 }

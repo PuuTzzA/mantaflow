@@ -1,24 +1,24 @@
 {
-  "title": "redistro_test_pos_singum_1_lay",
+  "title": "cccdalsdkj",
 
-  "dimension": 2,
-  "resolutionX": 50,
-  "resolutionY": 50,
-  "resolutionZ": 70,
+  "dimension": 3,
+  "resolutionX": 128,
+  "resolutionY": 256,
+  "resolutionZ": 128,
 
-  "doOpen": false,
+  "doOpen": true,
   "doObstacle": true,
   "doConserving": false,
-  "tracingMethod": "RK4",
-  "interpolationMethod": 2,
-  "tracingFunction":1,
+  "tracingMethod": "EE1",
+  "interpolationMethod": -1,
+  "tracingFunction":0,
 
-  "exportData": false,
+  "exportData": true,
   "exportImages": false,
   "exportVideos": false,
-  "exportVDBs": false,
+  "exportVDBs": true,
 
   "max_time": 120,
-  "maxCFL": 3, 
-  "dt": 20
+  "maxCFL": 40, 
+  "dt": 4
 }
