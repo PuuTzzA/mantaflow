@@ -1,0 +1,20 @@
+{
+  "title": "plume_3d_high_highres_conserving_0_linear",
+  "dimension": 3,
+  "resolutionX": 256,
+  "resolutionY": 512,
+  "resolutionZ": 256,
+  "doOpen": true,
+  "doObstacle": true,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "tracingFunction": 0,
+  "interpolationMethod": 0,
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": true,
+  "max_time": 140,
+  "maxCFL": 50,
+  "dt": 6
+}
