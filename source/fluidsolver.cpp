@@ -209,10 +209,10 @@ void FluidSolver::adaptTimestep(Real maxVel)
 			mLockDt = true;
 		}
 
-		if ( mDt >= mDtBefore * 2 ) {
+		/* if ( mDt >= mDtBefore * 2 ) {
 			// avoid fast growth of mDt
 			mDt = mDtBefore * 2;
-		}
+		} */
 	}
 	debMsg( "Frame "<<mFrame<<", max vel per step: "<<mvt<<" , dt: "<<mDt<<", frame time "<<mTimePerFrame<<"/"<<mFrameLength<<"; lock:"<<mLockDt , 2);
 

@@ -1,0 +1,20 @@
+{
+  "title": "simple_plume_2d_high_conserving_0_linear",
+  "dimension": 2,
+  "resolutionX": 256,
+  "resolutionY": 256,
+  "resolutionZ": 256,
+  "doOpen": false,
+  "doObstacle": false,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "tracingFunction": 0,
+  "interpolationMethod": 0,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 150,
+  "maxCFL": 5,
+  "dt": 2
+}

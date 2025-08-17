@@ -384,6 +384,7 @@ void glBox(const Vec3& p0, const Vec3& p1, const float dx) {
 
 // Paint gridlines
 template<> void GridPainter<int>::paint() {
+	return; // THOMAS THOMAS
 	 if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 	float dx = mLocalGrid->getDx();
@@ -435,6 +436,77 @@ template<> void GridPainter<int>::paint() {
 // from simpleimage.cpp
 void projectImg( SimpleImage& img, const Grid<Real>& val, int shadeMode=0, Real scale=1.);
 
+// THOMAS THOMAS
+// Paint box colors (inverted, white background + white foreground inverted)
+template<> void GridPainter<Real>::paint() {
+	if (!mObject || mHide || mHideLocal || mPlane < 0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
+		return;
+	
+	const int dm     = getDispMode();
+	const Real scale = getScale();
+	const float dx   = mLocalGrid->getDx();
+	Vec3 box[4];
+	glBegin(GL_QUADS);
+
+	// helper to invert colors
+	auto setInvertedColor = [](float r, float g, float b) {
+		glColor3f(1.0f - r, 1.0f - g, 1.0f - b);
+	};
+
+	// "new" drawing style 
+	if ((dm==RealDispStd) || (dm==RealDispLevelset)) {
+
+		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
+		{ 
+			Real v = mLocalGrid->get(p) * scale; 
+			if (dm==RealDispLevelset) {
+				v = max(min(v*0.2, 1.0),-1.0);
+				if (v>=0)
+					setInvertedColor(v, 0, 0.5);
+				else
+					setInvertedColor(0.5, 1.0+v, 0.);
+			} else { // RealDispStd
+				if (v>0)
+					setInvertedColor(v, v, v);
+				else
+					setInvertedColor(-v, 0, 0);
+			}
+
+			getCellCoordinates(p, box, mDim);
+			for (int n=0;n<4;n++) 
+				glVertex(box[n], dx);
+		}
+	}
+
+	if ((dm==RealDispShadeVol) || (dm==RealDispShadeSurf)) {
+		SimpleImage img;
+
+		// note - slightly wasteful, projects all 3 axes!
+		int mode = 0;
+		if (dm==RealDispShadeSurf) mode = 1;
+		projectImg(img, *mLocalGrid, mode, scale);
+
+		FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
+		{ 
+			Vec3 col(0.); Vec3i s  = mLocalGrid->getSize();
+
+			// "un-transform" projected image
+		   	if(mDim==2) col = img.get(0       + p[0], p[1]);
+		   	if(mDim==0) col = img.get(s[0]    + p[2], p[1]);
+		   	if(mDim==1) col = img.get(s[0]+s[2]+p[0], p[2]);
+
+			setInvertedColor(col.x, col.y, col.z);
+			getCellCoordinates(p, box, mDim);
+			for (int n=0;n<4;n++) 
+				glVertex(box[n], dx);
+		}
+	}
+
+	glEnd();    
+}
+// THOMAS END
+// THOMAS END
+/* 
 // Paint box colors
 template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
@@ -499,14 +571,15 @@ template<> void GridPainter<Real>::paint() {
 
 	glEnd();    
 }
-
+ */
 // Paint velocity vectors
 template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 	
 	const int dm     = getDispMode();
-	const Real scale = getScale();
+	//const Real scale = getScale();
+	const Real scale = 0.0; // THOMAS THOMAS
 	const float dx   = mLocalGrid->getDx();
 	const bool mac   = mLocalGrid->getType() & GridBase::TypeMAC;
 

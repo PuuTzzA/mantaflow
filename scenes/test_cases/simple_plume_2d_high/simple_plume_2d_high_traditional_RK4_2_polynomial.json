@@ -1,24 +1,20 @@
 {
-  "title": "cccdalsdkj",
-
+  "title": "simple_plume_2d_high_traditional_RK4_2_polynomial",
   "dimension": 2,
   "resolutionX": 256,
   "resolutionY": 256,
-  "resolutionZ": 128,
-
+  "resolutionZ": 256,
   "doOpen": false,
   "doObstacle": false,
   "doConserving": false,
   "tracingMethod": "RK4",
   "interpolationMethod": 2,
-  "tracingFunction":0,
-
-  "exportData": false,
-  "exportImages": false,
-  "exportVideos": false,
+  "tracingFunction": 0,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
   "exportVDBs": false,
-
   "max_time": 150,
-  "maxCFL": 5, 
+  "maxCFL": 5,
   "dt": 2
 }

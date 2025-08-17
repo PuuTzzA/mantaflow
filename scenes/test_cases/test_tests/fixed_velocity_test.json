@@ -2,8 +2,8 @@
   "title": "moinmeister",
 
   "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
+  "resolutionX": 128,
+  "resolutionY": 128,
   "resolutionZ": 20,
 
   "scenario" : "shear_flow",

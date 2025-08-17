@@ -52,33 +52,9 @@ videos_plume_2d_high = [
     '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_3_monotone_hermite',
 ]
 
-videos_redistro_test = [
-    '/test_redistribution/0_gar_nix',
-    '/test_redistribution/1_ein_nachbar',
-    '/test_redistribution/2_zwei_nachbarn',
-    '/test_redistribution/3_drei_nachbarn',
-    '/test_redistribution/4_drei_nachbarn_plus_weights',
-    '/test_redistribution/5_alle_nachbarn',
-    '/test_redistribution/6_alle_nachbarn_3_iter',
-    '/test_redistribution/7_alle_nachbarn_zwei_layers',
-    '/test_redistribution/8_alle_nachbarn_drei_layer',
-]
-
-videos_redistro_test_2 = [
-    '/test_redistribution_2/0_no_redistro',
-    '/test_redistribution_2/1_nur_weights',
-    '/test_redistribution_2/2_alle_nb_ein_layer',
-    '/test_redistribution_2/3_alle_nb_zwei_layer_cossim',
-    '/test_redistribution_2/4_alle_nb_zwei_layer_fixed_number_one',
-    '/test_redistribution_2/5_alle_nb_zwei_layer_fixed_number_one_plus_weights',
-    '/test_redistribution_2/6_alle_nb_drei_layer_fixed_number_one',
-    '/test_redistribution_2/7_alle_nb_drei_layer_fixed_number_one_plus_weights',
-    '/test_redistribution_2/8_alle_nb_vier_layer_fixed_number_one',
-]
-
-videos = videos_redistro_test_2
+videos = videos_shear_flow
 FILENAME = "testField.webm" # for fixed vel
-FILENAME = "density.webm" # for plume
+#FILENAME = "density.webm" # for plume
 
 # Resolve full paths
 input_paths = []

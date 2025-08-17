@@ -1,19 +1,20 @@
 {
-  "title": "simple_plume_obstacle_2d_high_traditional_EE1",
+  "title": "simple_plume_2d_high_traditional_EE1",
   "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
-  "resolutionZ": 100,
+  "resolutionX": 256,
+  "resolutionY": 256,
+  "resolutionZ": 256,
   "doOpen": false,
-  "doObstacle": true,
+  "doObstacle": false,
   "doConserving": false,
   "tracingMethod": "EE1",
   "interpolationMethod": -1,
+  "tracingFunction": 0,
   "exportData": true,
   "exportImages": true,
   "exportVideos": true,
   "exportVDBs": false,
-  "max_time": 160,
-  "maxCFL": 10,
-  "dt": 20
+  "max_time": 150,
+  "maxCFL": 5,
+  "dt": 2
 }

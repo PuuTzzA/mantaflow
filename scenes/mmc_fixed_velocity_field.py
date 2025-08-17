@@ -10,7 +10,7 @@ EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/fixed_vel_zalesak_rotation/"
+    EXPORTS_BASE_DIR = "../exports/fixed_vel_shear_flow/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -61,7 +61,7 @@ testPhiGamma = s.create(RealGrid)
 testFieldGamma = s.create(RealGrid)
 
 # prepare grids
-bWidth=2
+bWidth=1
 flags.initDomain( boundaryWidth=bWidth )
 flags.fillGrid()
 
