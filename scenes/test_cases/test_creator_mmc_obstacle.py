@@ -26,7 +26,7 @@ exportVDBs = True  # This is the flag we will output as True/False in the printe
 
 max_time = 150
 maxCFL = 50
-dt = 6
+dt = 5
 
 # Interpolation method names
 interpolation_method_names = {
