@@ -10,8 +10,8 @@ EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    #EXPORTS_BASE_DIR = "../exports/3d_final/simple_plume_3d_high"
-    EXPORTS_BASE_DIR = "../exports/simple_plume_2d_high"
+    EXPORTS_BASE_DIR = "../exports/3d_final/simple_plume_3d_high"
+    #EXPORTS_BASE_DIR = "../exports/simple_plume_2d_high"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -86,8 +86,8 @@ if doObstacle:
     flags.fillGrid()
     obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
 
-#source = s.create(Cylinder, center=gs*vec3(0.5,0.075,0.5), radius=res*0.15, z=gs*vec3(0, 0.028, 0))
-source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.15, z=gs*vec3(0, 0.04, 0))
+source = s.create(Cylinder, center=gs*vec3(0.5,0.075,0.5), radius=res*0.15, z=gs*vec3(0, 0.028, 0))
+#source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.15, z=gs*vec3(0, 0.04, 0))
 
 source.applyToGrid(grid=innen0außen1, value=1)
 fillWithOnes( grid=density_gamma )

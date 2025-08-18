@@ -41,20 +41,27 @@ videos_plume_2d_low = [
 ]
 
 videos_plume_2d_high = [
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_conserving_0_linear',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_conserving_1_cubic',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_conserving_2_polynomial',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_EE1',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_EE2',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_0_linear',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_1_cubic',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_2_polynomial',
-    '/simple_plume_obstacle_2d_high/simple_plume_obstacle_2d_high_traditional_RK4_3_monotone_hermite',
+    '/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear',
+    '/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear_local_cfl',
+    '/simple_plume_2d_high/simple_plume_2d_high_conserving_1_cubic',
+    '/simple_plume_2d_high/simple_plume_2d_high_conserving_1_cubic_local_cfl',
+    '/simple_plume_2d_high/simple_plume_2d_high_conserving_2_polynomial',
+    '/simple_plume_2d_high/simple_plume_2d_high_conserving_2_polynomial_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_EE1',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_EE2',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_0_linear',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_0_linear_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic',
+    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial',
+    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite',
+    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite_local_cfl',
 ]
 
-videos = videos_shear_flow
-FILENAME = "testField.webm" # for fixed vel
-#FILENAME = "density.webm" # for plume
+videos = videos_plume_2d_high
+#FILENAME = "testField.webm" # for fixed vel
+FILENAME = "density.webm" # for plume
 
 # Resolve full paths
 input_paths = []

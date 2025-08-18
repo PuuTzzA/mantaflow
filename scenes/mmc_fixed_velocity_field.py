@@ -104,9 +104,15 @@ setVelocityField(vel=vel, flags=flags, functionName=scenario)
 #Data Colleciton and Export
 if GUI:
     gui = Gui()
-    gui.show( True ) 
+    gui.show( True )
 
-    #gui.pause()
+    gui.nextRealGrid()
+    gui.windowSize(1000, 1000)
+    gui.setCamPos(0, 0, -1.2)
+    gui.update()
+    gui.screenshot(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / f"first_frame.png"))
+ 
+    gui.pause()
 
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
                                  export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
