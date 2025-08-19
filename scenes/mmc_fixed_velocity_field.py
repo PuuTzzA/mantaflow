@@ -9,7 +9,7 @@ EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/fixed_vel_shear_flow_EE_vs_RK4/"
+    EXPORTS_BASE_DIR = "../exports/1_fixed_vel_shear_flow_low_cfl/"
 
 with open(param_path) as f:
     params = json.load(f)

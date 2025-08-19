@@ -10,10 +10,10 @@
   "interpolationMethod": -1,
   "redistributeClamped": false,
   "exportData": true,
-  "exportImages": false,
-  "exportVideos": false,
+  "exportImages": true,
+  "exportVideos": true,
   "exportVDBs": false,
   "max_time": 500,
-  "maxCFL": 10,
+  "maxCFL": 1,
   "dt": 10000
 }
