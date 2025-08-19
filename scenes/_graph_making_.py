@@ -8,27 +8,31 @@ BASEDIR = (Path(__file__).parent.parent / "exports/").resolve()
 FILENAME = "data.json"
 
 data_zalesak_rotation = [
-    '/fixed_vel_zalesak_rotation/zalesak_rotation_conserving_0_linear/',
-    #'/fixed_vel_zalesak_rotation/zalesak_rotation_conserving_1_cubic/',
-    '/fixed_vel_zalesak_rotation/zalesak_rotation_conserving_2_polynomial/',
-    '/fixed_vel_zalesak_rotation/zalesak_rotation_traditional_EE1/',
-    #'/fixed_vel_zalesak_rotation/zalesak_rotation_traditional_EE2/',
-    #'/fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_0_linear/',
-    #'/fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_1_cubic/',
-    '/fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_2_polynomial/',
-    #'/fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_3_monotone_hermite/',
+    '/2_fixed_vel_zalesak_rotation/zalesak_rotation_conserving_0_linear',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_conserving_1_cubic_no_clamped_redistro',
+    '/2_fixed_vel_zalesak_rotation/zalesak_rotation_conserving_1_cubic',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_conserving_2_polynomial_no_clamped_redistro',
+    '/2_fixed_vel_zalesak_rotation/zalesak_rotation_conserving_2_polynomial',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_traditional_EE1',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_traditional_EE2',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_0_linear',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_1_cubic.json',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_2_polynomial',
+    #'/2_fixed_vel_zalesak_rotation/zalesak_rotation_traditional_RK4_3_monotone_hermite',
 ]
 
-data_shear_flow = [
-    '/fixed_vel_shear_flow/shear_flow_conserving_0_linear',
-    '/fixed_vel_shear_flow/shear_flow_conserving_1_cubic',
-    '/fixed_vel_shear_flow/shear_flow_conserving_2_polynomial',
-    #'/fixed_vel_shear_flow/shear_flow_traditional_EE1',
-    #'/fixed_vel_shear_flow/shear_flow_traditional_EE2',
-    '/fixed_vel_shear_flow/shear_flow_traditional_RK4_0_linear',
-    #'/fixed_vel_shear_flow/shear_flow_traditional_RK4_1_cubic',
-    #'/fixed_vel_shear_flow/shear_flow_traditional_RK4_2_polynomial',
-    #'/fixed_vel_shear_flow/shear_flow_traditional_RK4_3_monotone_hermite',
+data_shear_flow_low = [
+    '/1_fixed_vel_shear_flow_low_cfl/shear_flow_conserving_0_linear',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_conserving_1_cubic_no_clamped_redistro',
+    '/1_fixed_vel_shear_flow_low_cfl/shear_flow_conserving_1_cubic',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_conserving_2_polynomial_no_clamped_redistro',
+    '/1_fixed_vel_shear_flow_low_cfl/shear_flow_conserving_2_polynomial',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_EE1',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_EE2',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_RK4_0_linear',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_RK4_1_cubic',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_RK4_2_polynomial',
+    #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_RK4_3_monotone_hermitn'
 ]
 
 data_plume_2d_high = [
@@ -69,9 +73,9 @@ data_plume_3d_high = [
     #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_1_cubic_local_cfl',
 ]
 
-data = data_plume_3d_high
-#interested_fields = [["testField", "sum"]] # for fixed vel Field
-interested_fields = [["fixed_volume", "sum"]] # for plume
+data = data_zalesak_rotation
+interested_fields = [["testField", "sum"]] # for fixed vel Field
+#interested_fields = [["fixed_volume", "sum"]] # for plume
 
 # Resolve full paths
 input_paths = []
@@ -90,7 +94,7 @@ for d in data:
 
 # Create combined Graph
 title = f"combined_{FILENAME.removesuffix(".json")}"
-title = "combined_data_everything_ohne_local_ohne_EE_higher_order_RK4"
+title = "combined_data_only_conserving"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
 
 #General Setup
