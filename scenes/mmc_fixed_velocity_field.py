@@ -3,14 +3,13 @@ from data_collection import *
 import json
 import sys
 
-
 params = {}
 param_path = "../scenes/test_cases/test_tests/fixed_velocity_test.json"
 EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/fixed_vel_shear_flow/"
+    EXPORTS_BASE_DIR = "../exports/fixed_vel_shear_flow_EE_vs_RK4/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -40,6 +39,7 @@ if exportVDBs and (exportImages or exportVideos):
 
 interpolationMethod = params["interpolationMethod"] # only important for tracingMethod == "RK4"
 tracingMethod = params["tracingMethod"] # only important for notCoserving (EE1: Explicit Euler Order 1, EE2: Explicit Euler with MAC cormack, RK$, Runge Kutta 4)
+redistributeClamped = params["redistributeClamped"]
 
 # set time step range
 s.cfl         = params["maxCFL"]
@@ -142,8 +142,8 @@ while (s.timeTotal < params["max_time"]):
 
     else:
         print(data_collector.current_frame)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma    ,interpolationType=interpolationMethod)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma    ,interpolationType=interpolationMethod, redistributeClamped=redistributeClamped)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod, redistributeClamped=redistributeClamped)
 
     #timings.display()    
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)

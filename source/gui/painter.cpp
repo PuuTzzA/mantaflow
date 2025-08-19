@@ -384,7 +384,7 @@ void glBox(const Vec3& p0, const Vec3& p1, const float dx) {
 
 // Paint gridlines
 template<> void GridPainter<int>::paint() {
-	//return; // THOMAS THOMAS
+	return; // THOMAS THOMAS
 	 if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 	float dx = mLocalGrid->getDx();
@@ -438,7 +438,7 @@ void projectImg( SimpleImage& img, const Grid<Real>& val, int shadeMode=0, Real 
 
 // THOMAS THOMAS
 // Paint box colors (inverted, white background + white foreground inverted)
-/* template<> void GridPainter<Real>::paint() {
+template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane < 0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
 		return;
 	
@@ -503,10 +503,10 @@ void projectImg( SimpleImage& img, const Grid<Real>& val, int shadeMode=0, Real 
 	}
 
 	glEnd();    
-} */
+}
 // THOMAS END
 // THOMAS END
-
+/* 
 // Paint box colors
 template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
@@ -571,15 +571,15 @@ template<> void GridPainter<Real>::paint() {
 
 	glEnd();    
 }
-
+ */
 // Paint velocity vectors
 template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 	
 	const int dm     = getDispMode();
-	const Real scale = getScale();
-	//const Real scale = 0.0; // THOMAS THOMAS
+	//const Real scale = getScale();
+	const Real scale = 0.0; // THOMAS THOMAS
 	const float dx   = mLocalGrid->getDx();
 	const bool mac   = mLocalGrid->getType() & GridBase::TypeMAC;
 

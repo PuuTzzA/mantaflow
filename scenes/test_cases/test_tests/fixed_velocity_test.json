@@ -1,5 +1,5 @@
 {
-  "title": "moinmeister",
+  "title": "moinmeister_no_redistro",
 
   "dimension": 2,
   "resolutionX": 128,
@@ -7,16 +7,17 @@
   "resolutionZ": 20,
 
   "scenario" : "shear_flow",
-  "doConserving": false,
+  "doConserving": true,
   "tracingMethod": "EE1",
-  "interpolationMethod": 1,
+  "interpolationMethod": 2,
+  "redistributeClamped": true,
 
-  "exportData": false,
+  "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 1000,
+  "max_time": 100,
   "maxCFL": 5, 
   "dt": 20
 }

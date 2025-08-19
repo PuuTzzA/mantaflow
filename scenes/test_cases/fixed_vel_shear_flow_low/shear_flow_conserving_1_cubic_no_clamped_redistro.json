@@ -1,5 +1,5 @@
 {
-  "title": "shear_flow_conserving_0_linear",
+  "title": "shear_flow_conserving_1_cubic_no_clamped_redistro",
   "dimension": 2,
   "resolutionX": 128,
   "resolutionY": 128,
@@ -7,8 +7,8 @@
   "scenario": "shear_flow",
   "doConserving": true,
   "tracingMethod": "RK4",
-  "interpolationMethod": 0,
-  "redistributeClamped": true,
+  "interpolationMethod": 1,
+  "redistributeClamped": false,
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
