@@ -55,7 +55,7 @@ flags = s.create(FlagGrid)
 vel = s.create(MACGrid)
 testPhi = s.create(LevelsetGrid)
 testField = s.create(RealGrid)
-curl = s.create(RealGrid)
+velocity_magnitude = s.create(RealGrid)
 
 testPhiGamma = s.create(RealGrid)
 testFieldGamma = s.create(RealGrid)
@@ -112,12 +112,12 @@ if GUI:
     gui.update()
     gui.screenshot(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / f"first_frame.png"))
  
-    gui.pause()
+    #gui.pause()
 
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
                                  export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
-                                 trackable_grid_names=[["testPhi", testPhi], ["testField", testField], ["curl", curl], [], []], 
-                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0, 1], graph_grids=[["testField", "sum"]])
+                                 trackable_grid_names=[["testField", testField], ["vel_magnitude", velocity_magnitude], [], [], ["testPhi", testPhi]], 
+                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]])
 
 data_collector.init()
 
@@ -146,9 +146,8 @@ while (s.timeTotal < params["max_time"]):
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod)
 
     #timings.display()    
-    computeVelocityMagnitude(dest=curl, vel=vel)
-    maxVel = getMaxVal(grid=curl, flags=flags) # flags param does nothign for now
-    calculateCurl(vel=vel, curl=curl, flags=flags)
+    computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
+    maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
 
     data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[])
 
