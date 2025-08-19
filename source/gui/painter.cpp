@@ -384,52 +384,98 @@ void glBox(const Vec3& p0, const Vec3& p1, const float dx) {
 
 // Paint gridlines
 template<> void GridPainter<int>::paint() {
-	return; // THOMAS THOMAS
+	//return; // THOMAS THOMAS
 	 if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
-	float dx = mLocalGrid->getDx();
-	Vec3 box[4];
-	glColor3f(0.5,0,0);
-	
-	bool rbox = true;
-	bool skipFluid = mLocalGrid->getSize().max() >= 64; 
-	bool drawLines = mLocalGrid->getSize().max() <= 80; 
-	if (drawLines) {
-		//glDepthFunc(GL_LESS);
-		glBegin(GL_LINES);
-		FOR_P_SLICE(mLocalGrid, mDim, mPlane) {
 
-			int flag = 0;
-			flag = mLocalGrid->get(p);
+	if (true){
+		const int dm     = getDispMode();
+		const Real scale = getScale();
+		const float dx   = mLocalGrid->getDx();
+		Vec3 box[4];
+		glBegin(GL_QUADS);
 
-			if (flag & FlagGrid::TypeObstacle) {
-				glColor3f(0.2,0.2,0.2); // dark gray
-			} else if (flag & FlagGrid::TypeOutflow) {
-				glColor3f(0.9,0.3,0);   // orange
-			} else if (flag & FlagGrid::TypeEmpty) {
-				glColor3f(0.25,0,0.2);  // dark purple
-			} else if (flag & FlagGrid::TypeFluid) {
-				if(skipFluid) continue;
-				glColor3f(0,0,0.75);    // blue
-			} else {
-				glColor3f(0.5,0,0); // unknown , medium red
+		// "new" drawing style 
+		// ignore flags, its a bit dangerous to skip outside info
+		if( (dm==RealDispStd) || (dm==RealDispLevelset) ) {
+
+			FOR_P_SLICE(mLocalGrid, mDim, mPlane) 
+			{ 
+				int flag = 0;
+				flag = mLocalGrid->get(p);
+
+				if (flag & FlagGrid::TypeObstacle) {
+					//glColor3f(0.2,0.2,0.2); // dark gray
+					glColor3f(0.0, 0.396, 0.7411);
+				} else if (flag & FlagGrid::TypeOutflow) {
+					glColor3f(0.9,0.3,0);   // orange
+				} else if (flag & FlagGrid::TypeEmpty) {
+					glColor3f(0.25,0,0.2);  // dark purple
+				} else if (flag & FlagGrid::TypeFluid) {
+					if(true) continue;
+					glColor3f(0,0,0.75);    // blue
+				} else {
+					glColor3f(0.5,0,0); // unknown , medium red
+				}
+				
+				getCellCoordinates(p, box, mDim);
+				for (int n=0;n<4;n++) 
+					glVertex(box[n], dx);
 			}
 
-			getCellCoordinates(p, box, mDim, true); 
-			for (int n=1;n<=8;n++)
-				glVertex(box[(n/2)%4], dx);
 		}
-		glEnd();
-		//glDepthFunc(GL_ALWAYS);        
-	}
-	
-	if (rbox) {
-		Vec3 p0(0.0), p1(toVec3(mLocalGrid->getSize())),p(p0);
-		glDepthFunc(GL_LESS);
-		glBegin(GL_LINES);
-		glBox(p0,p1,dx);
-		glEnd();
-		glDepthFunc(GL_ALWAYS);        
+		glEnd();    
+	} else{
+		return; //THOMAS
+		float dx = mLocalGrid->getDx();
+		Vec3 box[4];
+		glColor3f(0.5,0,0);
+		
+		bool rbox = true;
+		bool skipFluid = mLocalGrid->getSize().max() >= 64; 
+		bool drawLines = mLocalGrid->getSize().max() <= 80; 
+		drawLines = true;
+		rbox = false;
+		if (drawLines) {
+			//glDepthFunc(GL_LESS);
+			//glBegin(GL_LINES);
+			glBegin(GL_QUADS);
+
+			FOR_P_SLICE(mLocalGrid, mDim, mPlane) {
+
+				int flag = 0;
+				flag = mLocalGrid->get(p);
+
+				if (flag & FlagGrid::TypeObstacle) {
+					//glColor3f(0.2,0.2,0.2); // dark gray
+					glColor3f(0.0, 0.0, 1.0);
+				} else if (flag & FlagGrid::TypeOutflow) {
+					glColor3f(0.9,0.3,0);   // orange
+				} else if (flag & FlagGrid::TypeEmpty) {
+					glColor3f(0.25,0,0.2);  // dark purple
+				} else if (flag & FlagGrid::TypeFluid) {
+					if(skipFluid) continue;
+					glColor3f(0,0,0.75);    // blue
+				} else {
+					glColor3f(0.5,0,0); // unknown , medium red
+				}
+
+				getCellCoordinates(p, box, mDim, true); 
+				for (int n=1;n<=8;n++)
+					glVertex(box[(n/2)%4], dx);
+			}
+			glEnd(); 
+			//glDepthFunc(GL_ALWAYS);        
+		}
+		
+		if (rbox) {
+			Vec3 p0(0.0), p1(toVec3(mLocalGrid->getSize())),p(p0);
+			glDepthFunc(GL_LESS);
+			glBegin(GL_LINES);
+			glBox(p0,p1,dx);
+			glEnd();
+			glDepthFunc(GL_ALWAYS);        
+		}
 	}
 }
 

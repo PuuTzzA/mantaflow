@@ -1,0 +1,21 @@
+{
+  "title": "obstacle_2d_high_traditional_EE2",
+  "dimension": 2,
+  "resolutionX": 512,
+  "resolutionY": 512,
+  "resolutionZ": 512,
+  "doOpen": false,
+  "doObstacle": true,
+  "doConserving": false,
+  "tracingMethod": "EE2",
+  "interpolationMethod": -1,
+  "tracingFunction": 0,
+  "redistributeClamped": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 150,
+  "maxCFL": 20,
+  "dt": 2
+}

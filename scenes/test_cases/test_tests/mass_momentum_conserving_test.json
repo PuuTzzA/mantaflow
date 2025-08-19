@@ -7,11 +7,12 @@
   "resolutionZ": 128,
 
   "doOpen": false,
-  "doObstacle": false,
+  "doObstacle": true,
   "doConserving": false,
   "tracingMethod": "RK4",
   "interpolationMethod": 2,
   "tracingFunction":0,
+  "redistributeClamped":true,
 
   "exportData": false,
   "exportImages": false,
@@ -19,6 +20,6 @@
   "exportVDBs": false,
 
   "max_time": 150,
-  "maxCFL": 5, 
+  "maxCFL": 15, 
   "dt": 2
 }

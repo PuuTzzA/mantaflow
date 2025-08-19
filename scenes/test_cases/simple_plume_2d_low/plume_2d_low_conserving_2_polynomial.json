@@ -1,0 +1,21 @@
+{
+  "title": "plume_2d_low_conserving_2_polynomial",
+  "dimension": 2,
+  "resolutionX": 512,
+  "resolutionY": 512,
+  "resolutionZ": 512,
+  "doOpen": false,
+  "doObstacle": false,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "tracingFunction": 0,
+  "redistributeClamped": true,
+  "interpolationMethod": 2,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 150,
+  "maxCFL": 7,
+  "dt": 2
+}

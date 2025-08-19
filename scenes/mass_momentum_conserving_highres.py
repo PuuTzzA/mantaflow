@@ -76,7 +76,6 @@ if doOpen:
 
 if doObstacle:
     obsPos = vec3(0.5, 0.5, 0.5)
-    obsPos = vec3(0.5, 0.5605, 0.5) # for 2d
     obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
     obsSize = 0.11
 
@@ -88,8 +87,8 @@ if doObstacle:
     flags.fillGrid()
     obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
 
-#source = s.create(Cylinder, center=gs*vec3(0.5,0.075,0.5), radius=res*0.15, z=gs*vec3(0, 0.028, 0))
-source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.15, z=gs*vec3(0, 0.04, 0)) # for 2d
+source = s.create(Cylinder, center=gs*vec3(0.5,0.075,0.5), radius=res*0.15, z=gs*vec3(0, 0.028, 0))
+#source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.15, z=gs*vec3(0, 0.04, 0))
 
 source.applyToGrid(grid=innen0außen1, value=1)
 fillWithOnes( grid=density_gamma )
@@ -112,7 +111,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"]: #and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now

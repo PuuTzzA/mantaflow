@@ -1,0 +1,21 @@
+{
+  "title": "plume_2d_low_traditional_RK4_2_polynomial_local_cfl",
+  "dimension": 2,
+  "resolutionX": 512,
+  "resolutionY": 512,
+  "resolutionZ": 512,
+  "doOpen": false,
+  "doObstacle": false,
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 2,
+  "tracingFunction": 1,
+  "redistributeClamped": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 150,
+  "maxCFL": 7,
+  "dt": 2
+}

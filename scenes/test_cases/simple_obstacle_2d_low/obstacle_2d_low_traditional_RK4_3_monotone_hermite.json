@@ -1,0 +1,21 @@
+{
+  "title": "obstacle_2d_low_traditional_RK4_3_monotone_hermite",
+  "dimension": 2,
+  "resolutionX": 512,
+  "resolutionY": 512,
+  "resolutionZ": 512,
+  "doOpen": false,
+  "doObstacle": true,
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 3,
+  "tracingFunction": 0,
+  "redistributeClamped": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 150,
+  "maxCFL": 7,
+  "dt": 2
+}
