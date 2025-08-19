@@ -91,9 +91,9 @@ FIXED_VEL_SHEAR_FLOW_LOW_PATHS = [
 ]
 
 PLUME_2D_LOW_PATHS = [
-    ['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_0_linear.json', False],
+#    ['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_0_linear.json', False],
     #['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_0_linear_local_cfl.json', False],
-    ['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_1_cubic.json', False],
+#    ['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_1_cubic.json', False],
     #['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_1_cubic_local_cfl.json', False],
     ['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_1_cubic_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_plume_2d_low/plume_2d_low_conserving_1_cubic_local_cfl_no_clamped_redistro.json', False],

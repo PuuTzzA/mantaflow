@@ -1,0 +1,25 @@
+{
+  "title": "cccdalsdkj",
+
+  "dimension": 3,
+  "resolutionX": 100,
+  "resolutionY": 100,
+  "resolutionZ": 100,
+
+  "doOpen": true,
+  "doObstacle": true,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 2,
+  "tracingFunction": 1,
+  "redistributeClamped":true,
+
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": true,
+
+  "max_time": 130,
+  "maxCFL": 30, 
+  "dt": 4
+}
