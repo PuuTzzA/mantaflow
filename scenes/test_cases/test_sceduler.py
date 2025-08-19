@@ -119,7 +119,7 @@ FIXED_VEL_SHEAR_FLOW_LOW_PATHS = [
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
  """
 
-for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_LOW_PATHS:
+for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_LOW_PATHS + FIXED_VEL_ZALESAK_ROTATION_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)

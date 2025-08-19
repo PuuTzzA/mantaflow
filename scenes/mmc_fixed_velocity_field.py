@@ -5,7 +5,7 @@ import sys
 
 params = {}
 param_path = "../scenes/test_cases/test_tests/fixed_velocity_test.json"
-EXPORTS_BASE_DIR = "../exports/test/"
+EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
@@ -110,7 +110,7 @@ if GUI:
     gui.windowSize(1000, 1000)
     gui.setCamPos(0, 0, -1.2)
     gui.update()
-    gui.screenshot(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / f"first_frame.png"))
+    gui.screenshot(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / f"{params["scenario"]}_first_frame.png"))
  
     #gui.pause()
 

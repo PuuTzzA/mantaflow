@@ -70,7 +70,7 @@ class Data_collectior:
         if self.export_images and gui is not None and (int(solver.timeTotal * 0.4) != self.last_framerate_frame): #and (self.last_framerate_frame != solver.frame):
             gui.windowSize(windowSize[0], windowSize[1])
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
-
+            gui.update()
             for i in range(len(self.trackable_grids)):
                 if i in self.image_grids_indeces:
                     name = self.trackable_grids[i][0]

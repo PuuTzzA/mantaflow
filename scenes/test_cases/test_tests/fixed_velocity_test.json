@@ -13,11 +13,11 @@
   "redistributeClamped": true,
 
   "exportData": true,
-  "exportImages": false,
+  "exportImages": true,
   "exportVideos": false,
   "exportVDBs": false,
 
   "max_time": 100,
-  "maxCFL": 5, 
+  "maxCFL": 1, 
   "dt": 20
 }
