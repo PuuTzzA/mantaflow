@@ -20,6 +20,6 @@
   "exportVDBs": true,
 
   "max_time": 130,
-  "maxCFL": 30, 
+  "maxCFL": 25, 
   "dt": 4
 }

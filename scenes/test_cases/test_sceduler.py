@@ -182,7 +182,7 @@ OBSTACLE_2D_HIGH_PATHS = [
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_traditional_RK4_3_monotone_hermite_local_cfl.json', False],
 ]
 
-for param, requiresVDB in PLUME_2D_LOW_PATHS + PLUME_2D_HIGH_PATHS:
+for param, requiresVDB in PLUME_2D_HIGH_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)

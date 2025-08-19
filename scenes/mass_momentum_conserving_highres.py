@@ -8,6 +8,8 @@ params = {}
 param_path = "../scenes/test_cases/test_tests/mass_momentum_conserving_highres_3d_test.json"
 EXPORTS_BASE_DIR = "../exportsIgnore/highres_3d_yay/"
 
+OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated.obj"
+
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
     #EXPORTS_BASE_DIR = "../exports/3d_final/simple_plume_3d_high"
@@ -57,42 +59,35 @@ flags = s.create(FlagGrid)
 vel = s.create(MACGrid)
 density = s.create(RealGrid)
 pressure = s.create(RealGrid)
-innen0außen1 = s.create(RealGrid)
 curl = s.create(RealGrid)
 velocity_magnitude = s.create(RealGrid)
+phiObs = s.create(LevelsetGrid)
 
 vel_gamma = s.create(MACGrid)
 density_gamma = s.create(RealGrid)
-innen0außen1_gamma = s.create(RealGrid)
-phiObs = s.create(LevelsetGrid)
+
+mesh = s.create(Mesh)
+mesh.load(OBSTACLE_MESH_PATH)
+#mesh.load("../resources/simpletorus.obj")
+mesh.scale( vec3(res) )
+mesh.offset( gs* (Vec3(0.5, 0.5, 0.5)) ) # center + slight offset
+
+mesh.computeLevelset(phiObs, 1)
 
 #prepare grids
 bWidth=1
 flags.initDomain(boundaryWidth=bWidth) 
-flags.fillGrid()
 
-if doOpen:
+if doOpen or True:
     setOpenBound(flags, bWidth,'xXYzZ',FlagOutflow|FlagEmpty) 
 
-if doObstacle:
-    obsPos = vec3(0.5, 0.5, 0.5)
-    obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
-    obsSize = 0.11
+setObstacleFlags(flags=flags, phiObs=phiObs) #, fractions=fractions)
+flags.fillGrid()
 
-    obs = Sphere( parent=s, center=gs*obsPos, radius=res*obsSize)
-    phiObs = obs.computeLevelset()
-
-    setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=4) 
-
-    flags.fillGrid()
-    obs.applyToGrid(grid=density, value=0.) # clear smoke inside, flags
-
-source = s.create(Cylinder, center=gs*vec3(0.5,0.075,0.5), radius=res*0.15, z=gs*vec3(0, 0.028, 0))
+source = s.create(Cylinder, center=gs*vec3(0.5,0.15,0.5), radius=res*0.1, z=gs*vec3(0, 0.037, 0))
 #source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.15, z=gs*vec3(0, 0.04, 0))
 
-source.applyToGrid(grid=innen0außen1, value=1)
 fillWithOnes( grid=density_gamma )
-fillWithOnes( grid=innen0außen1_gamma )
 fillWithOnes( grid=vel_gamma )
 
 # guid and data collection
@@ -100,12 +95,12 @@ gui = None
 if (GUI) and not exportVDBs:
     gui = Gui()
     gui.show( True ) 
-    #gui.pause()
+    gui.pause()
 
 data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                  export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-                                 trackable_grid_names=[["density", density], [], ["fixed_volume", innen0außen1], ["curl", curl], ["vel_magnitude", velocity_magnitude], [], [], []], 
-                                 tracked_grids_indeces=[0, 2, 4], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["fixed_volume", "sum"]])
+                                 trackable_grid_names=[["density", density], [], ["curl", curl], ["vel_magnitude", velocity_magnitude], [], [], []], 
+                                 tracked_grids_indeces=[0, 3], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"]])
 
 data_collector.init()
 
@@ -139,22 +134,18 @@ while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
         if tracingMethod.startswith("EE"):
             order = int(tracingMethod[-1])  # Extracts 1 or 2 from "EE1" or "EE2"
             advectSemiLagrange(flags=flags, vel=vel, grid=density,      order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect 
-            advectSemiLagrange(flags=flags, vel=vel, grid=innen0außen1, order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
             advectSemiLagrange(flags=flags, vel=vel, grid=vel,          order=order) # ziemlich scheiße, hauptsachlich da es explicit Euler verwendet, nicht RK4 wie simpleSLAdvect
 
             setOutflowToZero(flags=flags, grid=density)
-            setOutflowToZero(flags=flags, grid=innen0außen1)
             setOutflowToZero(flags=flags, grid=vel)
 
         elif tracingMethod == "RK4":
             simpleSLAdvect(flags=flags, vel=vel, grid=density,     interpolationType=interpolationMethod, tracingMethod=tracingFunction) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
-            simpleSLAdvect(flags=flags, vel=vel, grid=innen0außen1,interpolationType=interpolationMethod, tracingMethod=tracingFunction) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
             simpleSLAdvect(flags=flags, vel=vel, grid=vel,         interpolationType=interpolationMethod, tracingMethod=tracingFunction) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
     else:
         #simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
 
     if doOpen:
