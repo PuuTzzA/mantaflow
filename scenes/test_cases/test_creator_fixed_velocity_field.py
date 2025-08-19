@@ -4,28 +4,30 @@ from itertools import product
 import shutil
 
 # Base directory to store JSONs
-CONTAINER_DIR = "fixed_vel_zalesak_rotation"
+CONTAINER_DIR = "fixed_vel_shear_flow_low"
 BASE_DIR = (Path(__file__).parent / CONTAINER_DIR).resolve()
 shutil.rmtree(BASE_DIR, ignore_errors=True)
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Constant settings
-BASE_TITLE = "zalesak_rotation"
+#BASE_TITLE = "zalesak_rotation"
+BASE_TITLE = "shear_flow"
 dimension = 2
 resolutionX = 128
 resolutionY = 128
 resolutionZ = 100
 
-scenario = "zalesak_rotation"
+#scenario = "zalesak_rotation"
+scenario = "shear_flow"
 
 exportData = True
-exportImages = True
-exportVideos = True
+exportImages = False
+exportVideos = False
 exportVDBs = False  # This is the flag we will output as True/False in the printed list
 
 max_time = 500
-maxCFL = 5
-dt = 20
+maxCFL = 10
+dt = 10000
 
 # Interpolation method names
 interpolation_method_names = {
@@ -47,34 +49,40 @@ for doConserving in conserving_options:
     if doConserving:
         valid_interps = [0, 1, 2]  # monotoneHermite not allowed
         for interp in valid_interps:
-            interp_name = interpolation_method_names[interp]
-            title = f"{BASE_TITLE}_conserving_{interp_name}"
-            config = {
-                "title": title,
-                "dimension": dimension,
-                "resolutionX": resolutionX,
-                "resolutionY": resolutionY,
-                "resolutionZ": resolutionZ,
-                "scenario": scenario,
-                "doConserving": True,
-                "tracingMethod": "RK4",  # ignored in this case
-                "interpolationMethod": interp,
-                "exportData": exportData,
-                "exportImages": exportImages,
-                "exportVideos": exportVideos,
-                "exportVDBs": exportVDBs,
-                "max_time": max_time,
-                "maxCFL": maxCFL,
-                "dt": dt,
-            }
+            redistribute_clamped_options = [True, False]
+            if interp == 0:
+                redistribute_clamped_options = [True]
 
-            path = BASE_DIR / f"{title}.json"
-            with open(path, "w") as f:
-                json.dump(config, f, indent=2)
+            for redistribute_clamped in redistribute_clamped_options:
+                interp_name = interpolation_method_names[interp]
+                title = f"{BASE_TITLE}_conserving_{interp_name}{"" if redistribute_clamped else "_no_clamped_redistro"}"
+                config = {
+                    "title": title,
+                    "dimension": dimension,
+                    "resolutionX": resolutionX,
+                    "resolutionY": resolutionY,
+                    "resolutionZ": resolutionZ,
+                    "scenario": scenario,
+                    "doConserving": True,
+                    "tracingMethod": "RK4",  # ignored in this case
+                    "interpolationMethod": interp,
+                    "redistributeClamped": redistribute_clamped,
+                    "exportData": exportData,
+                    "exportImages": exportImages,
+                    "exportVideos": exportVideos,
+                    "exportVDBs": exportVDBs,
+                    "max_time": max_time,
+                    "maxCFL": maxCFL,
+                    "dt": dt,
+                }
 
-            # Store relative path with exportVDBs flag
-            relative_path = f"../scenes/test_cases/{CONTAINER_DIR}/{title}.json"
-            generated_paths.append([relative_path, exportVDBs])
+                path = BASE_DIR / f"{title}.json"
+                with open(path, "w") as f:
+                    json.dump(config, f, indent=2)
+
+                # Store relative path with exportVDBs flag
+                relative_path = f"../scenes/test_cases/{CONTAINER_DIR}/{title}.json"
+                generated_paths.append([relative_path, exportVDBs])
 
     else:
         for tracing in tracing_methods:
@@ -95,6 +103,7 @@ for doConserving in conserving_options:
                     "doConserving": False,
                     "tracingMethod": tracing,
                     "interpolationMethod": interp,
+                    "redistributeClamped": False,
                     "exportData": exportData,
                     "exportImages": exportImages,
                     "exportVideos": exportVideos,

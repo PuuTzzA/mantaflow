@@ -1,18 +1,19 @@
 {
-  "title": "zalesak_rotation_conserving_0_linear",
+  "title": "shear_flow_conserving_1_cubic_no_clamped_redistro",
   "dimension": 2,
   "resolutionX": 128,
   "resolutionY": 128,
   "resolutionZ": 100,
-  "scenario": "zalesak_rotation",
+  "scenario": "shear_flow",
   "doConserving": true,
   "tracingMethod": "RK4",
-  "interpolationMethod": 0,
+  "interpolationMethod": 1,
+  "redistributeClamped": false,
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
   "max_time": 500,
-  "maxCFL": 1,
+  "maxCFL": 10,
   "dt": 10000
 }

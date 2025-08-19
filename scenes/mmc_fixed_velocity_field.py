@@ -3,14 +3,13 @@ from data_collection import *
 import json
 import sys
 
-
 params = {}
 param_path = "../scenes/test_cases/test_tests/fixed_velocity_test.json"
 EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/fixed_vel_shear_flow/"
+    EXPORTS_BASE_DIR = "../exports/fixed_vel_shear_flow_EE_vs_RK4/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -40,6 +39,7 @@ if exportVDBs and (exportImages or exportVideos):
 
 interpolationMethod = params["interpolationMethod"] # only important for tracingMethod == "RK4"
 tracingMethod = params["tracingMethod"] # only important for notCoserving (EE1: Explicit Euler Order 1, EE2: Explicit Euler with MAC cormack, RK$, Runge Kutta 4)
+redistributeClamped = params["redistributeClamped"]
 
 # set time step range
 s.cfl         = params["maxCFL"]
@@ -55,7 +55,7 @@ flags = s.create(FlagGrid)
 vel = s.create(MACGrid)
 testPhi = s.create(LevelsetGrid)
 testField = s.create(RealGrid)
-curl = s.create(RealGrid)
+velocity_magnitude = s.create(RealGrid)
 
 testPhiGamma = s.create(RealGrid)
 testFieldGamma = s.create(RealGrid)
@@ -112,12 +112,12 @@ if GUI:
     gui.update()
     gui.screenshot(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / f"first_frame.png"))
  
-    gui.pause()
+    #gui.pause()
 
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
                                  export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
-                                 trackable_grid_names=[["testPhi", testPhi], ["testField", testField], ["curl", curl], [], []], 
-                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0, 1], graph_grids=[["testField", "sum"]])
+                                 trackable_grid_names=[["testField", testField], ["vel_magnitude", velocity_magnitude], [], [], ["testPhi", testPhi]], 
+                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]])
 
 data_collector.init()
 
@@ -142,13 +142,12 @@ while (s.timeTotal < params["max_time"]):
 
     else:
         print(data_collector.current_frame)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma    ,interpolationType=interpolationMethod)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma    ,interpolationType=interpolationMethod, redistributeClamped=redistributeClamped)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod, redistributeClamped=redistributeClamped)
 
     #timings.display()    
-    computeVelocityMagnitude(dest=curl, vel=vel)
-    maxVel = getMaxVal(grid=curl, flags=flags) # flags param does nothign for now
-    calculateCurl(vel=vel, curl=curl, flags=flags)
+    computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
+    maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
 
     data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[])
 

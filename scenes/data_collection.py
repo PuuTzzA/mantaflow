@@ -67,14 +67,15 @@ class Data_collectior:
                 grid = self.trackable_grids[i][1]
                 self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
 
-        if self.export_images and gui is not None and (self.last_framerate_frame != solver.frame):
+        if self.export_images and gui is not None: #and (self.last_framerate_frame != solver.frame):
             gui.windowSize(windowSize[0], windowSize[1])
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
 
             for i in range(len(self.trackable_grids)):
                 if i in self.image_grids_indeces:
                     name = self.trackable_grids[i][0]
-                    gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(solver.frame)).zfill(4)}.png"))
+                    #gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(solver.frame)).zfill(4)}.png"))
+                    gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(self.current_frame)).zfill(4)}.png"))
                     
                 gui.nextRealGrid()
                 gui.update()

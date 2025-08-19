@@ -744,7 +744,7 @@ namespace Manta
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        //if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
+        // if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
         if (isSampleableFluid(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
         {
             getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH);
@@ -819,7 +819,7 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            //if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
+            // if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
             if (isValidFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, NONE))
             {
                 getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH);
@@ -966,7 +966,7 @@ namespace Manta
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod)
+    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, const Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool redistributeClamped)
     {
         if (interpolationType == MONOTONE_CUBIC_HERMITE)
         {
@@ -1147,101 +1147,104 @@ namespace Manta
 
             knClampToMinMaxDiff(grid, min, max, tempGrid);
 
-            int neighborRadius = 3; // configurable cube/square radius
-            std::vector<Vec3> neighbors;
-            for (int dz = grid.is3D() ? -neighborRadius : 0; dz <= grid.is3D() ? neighborRadius : 0; ++dz)
+            if (redistributeClamped)
             {
-                for (int dy = -neighborRadius; dy <= neighborRadius; ++dy)
+                int neighborRadius = 3; // configurable cube/square radius
+                std::vector<Vec3> neighbors;
+                for (int dz = grid.is3D() ? -neighborRadius : 0; dz <= grid.is3D() ? neighborRadius : 0; ++dz)
                 {
-                    for (int dx = -neighborRadius; dx <= neighborRadius; ++dx)
+                    for (int dy = -neighborRadius; dy <= neighborRadius; ++dy)
                     {
-                        if (dx == 0 && dy == 0 && dz == 0)
-                            continue; // skip self
-                        if (std::sqrt(dx * dx + dy * dy + dz * dz) <= neighborRadius + 0.5)
+                        for (int dx = -neighborRadius; dx <= neighborRadius; ++dx)
                         {
-                            neighbors.push_back({static_cast<Real>(dx), static_cast<Real>(dy), static_cast<Real>(dz)});
+                            if (dx == 0 && dy == 0 && dz == 0)
+                                continue; // skip self
+                            if (std::sqrt(dx * dx + dy * dy + dz * dz) <= neighborRadius + 0.5)
+                            {
+                                neighbors.push_back({static_cast<Real>(dx), static_cast<Real>(dy), static_cast<Real>(dz)});
+                            }
                         }
                     }
                 }
-            }
 
-            for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
-            {
-                FOR_IJK(grid)
+                for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
                 {
-                    if (!isSampleableFluid(i, j, k, flags_n_plus_one, component) || std::abs(tempGrid(i, j, k)) < EPSILON * EPSILON)
+                    FOR_IJK(grid)
                     {
-                        continue; // no mass to distribute
-                    }
-
-                    Vec3 gradient = getGradient(grid, i, j, k);
-                    normalize(gradient);
-                    gradient *= signum(tempGrid(i, j, k));
-
-                    Vec3 roundedGrad(std::round(gradient.x), std::round(gradient.y), std::round(gradient.z));
-
-                    Real mass_to_move = tempGrid(i, j, k);
-
-                    // try closest first, for early exit
-                    Vec3i firstTarget = Vec3i(i + roundedGrad.x, j + roundedGrad.y, k + roundedGrad.z);
-                    if (isSampleableFluid(firstTarget.x, firstTarget.y, firstTarget.z, flags_n_plus_one, component))
-                    {
-                        Real targetBefore = grid(firstTarget);
-                        grid(firstTarget) = Manta::clamp(grid(firstTarget) - mass_to_move, min(firstTarget), max(firstTarget));
-                        Real movedMass = targetBefore - grid(firstTarget);
-
-                        mass_to_move -= movedMass;
-                    }
-
-                    if (std::abs(mass_to_move) < EPSILON * EPSILON)
-                    {
-                        continue;
-                    }
-
-                    std::sort(neighbors.begin(), neighbors.end(),
-                              [&](const Vec3 &a, const Vec3 &b)
-                              {
-                                  // Check if a or b matches the rounded gradient exactly
-                                  bool aIsClosestFirstLayer = (a.x == roundedGrad.x && a.y == roundedGrad.y && a.z == roundedGrad.z);
-                                  bool bIsClosestFirstLayer = (b.x == roundedGrad.x && b.y == roundedGrad.y && b.z == roundedGrad.z);
-
-                                  if (aIsClosestFirstLayer && !bIsClosestFirstLayer)
-                                      return true; // a goes first
-                                  if (bIsClosestFirstLayer && !aIsClosestFirstLayer)
-                                      return false; // b goes first
-
-                                  float simA = dot(a, gradient) / norm(a);
-                                  float simB = dot(b, gradient) / norm(b);
-
-                                  if (simA == simB)
-                                  {
-                                      // Tie-breaker: shorter Euclidean distance first
-                                      return norm(a) < norm(b);
-                                  }
-                                  return simA > simB; // descending similarity
-                              });
-
-                    for (const auto &n : neighbors)
-                    {
-                        if (std::abs(mass_to_move) > EPSILON * EPSILON)
+                        if (!isSampleableFluid(i, j, k, flags_n_plus_one, component) || std::abs(tempGrid(i, j, k)) < EPSILON * EPSILON)
                         {
-                            Vec3i target = Vec3i(i + n.x, j + n.y, k + n.z);
+                            continue; // no mass to distribute
+                        }
 
-                            if (isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                        Vec3 gradient = getGradient(grid, i, j, k);
+                        normalize(gradient);
+                        gradient *= signum(tempGrid(i, j, k));
+
+                        Vec3 roundedGrad(std::round(gradient.x), std::round(gradient.y), std::round(gradient.z));
+
+                        Real mass_to_move = tempGrid(i, j, k);
+
+                        // try closest first, for early exit
+                        Vec3i firstTarget = Vec3i(i + roundedGrad.x, j + roundedGrad.y, k + roundedGrad.z);
+                        if (isSampleableFluid(firstTarget.x, firstTarget.y, firstTarget.z, flags_n_plus_one, component))
+                        {
+                            Real targetBefore = grid(firstTarget);
+                            grid(firstTarget) = Manta::clamp(grid(firstTarget) - mass_to_move, min(firstTarget), max(firstTarget));
+                            Real movedMass = targetBefore - grid(firstTarget);
+
+                            mass_to_move -= movedMass;
+                        }
+
+                        if (std::abs(mass_to_move) < EPSILON * EPSILON)
+                        {
+                            continue;
+                        }
+
+                        std::sort(neighbors.begin(), neighbors.end(),
+                                  [&](const Vec3 &a, const Vec3 &b)
+                                  {
+                                      // Check if a or b matches the rounded gradient exactly
+                                      bool aIsClosestFirstLayer = (a.x == roundedGrad.x && a.y == roundedGrad.y && a.z == roundedGrad.z);
+                                      bool bIsClosestFirstLayer = (b.x == roundedGrad.x && b.y == roundedGrad.y && b.z == roundedGrad.z);
+
+                                      if (aIsClosestFirstLayer && !bIsClosestFirstLayer)
+                                          return true; // a goes first
+                                      if (bIsClosestFirstLayer && !aIsClosestFirstLayer)
+                                          return false; // b goes first
+
+                                      float simA = dot(a, gradient) / norm(a);
+                                      float simB = dot(b, gradient) / norm(b);
+
+                                      if (simA == simB)
+                                      {
+                                          // Tie-breaker: shorter Euclidean distance first
+                                          return norm(a) < norm(b);
+                                      }
+                                      return simA > simB; // descending similarity
+                                  });
+
+                        for (const auto &n : neighbors)
+                        {
+                            if (std::abs(mass_to_move) > EPSILON * EPSILON)
                             {
-                                Real targetBefore = grid(target);
-                                grid(target) = Manta::clamp(grid(target) - mass_to_move, min(target), max(target));
-                                Real movedMass = targetBefore - grid(target);
+                                Vec3i target = Vec3i(i + n.x, j + n.y, k + n.z);
 
-                                mass_to_move -= movedMass;
+                                if (isSampleableFluid(target.x, target.y, target.z, flags_n_plus_one, component))
+                                {
+                                    Real targetBefore = grid(target);
+                                    grid(target) = Manta::clamp(grid(target) - mass_to_move, min(target), max(target));
+                                    Real movedMass = targetBefore - grid(target);
+
+                                    mass_to_move -= movedMass;
+                                }
+                            }
+                            else
+                            {
+                                break;
                             }
                         }
-                        else
-                        {
-                            break;
-                        }
+                        tempGrid(i, j, k) = mass_to_move;
                     }
-                    tempGrid(i, j, k) = mass_to_move;
                 }
             }
 
@@ -1257,7 +1260,7 @@ namespace Manta
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
 
-    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> *phi, InterpolationType interpolationType, TracingMethod tracingMethod)
+    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, const Grid<Real> *phi, InterpolationType interpolationType, TracingMethod tracingMethod, bool redistributeClamped)
     {
         Grid<Real> velX(parent);
         Grid<Real> velY(parent);
@@ -1280,15 +1283,15 @@ namespace Manta
 
         if (!water)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType, tracingMethod);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType, tracingMethod);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod, redistributeClamped);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType, tracingMethod, redistributeClamped);
         }
         else
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod, redistributeClamped);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod, redistributeClamped);
         }
 
         knGrids2MAC(grid, velX, velY, velZ);
@@ -1296,15 +1299,15 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = LINEAR, int tracingMethod = NORMAL)
+    void massMomentumConservingAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, int interpolationType = LINEAR, int tracingMethod = NORMAL, bool redistributeClamped = true)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags->getParent(), *flags, *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), nullptr, NONE, (InterpolationType)interpolationType, (TracingMethod)tracingMethod);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags->getParent(), *flags, *flags, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), nullptr, NONE, (InterpolationType)interpolationType, (TracingMethod)tracingMethod, redistributeClamped);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false, nullptr, (InterpolationType)interpolationType, (TracingMethod)tracingMethod);
+            fnMassMomentumConservingAdvectMAC(flags->getParent(), *flags, *flags, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), false, nullptr, (InterpolationType)interpolationType, (TracingMethod)tracingMethod, redistributeClamped);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
@@ -1319,11 +1322,11 @@ namespace Manta
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE, (InterpolationType)interpolationType, NORMAL);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE, (InterpolationType)interpolationType, NORMAL, true);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi, (InterpolationType)interpolationType, NORMAL);
+            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi, (InterpolationType)interpolationType, NORMAL, true);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
