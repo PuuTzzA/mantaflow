@@ -9,14 +9,13 @@ EXPORTS_BASE_DIR = "../exports/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/mmc_liquid/"
+    EXPORTS_BASE_DIR = "../exports/test/simple_liquid/"
 
 with open(param_path) as f:
     params = json.load(f)
 
 
 LEVEL = 0
-doOpen = params["doOpen"]
 doConserving = params["doConserving"]
 doParticleLevelSet = params["doParticleLevelSet"]
 interpolationMethod = params["interpolationMethod"]
@@ -45,6 +44,9 @@ s.timestepMin = 0.001
 s.timestepMax = 20000
 
 # prepare grids and particles
+visualizerGrid = s.create(LevelsetGrid)
+
+flags_all_fluid  = s.create(FlagGrid)
 flags_n          = s.create(FlagGrid)
 flags_n_plus_one = s.create(FlagGrid)
 
@@ -134,19 +136,23 @@ fillLevelsetWithOnes( grid=innen1außen0, flags=flags_n, phi=phi_fluid, level=LE
 fillWithOnes( grid=innen1außen0_gamma )
 fillWithOnes( grid=phi_gamma )
 
+
+flags_all_fluid.copyFrom(flags_n_plus_one)
+setAllEmptyFlagsToLiquid(flags=flags_all_fluid)
+
 if (GUI):
     gui = Gui()
     gui.show()
-    gui.setCamPos(0, 0, -1.3)
+    gui.setCamPos(0, 0, -1.5)
     
-    gui.nextRealGrid()
-    gui.nextRealGrid()
-    gui.nextRealGrid()
-    gui.nextRealGrid()
-    gui.nextRealGrid()
+    #gui.nextRealGrid()
+    #gui.nextRealGrid()
+    #gui.nextRealGrid()
+    #gui.nextRealGrid()
+    #gui.nextRealGrid()
     
-    gui.nextVec3Grid()
-    gui.nextVec3Grid()
+    #gui.nextVec3Grid()
+    #gui.nextVec3Grid()
 
     if layout == 1:
         pass
@@ -158,15 +164,15 @@ if (GUI):
     if doConserving and not doParticleLevelSet:
         gui.nextParts()
         
-    gui.pause()
+    #gui.pause()
 
 # Data collection and exportation
 data_collector = None
-if layout == 0:
+if layout == 0: #dam
     data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                     export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-                                    trackable_grid_names=[["phi_fluid", phi_fluid], [], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], 
-                                    tracked_grids_indeces=[0, 3], image_grids_indeces=[0], graph_grids=[["fixed_volume", "max"]])
+                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], []], 
+                                    tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["innen1außen0", "sum"]])
 
 if layout == 1:
     data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
@@ -216,35 +222,37 @@ while (s.timeTotal < params["max_time"]):
     else:
         vel_extrapolated.copyFrom(vel)
         #extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+        #  _____ _        _____ _   _ ___ ____  _ _ _ 
+        # |  ___(_)_  __ |_   _| | | |_ _/ ___|| | | |
+        # | |_  | \ \/ /   | | | |_| || |\___ \| | | |
+        # |  _| | |>  <    | | |  _  || | ___) |_|_|_|
+        # |_|   |_/_/\_\   |_| |_| |_|___|____/(_|_|_)
+        # 
         extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
 
         if not doParticleLevelSet:
-            simpleSLAdvect(flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, interpolationType=2, all=True) # 0 = Trilinear, 1 = cubic convolutional, 2 = polynomial, 3 = monotone hermite
-            #advectSemiLagrange( flags=flags_n, vel=vel_extrapolated, grid=phi_fluid, order=2 )
-            #reinitializeLevelset( phi=phi_fluid, flags=flags_n )
-
-            setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
-
+            tracingMethod = 1
+            massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma,interpolationType=interpolationMethod, tracingMethod=tracingMethod)
+            setFlagsFromDensity (flags=flags_n_plus_one, density=innen1außen0)       
         else:
             advectParticleLevelSet( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, vel=vel_extrapolated, flags=flags_n )
 
-            if (data_collector.current_frame % 20 == 0):
+            if (data_collector.current_frame % 100 == 0):
                 pass
                 reseedParticles(phi=phi_fluid, flags=flags_n, particles=level_set_particles, radii=particle_radii )
 
-            setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=LEVEL )
+            setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=0 )    
 
-        # Advect grid quantities using the custom conserving advection scheme.
-        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
-        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid                  , interpolationType=interpolationMethod)
-        
-        #advectSemiLagrange( flags=flags_n_plus_one, vel=vel_extrapolated, grid=innen1außen0, order=1 )
-        #advectSemiLagrange( flags=flags_n_plus_one, vel=vel_extrapolated, grid=vel, order=1 )
-
-        simpleSLAdvect(flags=flags_n_plus_one, vel=vel, grid=innen1außen0,interpolationType=2, all=True) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
-        simpleSLAdvect(flags=flags_n_plus_one, vel=vel, grid=vel,         interpolationType=2, all=True) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+        interpolationMethod = 0
+        massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
 
         flags_n.copyFrom(flags_n_plus_one)
+
+        #massMomentumConservingAdvect( flags=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod, tracingMethod=tracingMethod)
+
+        print("Moin")
+        #setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n, level=0 )
+
         
         # Apply grid-based forces (gravity)
         addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
@@ -254,16 +262,14 @@ while (s.timeTotal < params["max_time"]):
         solvePressure(flags=flags_n, vel=vel, pressure=pressure)
         #solvePressure(flags=flags_n, vel=vel, pressure=pressure, cgMaxIterFac=0.5, cgAccuracy=5e-4, phi=phi_fluid )
 
-        setWallBcs(flags=flags_n, vel=vel)
+        setWallBcs(flags=flags_n, vel=vel)      
 
-    if doOpen:
-        resetOutflow( flags=flags_n)
-        
-
+    visualizeFlags(flags=flags_n, grid=visualizerGrid)
     # Data Collection
     computeVelocityMagnitude(dest=curl, vel=vel)
     maxVel = getMaxVal(grid=curl, flags=flags_n) # flags param does nothign for now
     calculateCurl(vel=vel, curl=curl, flags=flags_n)
+
     data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
 
     s.step()

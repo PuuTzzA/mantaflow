@@ -59,9 +59,17 @@ videos_plume_2d_high = [
     '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite_local_cfl',
 ]
 
-videos = videos_plume_2d_high
+videos_simple_liquid = [
+    '/test/simple_liquid/simple_water_conserving_0_linear',
+    '/test/simple_liquid/simple_water_conserving_1_cubic',
+    '/test/simple_liquid/simple_water_conserving_2_polynomial',
+    '/test/simple_liquid/simple_water_flip',
+]
+
+videos = videos_simple_liquid
 #FILENAME = "testField.webm" # for fixed vel
 FILENAME = "density.webm" # for plume
+FILENAME = "flags_viz.webm" # for simple liquid
 
 # Resolve full paths
 input_paths = []
@@ -70,18 +78,32 @@ for v in videos:
     input_paths.append(path)
 
 # Construct xstack layout
-layout = (
+
+""" layout = (
     "0_0|w0_0|w0+w1_0|"
     "0_h0|w3_h0|w3+w4_h0|"
     "0_h0+h3|w6_h0+h3|w6+w7_h0+h3"
 )
 
 # Build ffmpeg xstack command
+
 xstack_inputs = []
 for p in input_paths:
     xstack_inputs += ["-i", str(p)]
 
-filter_complex = f"xstack=inputs=9:layout={layout}"
+filter_complex = f"xstack=inputs=9:layout={layout}" """
+
+
+layout = (
+    "0_0|w0_0|"
+    "0_h0|w2_h0"
+)
+xstack_inputs = []
+for p in input_paths:
+    xstack_inputs += ["-i", str(p)]
+
+filter_complex = f"xstack=inputs=4:layout={layout}"
+
 
 output_path = input_paths[0].parent.parent / f"combined_{FILENAME.removesuffix(".webm")}.webm"
 

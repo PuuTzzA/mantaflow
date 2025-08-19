@@ -2,15 +2,14 @@
   "title": "asdf",
 
   "dimension": 2,
-  "resolutionX": 100,
-  "resolutionY": 100,
+  "resolutionX": 70,
+  "resolutionY": 70,
   "resolutionZ": 70,
 
-  "doOpen": true,
-  "layout": "dam",
+  "layout": "drop",
   "doConserving": true,
-  "interpolationMethod": 0,
-  "doParticleLevelSet": true,
+  "interpolationMethod": 2,
+  "doParticleLevelSet": false,
 
   "exportData": false,
   "exportImages": false,

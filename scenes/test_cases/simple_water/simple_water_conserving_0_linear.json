@@ -1,0 +1,18 @@
+{
+  "title": "simple_water_conserving_0_linear",
+  "dimension": 2,
+  "resolutionX": 150,
+  "resolutionY": 150,
+  "resolutionZ": 150,
+  "layout": "dam",
+  "doParticleLevelSet": false,
+  "doConserving": true,
+  "interpolationMethod": 0,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 150,
+  "maxCFL": 0.5,
+  "dt": 2
+}

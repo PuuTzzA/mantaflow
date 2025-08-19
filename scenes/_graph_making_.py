@@ -21,50 +21,57 @@ data_zalesak_rotation = [
 
 data_shear_flow = [
     '/fixed_vel_shear_flow/shear_flow_conserving_0_linear',
-    #'/fixed_vel_shear_flow/shear_flow_conserving_1_cubic',
+    '/fixed_vel_shear_flow/shear_flow_conserving_1_cubic',
     '/fixed_vel_shear_flow/shear_flow_conserving_2_polynomial',
-    '/fixed_vel_shear_flow/shear_flow_traditional_EE1',
+    #'/fixed_vel_shear_flow/shear_flow_traditional_EE1',
     #'/fixed_vel_shear_flow/shear_flow_traditional_EE2',
-    #'/fixed_vel_shear_flow/shear_flow_traditional_RK4_0_linear',
+    '/fixed_vel_shear_flow/shear_flow_traditional_RK4_0_linear',
     #'/fixed_vel_shear_flow/shear_flow_traditional_RK4_1_cubic',
-    '/fixed_vel_shear_flow/shear_flow_traditional_RK4_2_polynomial',
+    #'/fixed_vel_shear_flow/shear_flow_traditional_RK4_2_polynomial',
     #'/fixed_vel_shear_flow/shear_flow_traditional_RK4_3_monotone_hermite',
 ]
 
 data_plume_2d_high = [
     '/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear',
-    '/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear_local_cfl',
     '/simple_plume_2d_high/simple_plume_2d_high_conserving_1_cubic',
-    '/simple_plume_2d_high/simple_plume_2d_high_conserving_1_cubic_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_conserving_1_cubic_local_cfl',
     '/simple_plume_2d_high/simple_plume_2d_high_conserving_2_polynomial',
-    '/simple_plume_2d_high/simple_plume_2d_high_conserving_2_polynomial_local_cfl',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_EE1',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_EE2',
+    #'/simple_plume_2d_high/simple_plume_2d_high_conserving_2_polynomial_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_EE1',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_EE2',
     '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_0_linear',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_0_linear_local_cfl',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic_local_cfl',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial_local_cfl',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_0_linear_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial_local_cfl',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite',
+    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite_local_cfl',
 ]
 
 data_plume_3d_high = [
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_conserving_0_linear',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_conserving_1_cubic',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_conserving_2_polynomial',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_EE1',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_EE2',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_RK4_0_linear',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_RK4_1_cubic',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_RK4_2_polynomial',
-    '/simple_plume_obstacle_3d_high/simple_plume_obstacle_3d_high_traditional_RK4_3_monotone_hermite',
+    '/3d_final/simple_plume_3d_high/plume_3d_high_conserving_0_linear',
+    '/3d_final/simple_plume_3d_high/plume_3d_high_conserving_0_linear_local_cfl',
+    '/3d_final/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial_local_cfl',
+    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_EE1',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_EE2',
+    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_0_linear',
+    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_0_linear_local_cfl',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_1_cubic',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_1_cubic_local_cfl',
+    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_2_polynomial',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_2_polynomial_local_cfl',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_3_monotone_hermite',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_3_monotone_hermite_local_cfl',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_1_cubic',
+    #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_1_cubic_local_cfl',
 ]
 
-data = data_zalesak_rotation
-interested_fields = [["testField", "sum"]] # for fixed vel Field
-#interested_fields = [["fixed_volume", "sum"]] # for plume
+data = data_plume_3d_high
+#interested_fields = [["testField", "sum"]] # for fixed vel Field
+interested_fields = [["fixed_volume", "sum"]] # for plume
 
 # Resolve full paths
 input_paths = []
@@ -83,13 +90,13 @@ for d in data:
 
 # Create combined Graph
 title = f"combined_{FILENAME.removesuffix(".json")}"
-title = "combined_data_3"
+title = "combined_data_everything_ohne_local_ohne_EE_higher_order_RK4"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
 
 #General Setup
-""" create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
+create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
                       title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=(12, 6))
- """
+
 
 #Setup for Shear Flow
 """ labels = ["Conserving, linear", "Conserving, polynomial", "EE, linear", "RK4, polynomial"]
@@ -102,9 +109,10 @@ create_combined_graph_broken_axis(data_array=input_datas, data_names=labels, int
 
 
 #Setup for Zalesak Rotation
-labels = ["Conserving, linear", "Conserving, polynomial", "EE, linear", "RK4, polynomial"]
+""" labels = ["Conserving, linear", "Conserving, polynomial", "EE, linear", "RK4, polynomial"]
 output_path = input_paths[0].parent.parent / f"zalesak_rotation_mass_plot.pdf"
 
 create_combined_graph_broken_axis(data_array=input_datas, data_names=labels, interested_fields=interested_fields, 
                       title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, 
                       figsize=[(12, 3), (12, 1)], y_ranges=[[4306, 4335], [2000, 2900]], y_gap=0.05, smallTitles=["Total Mass"], yLabels=["Mass"])
+ """
