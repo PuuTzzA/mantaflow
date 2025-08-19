@@ -223,7 +223,7 @@ namespace Manta
             break;
         }
 
-        const Real MAX_LOCAL_CFL = 4;
+        const Real MAX_LOCAL_CFL = 1;
 
         pos += offset;
         Vec3 newPos = pos;
@@ -744,8 +744,10 @@ namespace Manta
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
         resultVec.reserve(4);
 
-        if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
+        //if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
+        if (isSampleableFluid(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
         {
+            getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH);
             return resultVec;
         }
 
@@ -817,16 +819,18 @@ namespace Manta
             Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
             current = pos + t * direction;
 
-            if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
+            //if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
+            if (isValidFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, NONE))
             {
+                getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH);
                 resultVec = testResultVec;
             }
             else
             {
-                return resultVec;
+                break;
             }
         }
-        return {};
+        return resultVec;
     }
 
     std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod)
@@ -1031,6 +1035,7 @@ namespace Manta
 
                 if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
                 {
+                    continue;
                     // std::cout << "ASLDkfj" << std::endl;
                     auto surfaceNeighboursAndWeights = getClosestSurfacePoint(Vec3(i, j, k), *phi, offset, flags_n_plus_one, component);
                     if (surfaceNeighboursAndWeights.empty()) // Now really just dump it into the same cell

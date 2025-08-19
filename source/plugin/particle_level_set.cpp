@@ -699,13 +699,17 @@ namespace Manta
     KERNEL()
     void knSetFlagsFromParticleLevelset(const Grid<Real> &phi, FlagGrid &flags, Real level)
     {
-        if (flags.isFluid(i, j, k) || flags.isEmpty(i, j, k))
+        if (!flags.isObstacle(i, j, k))
         {
-            flags(i, j, k) = (flags(i, j, k) | FlagGrid::TypeEmpty) & ~FlagGrid::TypeFluid; // clears the fluid flags
+            flags(i, j, k) = 0;
 
             if (phi(i, j, k) < level)
             {
-                flags(i, j, k) = (flags(i, j, k) | FlagGrid::TypeFluid) & ~FlagGrid::TypeEmpty;
+                flags(i, j, k) = FlagGrid::TypeFluid;
+            }
+            else
+            {
+                flags(i, j, k) = FlagGrid::TypeEmpty;
             }
         }
     }
@@ -755,14 +759,11 @@ namespace Manta
         knMarkPhiFromFlagGrid(phi, flags);
     }
 
-    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
-    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
-    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
-    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
-    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION 
-
-    
-
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION
+    // VELOCITY EXTRAPOLATION VELOCITY EXTRAPOLATION VELOCTY EXTRAPOLAION
 
     // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
     // FAST SWEEPING MARCHING EXTRAPOLATION FAST SWEEPING MARCHING EXTRAPOLATION
@@ -1048,5 +1049,71 @@ namespace Manta
         extrapolateComponentFSM(velY, phi, locked, steps, gs, MAC_Y);
 
         knGrids2MAC(vel, velX, velY, velZ);
+    }
+
+    KERNEL()
+    void knSetAllEmptyFlagsToLiquid(FlagGrid &flags, int _)
+    {
+        if (flags.isEmpty(i, j, k))
+        {
+            flags(i, j, k) = (flags(i, j, k) | FlagGrid::TypeFluid) & ~FlagGrid::TypeEmpty;
+        }
+    }
+
+    PYTHON()
+    void setAllEmptyFlagsToLiquid(FlagGrid &flags)
+    {
+        knSetAllEmptyFlagsToLiquid(flags, 1);
+    }
+
+    KERNEL()
+    void knSetFlagsFromDensity(FlagGrid &flags, const Grid<Real> &density)
+    {
+        if (!flags.isObstacle(i, j, k))
+        {
+            flags(i, j, k) = 0;
+
+            if (density(i, j, k) > 0.2)
+            {
+                flags(i, j, k) = FlagGrid::TypeFluid;
+            }
+            else
+            {
+                flags(i, j, k) = FlagGrid::TypeEmpty;
+            }
+        }
+    }
+
+    PYTHON()
+    void setFlagsFromDensity(FlagGrid &flags, const Grid<Real> &density)
+    {
+        knSetFlagsFromDensity(flags, density);
+    }
+
+    KERNEL()
+    void knVisualizeFlags(const FlagGrid &flags, Grid<Real> &grid)
+    {
+        if (flags.isEmpty(i, j, k))
+        {
+            grid(i, j, k) = 0;
+        }
+        else if (flags.isObstacle(i, j, k))
+        {
+            grid(i, j, k) = 1;
+        }
+        else if (flags.isFluid(i, j, k))
+        {
+            grid(i, j, k) = -1;
+        }
+        else
+        {
+            grid(i, j, k) = -100;
+        }
+    }
+
+    PYTHON()
+    void visualizeFlags(const FlagGrid &flags, Grid<Real> &grid)
+    {
+        knVisualizeFlags(flags, grid);
     }
 }

@@ -110,7 +110,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] :# and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
@@ -153,7 +153,7 @@ while s.timeTotal < params["max_time"] :# and data_collector.current_frame < 70:
     else:
         #simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod, tracingMethod=tracingFunction)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction)
+        #massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction)
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod, tracingMethod=tracingFunction)
 
     if doOpen:
@@ -174,7 +174,7 @@ while s.timeTotal < params["max_time"] :# and data_collector.current_frame < 70:
         maxvel = vel.getMax()
         storeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
 
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density, velocity_magnitude])
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density])
 
     timings.display()    
     s.step()
