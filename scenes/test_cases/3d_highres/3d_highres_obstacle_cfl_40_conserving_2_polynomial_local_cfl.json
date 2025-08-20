@@ -1,9 +1,9 @@
 {
   "title": "3d_highres_obstacle_cfl_40_conserving_2_polynomial_local_cfl",
   "dimension": 3,
-  "resolutionX": 300,
-  "resolutionY": 300,
-  "resolutionZ": 300,
+  "resolutionX": 256,
+  "resolutionY": 256,
+  "resolutionZ": 256,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
@@ -14,7 +14,7 @@
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
-  "max_time": 150,
+  "max_time": 120,
   "maxCFL": 40,
   "dt": 3
 }

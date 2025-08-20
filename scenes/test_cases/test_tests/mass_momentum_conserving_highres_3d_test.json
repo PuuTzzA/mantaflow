@@ -2,8 +2,8 @@
   "title": "cccdalsdkj",
 
   "dimension": 3,
-  "resolutionX": 300,
-  "resolutionY": 300,
+  "resolutionX": 256,
+  "resolutionY": 256,
   "resolutionZ": 10,
 
   "doOpen": true,
