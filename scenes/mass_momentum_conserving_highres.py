@@ -106,9 +106,11 @@ data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=
 
 data_collector.init()
 
+num_steps = 0
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] and num_steps < 200:
+    num_steps += 1
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
