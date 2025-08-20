@@ -76,14 +76,14 @@ HIGHRES_PATHS = [
     ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_40_conserving_2_polynomial_local_cfl.json', True],
     ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_40_conserving_0_linear_local_cfl.json', True],
 
-    #['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_20_conserving_0_linear_local_cfl.json', True],
-    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_20_conserving_2_polynomial_local_cfl.json', True],
-
-    #['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_10_conserving_0_linear_local_cfl.json', True],
-    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_10_conserving_2_polynomial_local_cfl.json', True],
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_25_conserving_2_polynomial_local_cfl.json', True],
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_25_conserving_0_linear_local_cfl.json', True],
 
     ['../scenes/test_cases/3d_highres/3d_highres_no_obstacle_cfl_40_conserving_2_polynomial_local_cfl.json', True],
     ['../scenes/test_cases/3d_highres/3d_highres_no_obstacle_cfl_40_conserving_0_linear_local_cfl.json', True],
+
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_10_conserving_2_polynomial_local_cfl.json', True],
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_10_conserving_0_linear_local_cfl.json', True],
 ]
 
 
