@@ -4,20 +4,20 @@ from itertools import product
 import shutil
 
 # Base directory to store JSONs
-CONTAINER_DIR = "simple_plume_2d_high"
+CONTAINER_DIR = "simple_obstacle_2d_low"
 BASE_DIR = (Path(__file__).parent / CONTAINER_DIR).resolve()
 shutil.rmtree(BASE_DIR, ignore_errors=True)
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Constant settings
-BASE_TITLE = "plume_2d_high"
+BASE_TITLE = "obstacle_2d_low"
 dimension = 2
 resolutionX = 512
 resolutionY = 512
 resolutionZ = 512
 
 doOpen = False
-doObstacle = False
+doObstacle = True
 
 exportData = True
 exportImages = True
@@ -25,7 +25,7 @@ exportVideos = True
 exportVDBs = False  # This is the flag we will output as True/False in the printed list
 
 max_time = 150
-maxCFL = 20
+maxCFL = 5
 dt = 2
 
 # Interpolation method names

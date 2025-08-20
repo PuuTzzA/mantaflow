@@ -35,6 +35,31 @@ data_shear_flow_low = [
     #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_RK4_3_monotone_hermitn'
 ]
 
+data_simple_plume_low = [
+    '/3_simple_plume/cfl_07/plume_2d_low_conserving_0_linear',
+    '/3_simple_plume/cfl_07/plume_2d_low_conserving_1_cubic',
+    #'/3_simple_plume/cfl_07/plume_2d_low_conserving_1_cubic_no_clamped_redistro',
+    '/3_simple_plume/cfl_07/plume_2d_low_conserving_2_polynomial',
+    #'/3_simple_plume/cfl_07/plume_2d_low_conserving_2_polynomial_no_clamped_redistro',
+    '/3_simple_plume/cfl_07/plume_2d_low_traditional_RK4_0_linear',
+]
+
+data_simple_obstacle_low = [
+    '/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_0_linear',
+    #'/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_1_cubic',
+    #'/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_1_cubic_no_clamped_redistro',
+    '/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_2_polynomial',
+    '/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_2_polynomial_no_clamped_redistro',
+    '/4_simple_obstacle/cfl_7/obstacle_2d_low_traditional_RK4_0_linear',
+]
+
+data_simple_obstacle_high = [
+    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_1_cubic',
+    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_1_cubic_local_cfl',
+    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_2_polynomial',
+    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_2_polynomial_local_cfl',
+]
+
 data_plume_2d_high = [
     '/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear',
     #'/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear_local_cfl',
@@ -73,9 +98,9 @@ data_plume_3d_high = [
     #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_1_cubic_local_cfl',
 ]
 
-data = data_zalesak_rotation
-interested_fields = [["testField", "sum"]] # for fixed vel Field
-#interested_fields = [["fixed_volume", "sum"]] # for plume
+data = data_simple_obstacle_high
+#interested_fields = [["testField", "sum"]] # for fixed vel Field
+interested_fields = [["fixed_volume", "sum"]] # for plume
 
 # Resolve full paths
 input_paths = []
@@ -94,7 +119,7 @@ for d in data:
 
 # Create combined Graph
 title = f"combined_{FILENAME.removesuffix(".json")}"
-title = "combined_data_only_conserving"
+title = "combined_data_nur_vier"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
 
 #General Setup

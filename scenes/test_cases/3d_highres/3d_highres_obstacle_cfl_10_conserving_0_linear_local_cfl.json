@@ -1,0 +1,20 @@
+{
+  "title": "3d_highres_obstacle_cfl_10_conserving_0_linear_local_cfl",
+  "dimension": 3,
+  "resolutionX": 300,
+  "resolutionY": 300,
+  "resolutionZ": 300,
+  "doOpen": true,
+  "doObstacle": true,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "tracingFunction": 1,
+  "interpolationMethod": 0,
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": true,
+  "max_time": 150,
+  "maxCFL": 10,
+  "dt": 3
+}

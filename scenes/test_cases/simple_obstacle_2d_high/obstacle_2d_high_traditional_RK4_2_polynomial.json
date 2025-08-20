@@ -16,6 +16,6 @@
   "exportVideos": true,
   "exportVDBs": false,
   "max_time": 150,
-  "maxCFL": 20,
+  "maxCFL": 30,
   "dt": 2
 }

@@ -57,6 +57,9 @@ class Data_collectior:
 
     def step(self, solver, flags, maxVel, gui=None, windowSize=[1000, 1000], camPos=[0, 0, -1.2], objects=[]):
         #self.current_frame = math.floor(solver.timeTotal)
+        if self.last_framerate_frame == solver.frame:
+            return
+
         self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
         self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = maxVel * solver.timestep
         self.data["frame_data"][str(self.current_frame).zfill(4)]["dt"] = solver.timestep
@@ -68,23 +71,23 @@ class Data_collectior:
                 self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
 
         #if self.export_images and gui is not None and (int(solver.timeTotal * 0.4) != self.last_framerate_frame): #and (self.last_framerate_frame != solver.frame):
-        if self.export_images and gui is not None and (self.last_framerate_frame != solver.frame):
+        if self.export_images and gui is not None:
             gui.windowSize(windowSize[0], windowSize[1])
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
             gui.update()
             for i in range(len(self.trackable_grids)):
                 if i in self.image_grids_indeces:
                     name = self.trackable_grids[i][0]
-                    gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(solver.frame)).zfill(4)}.png"))
+                    gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(self.current_frame)).zfill(4)}.png"))
                     #gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(int(solver.timeTotal * 0.4))).zfill(4)}.png"))
                     #gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(self.current_frame)).zfill(4)}.png"))
                     
                 gui.nextRealGrid()
                 gui.update()
         
-        if self.export_vdbs and (self.last_framerate_frame != solver.frame):
+        if self.export_vdbs:
             # note: when saving pdata fields, they must be accompanied by and listed before their parent pp
-            save( name=str(self.base_dir / "vdbs" / f"{self.title}_{solver.frame}.vdb"), objects=objects )
+            save( name=str(self.base_dir / "vdbs" / f"{self.title}_{self.current_frame}.vdb"), objects=objects )
 
         self.current_frame += 1
         self.last_framerate_frame = solver.frame

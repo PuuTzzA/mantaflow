@@ -41,7 +41,7 @@ if exportVDBs and (exportImages or exportVideos):
 interpolationMethod = params["interpolationMethod"] # only important for tracingMethod == "RK4" or doConserving ==  true
 tracingMethod = params["tracingMethod"] # only important for notCoserving (EE1: Explicit Euler Order 1, EE2: Explicit Euler with MAC cormack, RK$, Runge Kutta 4)
 tracingFunction = params["tracingFunction"] # only for RK4 or doConserving, 0 = NORMAL, 1 = LOCAL_CFL
-redistributeClamped = params["redistributeClamped"]
+redistributeClamped = True
 
 title = params["title"]
 
@@ -66,13 +66,14 @@ phiObs = s.create(LevelsetGrid)
 vel_gamma = s.create(MACGrid)
 density_gamma = s.create(RealGrid)
 
-mesh = s.create(Mesh)
-mesh.load(OBSTACLE_MESH_PATH)
-#mesh.load("../resources/simpletorus.obj")
-mesh.scale( vec3(res) )
-mesh.offset( gs* (Vec3(0.5, 0.5, 0.5)) ) # center + slight offset
+if doObstacle:
+    mesh = s.create(Mesh)
+    mesh.load(OBSTACLE_MESH_PATH)
+    #mesh.load("../resources/simpletorus.obj")
+    mesh.scale( vec3(res) )
+    mesh.offset( gs* (Vec3(0.5, 0.5, 0.5)) ) # center + slight offset
 
-mesh.computeLevelset(phiObs, 1)
+    mesh.computeLevelset(phiObs, 1)
 
 #prepare grids
 bWidth=1
@@ -81,10 +82,11 @@ flags.initDomain(boundaryWidth=bWidth)
 if doOpen or True:
     setOpenBound(flags, bWidth,'xXYzZ',FlagOutflow|FlagEmpty) 
 
-setObstacleFlags(flags=flags, phiObs=phiObs) #, fractions=fractions)
+if doObstacle:
+    setObstacleFlags(flags=flags, phiObs=phiObs) #, fractions=fractions)
 flags.fillGrid()
 
-source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.136, z=gs*vec3(0, 0.051, 0))
+source = s.create(Cylinder, center=gs*vec3(0.5,0.125,0.5), radius=res*0.15, z=gs*vec3(0, 0.051, 0))
 #source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.15, z=gs*vec3(0, 0.04, 0))
 
 fillWithOnes( grid=density_gamma )
