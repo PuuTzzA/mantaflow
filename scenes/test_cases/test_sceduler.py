@@ -195,6 +195,7 @@ os.chdir(PATH_TO_MANTA)
 subprocess.run(["make", "-j4"])
 
  """
+""" 
 for param, requiresVDB in OBSTACLE_2D_HIGH_PATHS:
 
     if requiresVDB:
@@ -203,7 +204,7 @@ for param, requiresVDB in OBSTACLE_2D_HIGH_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
-
+ """
 
 """ 
 for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:

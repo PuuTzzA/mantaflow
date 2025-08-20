@@ -21,7 +21,7 @@ with open(param_path) as f:
 # solver params
 dim = params["dimension"]
 gs = vec3(params["resolutionX"], params["resolutionY"], params["resolutionZ"])
-res = params["resolutionX"]
+res = params["resolutionY"]
 if dim==2:
     gs.z=1
 s = Solver(name='main', gridSize = gs, dim=dim)
@@ -84,7 +84,7 @@ if doOpen or True:
 setObstacleFlags(flags=flags, phiObs=phiObs) #, fractions=fractions)
 flags.fillGrid()
 
-source = s.create(Cylinder, center=gs*vec3(0.5,0.15,0.5), radius=res*0.1, z=gs*vec3(0, 0.037, 0))
+source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.136, z=gs*vec3(0, 0.051, 0))
 #source = s.create(Cylinder, center=gs*vec3(0.5,0.12,0.5), radius=res*0.15, z=gs*vec3(0, 0.04, 0))
 
 fillWithOnes( grid=density_gamma )
