@@ -168,7 +168,7 @@ while s.timeTotal < params["max_time"] and data_collector.current_frame < 70:
         maxvel = vel.getMax()
         storeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
 
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density])
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density, velocity_magnitude])
 
     timings.display()    
     s.step()
