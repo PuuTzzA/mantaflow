@@ -120,8 +120,8 @@ PLUME_2D_HIGH_PATHS = [
     #['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_1_cubic_local_cfl.json', False],
     #['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_1_cubic_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_1_cubic_local_cfl_no_clamped_redistro.json', False],
-    ['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_2_polynomial.json', False],
-    ['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_2_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_2_polynomial.json', False],
+#    ['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_2_polynomial_local_cfl.json', False],
     #['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_2_polynomial_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_conserving_2_polynomial_local_cfl_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_plume_2d_high/plume_2d_high_traditional_EE1.json', False],
@@ -137,19 +137,19 @@ PLUME_2D_HIGH_PATHS = [
 ]
 
 OBSTACLE_2D_LOW_PATHS = [
-    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_0_linear.json', False],
+#    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_0_linear.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_0_linear_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_local_cfl_no_clamped_redistro.json', False],
-    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial.json', False],
+#    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_local_cfl.json', False],
     ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_local_cfl_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_EE1.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_EE2.json', False],
-    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_RK4_0_linear.json', False],
+#    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_RK4_0_linear.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_RK4_0_linear_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_RK4_1_cubic.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_RK4_1_cubic_local_cfl.json', False],
@@ -160,13 +160,13 @@ OBSTACLE_2D_LOW_PATHS = [
 ]
 
 OBSTACLE_2D_HIGH_PATHS = [
-    ['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_0_linear.json', False],
+#    ['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_0_linear.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_0_linear_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_1_cubic.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_1_cubic_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_1_cubic_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_1_cubic_local_cfl_no_clamped_redistro.json', False],
-    ['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_2_polynomial.json', False],
+#    ['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_2_polynomial.json', False],
     ['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_2_polynomial_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_2_polynomial_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_high/obstacle_2d_high_conserving_2_polynomial_local_cfl_no_clamped_redistro.json', False],
@@ -196,7 +196,7 @@ HIGHRES_PATHS = [
     ['../scenes/test_cases/3d_highres/3d_highres_no_obstacle_cfl_40_conserving_0_linear_local_cfl.json', True],
 ]
 
-for param, requiresVDB in PLUME_2D_LOW_PATHS + PLUME_2D_HIGH_PATHS:
+""" for param, requiresVDB in PLUME_2D_LOW_PATHS + PLUME_2D_HIGH_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -206,9 +206,9 @@ for param, requiresVDB in PLUME_2D_LOW_PATHS + PLUME_2D_HIGH_PATHS:
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
 
 os.chdir(PATH_TO_MANTA)
-subprocess.run(["make", "-j4"])
+subprocess.run(["make", "-j4"]) """
 
-for param, requiresVDB in OBSTACLE_2D_HIGH_PATHS:
+for param, requiresVDB in OBSTACLE_2D_HIGH_PATHS + OBSTACLE_2D_LOW_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)

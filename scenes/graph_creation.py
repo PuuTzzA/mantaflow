@@ -134,7 +134,8 @@ def create_combined_graph_old(data_array, data_names, interested_fields, title, 
 #                      title="Fixed Shear Flow Field", include_cfl=True, include_extra_stats=False)
 
 
-def create_combined_graph(data_array, data_names, interested_fields, title, include_title=True, include_cfl=True, include_dt=True, include_extra_stats=True, export_path="./exports/combinded.png", figsize=(12,4), yAxisLabel = "---"):
+def create_combined_graph(data_array, data_names, interested_fields, title, include_title=True, include_cfl=True, include_dt=True, include_extra_stats=True, export_path="./exports/combinded.png", figsize=(12,4), yAxisLabel = "---", 
+                          labelOrder = None, linestyles=['solid'], linewidths=[3.5], colors=plt.cm.tab10.colors[0], margins=(.1, .1)):
     """
     Creates and saves a combined multi-line graph showing the evolution of various fields over time.
 
@@ -183,8 +184,11 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         frames_sets.append(field_frames)
 
     #plt.style.use("seaborn-v0_8-deep")
-    plt.style.use("seaborn-v0_8-notebook")
-    #plt.style.use("default")
+    #plt.style.use("seaborn-v0_8-notebook")
+    plt.style.use("classic")
+
+    plt.rcParams["legend.fontsize"] = "medium"  # or a number like 10
+    plt.rcParams["axes.labelsize"] = "medium"
 
     mpl.rcParams.update({
         "text.usetex": False,
@@ -211,7 +215,8 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
             median = np.median(frames)
 
             data_name = data_names[i]
-            ax[current_ax].plot(np.array(frames_sets[i]["time"]), frames, linewidth=2.5, label=f'{data_name}', zorder=2)
+            ax[current_ax].plot(np.array(frames_sets[i]["time"]), frames, 
+                                color=colors[i % len(colors)], linewidth=linewidths[i % len(linewidths)], linestyle=linestyles[i % len(linestyles)], label=f'{data_name}', zorder=2)
             if include_extra_stats:
                 ax[current_ax].axhline(mean, color=COLOR_THEMES[i % len(COLOR_THEMES)]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
                 ax[current_ax].axhline(median, color=COLOR_THEMES[i % len(COLOR_THEMES)]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
@@ -219,11 +224,21 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
                 ax[current_ax].axhline(maximum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
             ax[current_ax].set_ylabel(yAxisLabel)
             #ax[current_ax].set_title(f"{key} Over Time")
-            ax[current_ax].legend(loc='best')
-            #ax[current_ax].grid(True)
+
+            ax[current_ax].set_axisbelow(True)
+            ax[current_ax].grid(True, linestyle="-", color='gray', linewidth=0.5, alpha=0.3)
             ax[current_ax].ticklabel_format(style='plain', axis='y', useOffset=False)
             
         current_ax += 1
+      
+    handles, labels = plt.gca().get_legend_handles_labels()
+
+    if labelOrder is not None:
+        plt.legend([handles[i] for i in labelOrder], [labels[i] for i in labelOrder], framealpha=0.5, edgecolor='black', loc="upper left", bbox_to_anchor=(1.05, 1))
+    else:
+        plt.legend(loc='best')
+
+    plt.margins(x=margins[0], y=margins[1])  # 5% padding on both axes
 
     plt.xlabel("Time")
     if include_title:
