@@ -164,7 +164,7 @@ if (GUI):
     if doConserving and not doParticleLevelSet:
         gui.nextParts()
         
-    #gui.pause()
+    gui.pause()
 
 # Data collection and exportation
 data_collector = None
@@ -221,18 +221,21 @@ while (s.timeTotal < params["max_time"]):
 
     else:
         vel_extrapolated.copyFrom(vel)
-        #extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+        extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
         #  _____ _        _____ _   _ ___ ____  _ _ _ 
         # |  ___(_)_  __ |_   _| | | |_ _/ ___|| | | |
         # | |_  | \ \/ /   | | | |_| || |\___ \| | | |
         # |  _| | |>  <    | | |  _  || | ___) |_|_|_|
         # |_|   |_/_/\_\   |_| |_| |_|___|____/(_|_|_)
         # 
-        extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
+        #extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
 
         if not doParticleLevelSet:
             tracingMethod = 1
             massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma,interpolationType=interpolationMethod, tracingMethod=tracingMethod)
+            
+            #massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma, interpolationType=interpolationMethod, tracingMethod=0, redistributeClamped=True)
+
             setFlagsFromDensity (flags=flags_n_plus_one, density=innen1außen0)       
         else:
             advectParticleLevelSet( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, vel=vel_extrapolated, flags=flags_n )
@@ -270,7 +273,7 @@ while (s.timeTotal < params["max_time"]):
     maxVel = getMaxVal(grid=curl, flags=flags_n) # flags param does nothign for now
     calculateCurl(vel=vel, curl=curl, flags=flags_n)
 
-    data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
+    #data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
 
     s.step()
 

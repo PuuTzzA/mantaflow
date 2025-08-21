@@ -6,9 +6,9 @@
   "resolutionY": 70,
   "resolutionZ": 70,
 
-  "layout": "drop",
+  "layout": "dam",
   "doConserving": true,
-  "interpolationMethod": 2,
+  "interpolationMethod": 0,
   "doParticleLevelSet": false,
 
   "exportData": false,

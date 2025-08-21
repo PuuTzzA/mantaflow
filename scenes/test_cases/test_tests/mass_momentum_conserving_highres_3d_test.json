@@ -2,12 +2,12 @@
   "title": "cccdalsdkj",
 
   "dimension": 3,
-  "resolutionX": 256,
-  "resolutionY": 512,
-  "resolutionZ": 10,
+  "resolutionX": 56,
+  "resolutionY": 56,
+  "resolutionZ": 56,
 
   "doOpen": true,
-  "doObstacle": false,
+  "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "RK4",
   "interpolationMethod": 2,

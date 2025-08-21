@@ -388,7 +388,7 @@ template<> void GridPainter<int>::paint() {
 	 if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
-	if (true){ // THOMAS true is show obstacles as blue sqares
+	if (false){ // THOMAS true is show obstacles as blue sqares
 		const int dm     = getDispMode();
 		const Real scale = getScale();
 		const float dx   = mLocalGrid->getDx();
@@ -426,7 +426,7 @@ template<> void GridPainter<int>::paint() {
 		}
 		glEnd();    
 	} else{
-		return; //THOMAS
+		//return; //THOMAS
 		float dx = mLocalGrid->getDx();
 		Vec3 box[4];
 		glColor3f(0.5,0,0);
@@ -438,8 +438,8 @@ template<> void GridPainter<int>::paint() {
 		rbox = false;
 		if (drawLines) {
 			//glDepthFunc(GL_LESS);
-			//glBegin(GL_LINES);
-			glBegin(GL_QUADS);
+			glBegin(GL_LINES);
+			//glBegin(GL_QUADS);
 
 			FOR_P_SLICE(mLocalGrid, mDim, mPlane) {
 
@@ -447,8 +447,8 @@ template<> void GridPainter<int>::paint() {
 				flag = mLocalGrid->get(p);
 
 				if (flag & FlagGrid::TypeObstacle) {
-					//glColor3f(0.2,0.2,0.2); // dark gray
-					glColor3f(0.0, 0.0, 1.0);
+					glColor3f(0.2,0.2,0.2); // dark gray
+					//glColor3f(0.0, 0.0, 1.0); //THOMAS
 				} else if (flag & FlagGrid::TypeOutflow) {
 					glColor3f(0.9,0.3,0);   // orange
 				} else if (flag & FlagGrid::TypeEmpty) {
@@ -484,7 +484,7 @@ void projectImg( SimpleImage& img, const Grid<Real>& val, int shadeMode=0, Real 
 
 // THOMAS THOMAS
 // Paint box colors (inverted, white background + white foreground inverted)
-template<> void GridPainter<Real>::paint() {
+/* template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane < 0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
 		return;
 	
@@ -549,10 +549,10 @@ template<> void GridPainter<Real>::paint() {
 	}
 
 	glEnd();    
-}
+} */
 // THOMAS END
 // THOMAS END
-/* 
+
 // Paint box colors
 template<> void GridPainter<Real>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim] || !mFlags || !(*mFlags))
@@ -617,15 +617,15 @@ template<> void GridPainter<Real>::paint() {
 
 	glEnd();    
 }
- */
+
 // Paint velocity vectors
 template<> void GridPainter<Vec3>::paint() {
 	if (!mObject || mHide || mHideLocal || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 	
 	const int dm     = getDispMode();
-	//const Real scale = getScale();
-	const Real scale = 0.0; // THOMAS THOMAS
+	const Real scale = getScale();
+	//const Real scale = 0.0; // THOMAS THOMAS
 	const float dx   = mLocalGrid->getDx();
 	const bool mac   = mLocalGrid->getType() & GridBase::TypeMAC;
 

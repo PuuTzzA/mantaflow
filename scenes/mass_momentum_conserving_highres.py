@@ -98,7 +98,7 @@ gui = None
 if (GUI) and not exportVDBs:
     gui = Gui()
     gui.show( True ) 
-    gui.pause()
+    #gui.pause()
 
 data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                  export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
