@@ -133,9 +133,22 @@ def create_combined_graph_old(data_array, data_names, interested_fields, title, 
 #create_combined_graph(data_array=[data_1, data_2], data_names=["Traditional", "Mass Momemtum Conserving"], interested_fields=["testField"], 
 #                      title="Fixed Shear Flow Field", include_cfl=True, include_extra_stats=False)
 
+def set_custom_margins(ax, left=0.1, right=0.1, bottom=0.1, top=0.1):
+    """
+    Set asymmetric margins for an Axes, relative to data range.
+    Fractions are relative to (max - min).
+    """
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+
+    dx = xmax - xmin
+    dy = ymax - ymin
+
+    ax.set_xlim(xmin - left*dx, xmax + right*dx)
+    ax.set_ylim(ymin - bottom*dy, ymax + top*dy)
 
 def create_combined_graph(data_array, data_names, interested_fields, title, include_title=True, include_cfl=True, include_dt=True, include_extra_stats=True, export_path="./exports/combinded.png", figsize=(12,4), yAxisLabel = "---", 
-                          labelOrder = None, linestyles=['solid'], linewidths=[3.5], colors=plt.cm.tab10.colors[0], margins=(.1, .1)):
+                          labelOrder = None, linestyles=['solid'], linewidths=[3.5], colors=plt.cm.tab10.colors[0], margins=(.1, .1), allTextSize = 10, data_array_2=None):
     """
     Creates and saves a combined multi-line graph showing the evolution of various fields over time.
 
@@ -151,6 +164,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         figsize (tuple of number): Size of one individual graph.
     """
     frames_sets = []
+    frames_sets_2 = []
 
     for data in data_array:
         frames = data["frame_data"]
@@ -183,22 +197,91 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         
         frames_sets.append(field_frames)
 
+    if data_array_2 is not None:
+        for data in data_array_2:
+            frames = data["frame_data"]
+            if not frames:
+                print("No frame data collected")
+                return
+            
+            field_frames = {}
+            field_frames["time"] = []
+            if include_cfl:
+                field_frames["cfl"] = []
+            if include_dt:
+                field_frames["dt"] = []
+            for interested_field, target in interested_fields:
+                field_frames[f"{interested_field} {target}"] = []
+                
+            iter = 0
+            for key, grid in frames.items():
+                field_frames["time"].append(float(grid["dt"]) + (0 if iter == 0 else field_frames["time"][iter - 1]))
+                iter += 1
+
+                if include_cfl:
+                    field_frames["cfl"].append(grid["cfl"])
+                
+                if include_dt:
+                    field_frames["dt"].append(grid["dt"])
+
+                for interested_field, target in interested_fields:
+                    field_frames[f"{interested_field} {target}"].append(grid[interested_field][target])
+            
+            frames_sets_2.append(field_frames)
+
     #plt.style.use("seaborn-v0_8-deep")
     #plt.style.use("seaborn-v0_8-notebook")
     plt.style.use("classic")
 
-    plt.rcParams["legend.fontsize"] = "medium"  # or a number like 10
-    plt.rcParams["axes.labelsize"] = "medium"
+    plt.rcParams["legend.fontsize"] = allTextSize  # or a number like 10
+    plt.rcParams["axes.labelsize"] = allTextSize
+    plt.rcParams["xtick.labelsize"] = allTextSize - 2
+    plt.rcParams["ytick.labelsize"] = allTextSize - 2
 
     mpl.rcParams.update({
         "text.usetex": False,
-        "font.family": "serif",
+        "font.family": "TeX Gyre Pagella",
         "mathtext.fontset": "cm"   # uses Matplotlib’s Computer Modern lookalike
     })
 
+    if False:
+        # Create a dummy figure for the legend
+        fig_legend = plt.figure(figsize=(6, 1))
+        ax_legend = fig_legend.add_subplot(111)
+        ax_legend.axis('off')  # hide axes
+
+        handles = []
+        labels = []
+
+        # Create dummy lines for the legend
+        for i in range(len(data_array)):
+            data_name = data_names[i]
+            line_color = colors[i % len(colors)]
+            line_style = linestyles[i % len(linestyles)]
+            line_width = linewidths[i % len(linewidths)]
+            dummy_line, = ax_legend.plot([], [], color=line_color, linestyle=line_style, linewidth=line_width, label=data_name)
+            handles.append(dummy_line)
+            labels.append(data_name)
+
+        if labelOrder is not None:
+            ax_legend.legend([handles[i] for i in labelOrder], [labels[i] for i in labelOrder], loc='center', ncol=1, framealpha=1, edgecolor='black', fancybox=False, shadow=False)
+            pass
+        else:
+            plt.legend(loc='best')
+
+        # Add legend to figure
+        
+        # Save legend only
+        fig_legend.savefig(export_path, bbox_inches='tight')
+        plt.close(fig_legend)
+
+        return
+
     amount = len(interested_fields) + (1 if include_cfl else 0) + (1 if include_dt else 0)
-    fig, ax = plt.subplots(amount, 1, figsize=(figsize[0], figsize[1] * amount), sharex=True)
-    ax = np.atleast_1d(ax)
+    ncols = 2 if data_array_2 is not None else 1
+    fig, ax = plt.subplots(amount, ncols, figsize=(figsize[0] * ncols, figsize[1] * amount), sharex=True, sharey=True)
+
+    ax = np.atleast_2d(ax)
 
     current_ax = 0
     for key, value in frames_sets[0].items():
@@ -215,30 +298,60 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
             median = np.median(frames)
 
             data_name = data_names[i]
-            ax[current_ax].plot(np.array(frames_sets[i]["time"]), frames, 
+            ax[current_ax, 0].plot(np.array(frames_sets[i]["time"]), frames, 
                                 color=colors[i % len(colors)], linewidth=linewidths[i % len(linewidths)], linestyle=linestyles[i % len(linestyles)], label=f'{data_name}', zorder=2)
             if include_extra_stats:
-                ax[current_ax].axhline(mean, color=COLOR_THEMES[i % len(COLOR_THEMES)]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
-                ax[current_ax].axhline(median, color=COLOR_THEMES[i % len(COLOR_THEMES)]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
-                ax[current_ax].axhline(minimum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["min"], linestyle=':', linewidth=1.2, label=f'Min{data_name}: {minimum:.2f}', zorder=1)
-                ax[current_ax].axhline(maximum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
-            ax[current_ax].set_ylabel(yAxisLabel)
+                ax[current_ax, 0].axhline(mean, color=COLOR_THEMES[i % len(COLOR_THEMES)]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
+                ax[current_ax, 0].axhline(median, color=COLOR_THEMES[i % len(COLOR_THEMES)]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
+                ax[current_ax, 0].axhline(minimum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["min"], linestyle=':', linewidth=1.2, label=f'Min{data_name}: {minimum:.2f}', zorder=1)
+                ax[current_ax, 0].axhline(maximum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
+            ax[current_ax, 0].set_ylabel(yAxisLabel)
             #ax[current_ax].set_title(f"{key} Over Time")
 
-            ax[current_ax].set_axisbelow(True)
-            ax[current_ax].grid(True, linestyle="-", color='gray', linewidth=0.5, alpha=0.3)
-            ax[current_ax].ticklabel_format(style='plain', axis='y', useOffset=False)
+            ax[current_ax, 0].set_axisbelow(True)
+            ax[current_ax, 0].grid(True, linestyle="-", color='gray', linewidth=0.5, alpha=0.3)
+            ax[current_ax, 0].ticklabel_format(style='plain', axis='y', useOffset=False)
             
+        if data_array_2 is not None:
+            for i in range(len(data_array_2)):     
+                frames = np.array(frames_sets_2[i][key])
+                minimum = np.min(frames)
+                maximum = np.max(frames)
+                mean = np.mean(frames)
+                median = np.median(frames)
+
+                data_name = data_names[i]  # assumes you have names for second dataset
+                ax[current_ax, 1].plot(np.array(frames_sets_2[i]["time"]), frames, 
+                                    color=colors[i % len(colors)], 
+                                    linewidth=linewidths[i % len(linewidths)], 
+                                    linestyle=linestyles[i % len(linestyles)], 
+                                    label=f'{data_name}', zorder=2)
+                if include_extra_stats:
+                    ax[current_ax, 1].axhline(mean, color=COLOR_THEMES[i % len(COLOR_THEMES)]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
+                    ax[current_ax, 1].axhline(median, color=COLOR_THEMES[i % len(COLOR_THEMES)]["median"], linestyle='--', linewidth=1.2, label=f'Median{data_name}: {median:.2f}', zorder=1)
+                    ax[current_ax, 1].axhline(minimum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["min"], linestyle=':', linewidth=1.2, label=f'Min{data_name}: {minimum:.2f}', zorder=1)
+                    ax[current_ax, 1].axhline(maximum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
+
+                ax[current_ax, 1].set_axisbelow(True)
+                ax[current_ax, 1].grid(True, linestyle="-", color='gray', linewidth=0.5, alpha=0.3)
+                ax[current_ax, 1].ticklabel_format(style='plain', axis='y', useOffset=False)
+
         current_ax += 1
       
     handles, labels = plt.gca().get_legend_handles_labels()
 
     if labelOrder is not None:
-        plt.legend([handles[i] for i in labelOrder], [labels[i] for i in labelOrder], framealpha=0.5, edgecolor='black', loc="upper left", bbox_to_anchor=(1.05, 1))
+        plt.legend([handles[i] for i in labelOrder], [labels[i] for i in labelOrder], framealpha=1, edgecolor='black', 
+                   loc='upper center', bbox_to_anchor=(0.5, 1.23), fancybox=False, shadow=False)
+        pass
     else:
         plt.legend(loc='best')
 
-    plt.margins(x=margins[0], y=margins[1])  # 5% padding on both axes
+    #plt.margins(x=margins[0], y=margins[1])  # 5% padding on both axes
+    for axi in ax.flat:   # works whether ax is 1D or 2D
+        axi.margins(x=margins[0], y=margins[1])
+
+        set_custom_margins(axi, left=0, right=0, bottom=0.05, top=0.275)
 
     plt.xlabel("Time")
     if include_title:

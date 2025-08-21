@@ -2,7 +2,7 @@
   "title": "3d_highres_no_obstacle_cfl_40_conserving_0_linear_local_cfl",
   "dimension": 3,
   "resolutionX": 256,
-  "resolutionY": 256,
+  "resolutionY": 384,
   "resolutionZ": 256,
   "doOpen": true,
   "doObstacle": false,
@@ -14,7 +14,7 @@
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
-  "max_time": 120,
+  "max_time": 100,
   "maxCFL": 40,
   "dt": 3
 }

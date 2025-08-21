@@ -76,14 +76,15 @@ if doObstacle:
     mesh.computeLevelset(phiObs, 1)
 
 #prepare grids
-bWidth=1
+bWidth=0
 flags.initDomain(boundaryWidth=bWidth) 
+
+if doObstacle:
+    setObstacleFlags(flags=flags, phiObs=phiObs) #, fractions=fractions)
 
 if doOpen or True:
     setOpenBound(flags, bWidth,'xXYzZ',FlagOutflow|FlagEmpty) 
 
-if doObstacle:
-    setObstacleFlags(flags=flags, phiObs=phiObs) #, fractions=fractions)
 flags.fillGrid()
 
 source = s.create(Cylinder, center=gs*vec3(0.5,0.125,0.5), radius=res*0.15, z=gs*vec3(0, 0.051, 0))
@@ -109,7 +110,7 @@ data_collector.init()
 num_steps = 0
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] and num_steps < 110:
+while s.timeTotal < params["max_time"] and num_steps < 120:
     num_steps += 1
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)

@@ -11,6 +11,7 @@
 #include <numeric>
 #include <algorithm>
 #include <functional>
+#include <thread>
 
 namespace Manta
 {
@@ -1283,15 +1284,42 @@ namespace Manta
 
         if (!water)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod, redistributeClamped);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType, tracingMethod, redistributeClamped);
+            std::thread tx([&]
+                           { fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod, redistributeClamped); });
+
+            std::thread ty([&]
+                           { fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType, tracingMethod, redistributeClamped); });
+
+            std::thread tz([&]
+                           { fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType, tracingMethod, redistributeClamped); });
+
+            tx.join();
+            ty.join();
+            tz.join();
+
+            // fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod, redistributeClamped);
+            // fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
+            // fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, nullptr, MAC_Z, interpolationType, tracingMethod, redistributeClamped);
         }
         else
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod, redistributeClamped);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod, redistributeClamped);
+            std::thread tx([&]
+                           { fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod, redistributeClamped); });
+
+            std::thread ty([&]
+                           { fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod, redistributeClamped); });
+
+            std::thread tz([&]
+                           { fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod, redistributeClamped); });
+
+            // Wait for all to finish
+            tx.join();
+            ty.join();
+            tz.join();
+
+            // fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod, redistributeClamped);
+            // fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
+            // fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod, redistributeClamped);
         }
 
         knGrids2MAC(grid, velX, velY, velZ);

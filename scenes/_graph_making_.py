@@ -37,70 +37,36 @@ data_shear_flow_low = [
     #'/1_fixed_vel_shear_flow_low_cfl/shear_flow_traditional_RK4_3_monotone_hermitn'
 ]
 
-data_simple_plume_low = [
-    '/3_simple_plume/cfl_07/plume_2d_low_conserving_0_linear',
-    '/3_simple_plume/cfl_07/plume_2d_low_conserving_1_cubic',
-    #'/3_simple_plume/cfl_07/plume_2d_low_conserving_1_cubic_no_clamped_redistro',
-    '/3_simple_plume/cfl_07/plume_2d_low_conserving_2_polynomial',
-    #'/3_simple_plume/cfl_07/plume_2d_low_conserving_2_polynomial_no_clamped_redistro',
-    '/3_simple_plume/cfl_07/plume_2d_low_traditional_RK4_0_linear',
+data_simple_plume_cfl_5 = [
+    '/3_simple_plume/cfl_05/plume_2d_low_conserving_2_polynomial_no_clamped_redistro',
+    '/3_simple_plume/cfl_05/plume_2d_low_traditional_RK4_0_linear',
+
+    '/3_simple_plume/cfl_05/plume_2d_low_conserving_0_linear',
+    '/3_simple_plume/cfl_05/plume_2d_low_conserving_2_polynomial',
 ]
 
-data_simple_obstacle_low = [
-    '/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_0_linear',
-    #'/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_1_cubic',
-    #'/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_1_cubic_no_clamped_redistro',
-    '/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_2_polynomial',
-    '/4_simple_obstacle/cfl_7/obstacle_2d_low_conserving_2_polynomial_no_clamped_redistro',
-    '/4_simple_obstacle/cfl_7/obstacle_2d_low_traditional_RK4_0_linear',
+data_simple_obstacle_cfl_5 = [
+    '/4_simple_obstacle/cfl_05/obstacle_2d_low_conserving_2_polynomial_no_clamped_redistro',
+    '/4_simple_obstacle/cfl_05/obstacle_2d_low_traditional_RK4_0_linear',
+    '/4_simple_obstacle/cfl_05/obstacle_2d_low_conserving_0_linear',
+    '/4_simple_obstacle/cfl_05/obstacle_2d_low_conserving_2_polynomial',
 ]
 
-data_simple_obstacle_high = [
-    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_1_cubic',
-    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_1_cubic_local_cfl',
-    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_2_polynomial',
-    '/4_simple_obstacle/cfl_20/obstacle_2d_high_conserving_2_polynomial_local_cfl',
+data_simple_plume_cfl_20 = [
+    '/3_simple_plume/cfl_20/plume_2d_high_conserving_0_linear',
+    '/3_simple_plume/cfl_20/plume_2d_high_conserving_2_polynomial',
+    '/3_simple_plume/cfl_20/plume_2d_high_conserving_2_polynomial_local_cfl',
+    '/3_simple_plume/cfl_20/plume_2d_high_traditional_RK4_0_linear',
 ]
 
-data_plume_2d_high = [
-    '/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear',
-    #'/simple_plume_2d_high/simple_plume_2d_high_conserving_0_linear_local_cfl',
-    '/simple_plume_2d_high/simple_plume_2d_high_conserving_1_cubic',
-    #'/simple_plume_2d_high/simple_plume_2d_high_conserving_1_cubic_local_cfl',
-    '/simple_plume_2d_high/simple_plume_2d_high_conserving_2_polynomial',
-    #'/simple_plume_2d_high/simple_plume_2d_high_conserving_2_polynomial_local_cfl',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_EE1',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_EE2',
-    '/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_0_linear',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_0_linear_local_cfl',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_1_cubic_local_cfl',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_2_polynomial_local_cfl',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite',
-    #'/simple_plume_2d_high/simple_plume_2d_high_traditional_RK4_3_monotone_hermite_local_cfl',
+data_simple_obstacle_cfl_30 = [
+    '/4_simple_obstacle/cfl_30/obstacle_2d_high_conserving_0_linear',
+    '/4_simple_obstacle/cfl_30/obstacle_2d_high_conserving_2_polynomial',
+    '/4_simple_obstacle/cfl_30/obstacle_2d_high_conserving_2_polynomial_local_cfl',
+    '/4_simple_obstacle/cfl_30/obstacle_2d_high_traditional_RK4_0_linear',
 ]
 
-data_plume_3d_high = [
-    '/3d_final/simple_plume_3d_high/plume_3d_high_conserving_0_linear',
-    '/3d_final/simple_plume_3d_high/plume_3d_high_conserving_0_linear_local_cfl',
-    '/3d_final/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial_local_cfl',
-    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_EE1',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_EE2',
-    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_0_linear',
-    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_0_linear_local_cfl',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_1_cubic',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_1_cubic_local_cfl',
-    '/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_2_polynomial',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_2_polynomial_local_cfl',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_3_monotone_hermite',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_traditional_RK4_3_monotone_hermite_local_cfl',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_1_cubic',
-    #'/3d_final/simple_plume_3d_high/plume_3d_high_conserving_1_cubic_local_cfl',
-]
-
-data = data_zalesak_rotation
+data = data_shear_flow_low
 interested_fields = [["testField", "sum"]] # for fixed vel Field
 #interested_fields = [["fixed_volume", "sum"]] # for plume
 
@@ -119,17 +85,49 @@ for d in data:
 	    input_datas.append(json.load(f))
 
 
+data_2 = data_shear_flow_low
+input_datas_2 = []
+for d in data_2:
+    path = (BASEDIR / d.strip('/') / FILENAME).resolve()
+    with open(path) as f:
+	    input_datas_2.append(json.load(f))
+
+
 # Create combined Graph
 
-""" #1_shear_flow
+#1_shear_flow
+input_titles = ["conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "semi-Lagrangian, linear interpolation"]
+title = "shear_flow_total_mass_2"
+output_path = input_paths[0].parent.parent / f"{title}.pdf"
+labelOrder = [3, 1, 0, 2]
+
+linestyles = ['solid', 'solid', (0, (7.75, 7.75)), 'solid']
+linewidths = [5.5]
+blue =  plt.cm.tab10.colors[0]
+orange =plt.cm.tab10.colors[1] 
+green = plt.cm.tab10.colors[2]
+red =   plt.cm.tab10.colors[3]
+colors = [green, blue, orange, red]
+
+margins = (0.1, 0.1)
+figsize = (11.8, 7.5)
+allTextSize = 24
+
+create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
+                      title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=figsize, 
+                      yAxisLabel="Total mass", labelOrder=labelOrder, linestyles=linestyles, linewidths=linewidths, colors=colors, margins=margins, allTextSize=allTextSize)
+
+
+
+""" #2_zalesak_rotation
 interested_fields = [["testField", "sum"]]
 input_titles = ["conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "semi-Lagrangian, linear interpolation"]
-title = "shear_flow_total_mass"
+title = "shear_flow_total_mass2"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
 labelOrder = [3, 1, 0, 2]
 
 linestyles = ['solid', 'solid', 'dashed', 'solid']
-linewidths = [3.5]
+linewidths = [5]
 blue =  plt.cm.tab10.colors[0]
 orange =plt.cm.tab10.colors[1] 
 green = plt.cm.tab10.colors[2]
@@ -145,34 +143,81 @@ create_combined_graph(data_array=input_datas, data_names=input_titles, intereste
  """
 
 
-
-#2_zalesak_rotation
-interested_fields = [["testField", "sum"]]
-input_titles = ["conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "semi-Lagrangian, linear interpolation"]
-title = "shear_flow_total_mass"
+""" #3_simple_plume_cfl_5
+#input_titles = ["conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "semi-Lagrangian, linear interpolation"]
+title = "simple_plume_cfl_05"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
-labelOrder = [3, 1, 0, 2]
+labelOrder = [1, 2, 0, 3]
+#labelOrder = None
 
-linestyles = ['solid', 'solid', 'solid', 'solid']
-linewidths = [3.5]
+linestyles = ['solid', 'solid', 'solid', (0, (7.75, 7.75))]
+linewidths = [5.5]
 blue =  plt.cm.tab10.colors[0]
 orange =plt.cm.tab10.colors[1] 
 green = plt.cm.tab10.colors[2]
 red =   plt.cm.tab10.colors[3]
-colors = [green, blue, orange, red]
+colors = [green, red, blue, orange]
+
+margins = (0.1, 0.15)
+figsize = (7.5, 5)
+
+allTextSize = 24
+
+create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
+                      title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=figsize, 
+                      yAxisLabel="Total mass", labelOrder=labelOrder, linestyles=linestyles, linewidths=linewidths, colors=colors, margins=margins, 
+                      allTextSize=allTextSize, data_array_2=None)
+ """
+
+
+""" #3_simple_obstacle_cfl_5
+input_titles = ["conserving, polynomial interpolation, no redistribution", "semi-Lagrangian, linear interpolation", "conserving, linear interpolation", "conserving, polynomial interpolation"]
+title = "legend_2"
+output_path = input_paths[0].parent.parent / f"{title}.pdf"
+labelOrder = [1, 2, 0, 3]
+#labelOrder = None
+
+linestyles = ['solid', 'solid', 'solid', (0, (7.75, 7.75))]
+linewidths = [5.5]
+blue =  plt.cm.tab10.colors[0]
+orange =plt.cm.tab10.colors[1] 
+green = plt.cm.tab10.colors[2]
+red =   plt.cm.tab10.colors[3]
+colors = [green, red, blue, orange]
+
+margins = (0.1, 0.15)
+figsize = (7.5, 5)
+
+allTextSize = 24
+
+create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
+                      title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=figsize, 
+                      yAxisLabel="Total mass", labelOrder=labelOrder, linestyles=linestyles, linewidths=linewidths, colors=colors, margins=margins, allTextSize=allTextSize)
+ """
+
+
+""" # plume and obstacle high
+#input_titles = ["conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "semi-Lagrangian, linear interpolation"]
+title = "simple_obstacle_cfl_30"
+output_path = input_paths[0].parent.parent / f"{title}.pdf"
+labelOrder = [1, 2, 0, 3]
+#labelOrder = None
+
+linestyles = ['solid', 'solid', 'solid', (0, (7.75, 5.5))]
+linewidths = [5.5]
+blue =  plt.cm.tab10.colors[0]
+orange =plt.cm.tab10.colors[1] 
+green = plt.cm.tab10.colors[2]
+red =   plt.cm.tab10.colors[3]
+colors = [green, red, blue, orange]
 
 margins = (0.086666, 0.13)
-figsize = (15, 5)
+figsize = (7.5, 5)
 
 create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
                       title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=figsize, 
                       yAxisLabel="Total mass", labelOrder=labelOrder, linestyles=linestyles, linewidths=linewidths, colors=colors, margins=margins)
-
-
-
-
-
-
+ """
 
 
 
