@@ -5,7 +5,7 @@ import sys
 
 params = {}
 param_path = "../scenes/test_cases/test_tests/mmc_liquid_test.json"
-EXPORTS_BASE_DIR = "../exports/test/"
+EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
@@ -221,22 +221,21 @@ while (s.timeTotal < params["max_time"]):
 
     else:
         vel_extrapolated.copyFrom(vel)
-        extrapolateMACSimple( flags=flags_n, vel=vel_extrapolated, distance=10, intoObs=True )
+        extrapolateMACSimple( flags=flags_n, vel=vel, distance=10, intoObs=True )
         #  _____ _        _____ _   _ ___ ____  _ _ _ 
         # |  ___(_)_  __ |_   _| | | |_ _/ ___|| | | |
         # | |_  | \ \/ /   | | | |_| || |\___ \| | | |
         # |  _| | |>  <    | | |  _  || | ___) |_|_|_|
         # |_|   |_/_/\_\   |_| |_| |_|___|____/(_|_|_)
         # 
-        #extrapolateVelFSM( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
+        #extrapolateVelFSM2D( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
 
         if not doParticleLevelSet:
             tracingMethod = 1
-            massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma,interpolationType=interpolationMethod, tracingMethod=tracingMethod)
+            interpolationMethod = 2
+            massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=innen1außen0, gammaCumulative=innen1außen0_gamma,interpolationType=interpolationMethod, tracingMethod=tracingMethod)
             
-            #massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel_extrapolated, grid=innen1außen0, gammaCumulative=innen1außen0_gamma, interpolationType=interpolationMethod, tracingMethod=0, redistributeClamped=True)
-
-            setFlagsFromDensity (flags=flags_n_plus_one, density=innen1außen0)       
+            setFlagsFromDensity (flags=flags_n_plus_one, density=innen1außen0, level=0.15)       
         else:
             advectParticleLevelSet( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, vel=vel_extrapolated, flags=flags_n )
 
@@ -247,7 +246,11 @@ while (s.timeTotal < params["max_time"]):
             setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=0 )    
 
         interpolationMethod = 0
-        massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
+        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
+        
+        massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=vel, gammaCumulative=vel_gamma, interpolationType=interpolationMethod, tracingMethod=1)
+        
+        #simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod, tracingMethod=1) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
         flags_n.copyFrom(flags_n_plus_one)
 
@@ -259,8 +262,10 @@ while (s.timeTotal < params["max_time"]):
         
         # Apply grid-based forces (gravity)
         addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
+    
+        extrapolateMACSimple( flags=flags_n, vel=vel, distance=10, intoObs=True )
 
-        # Solve for pressure to make the velocity field divergence-free
+        # Solve for pressure to make the velocity field divergence-free     
         setWallBcs(flags=flags_n, vel=vel)    
         solvePressure(flags=flags_n, vel=vel, pressure=pressure)
         #solvePressure(flags=flags_n, vel=vel, pressure=pressure, cgMaxIterFac=0.5, cgAccuracy=5e-4, phi=phi_fluid )
@@ -273,7 +278,7 @@ while (s.timeTotal < params["max_time"]):
     maxVel = getMaxVal(grid=curl, flags=flags_n) # flags param does nothign for now
     calculateCurl(vel=vel, curl=curl, flags=flags_n)
 
-    #data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
+    data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
 
     s.step()
 

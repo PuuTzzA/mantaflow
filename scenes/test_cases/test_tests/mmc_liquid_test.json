@@ -1,5 +1,5 @@
 {
-  "title": "asdf",
+  "title": "liquid_no_flip_semiLagrangian",
 
   "dimension": 2,
   "resolutionX": 70,
@@ -8,7 +8,7 @@
 
   "layout": "dam",
   "doConserving": true,
-  "interpolationMethod": 0,
+  "interpolationMethod": 2,
   "doParticleLevelSet": false,
 
   "exportData": false,
@@ -18,5 +18,5 @@
 
   "max_time": 100,
   "maxCFL": 0.5, 
-  "dt": 20
+  "dt": 1
 }

@@ -6,18 +6,18 @@
   "resolutionY": 128,
   "resolutionZ": 20,
 
-  "scenario" : "shear_flow",
-  "doConserving": true,
-  "tracingMethod": "EE1",
-  "interpolationMethod": 2,
+  "scenario" : "zalesak_rotation",
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 0,
   "redistributeClamped": true,
 
-  "exportData": true,
-  "exportImages": true,
+  "exportData": false,
+  "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 100,
+  "max_time": 10000,
   "maxCFL": 1, 
   "dt": 20
 }

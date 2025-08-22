@@ -107,7 +107,7 @@ if GUI:
     gui.show( True )
 
     gui.nextRealGrid()
-    gui.windowSize(1000, 1000)
+    #gui.windowSize(1000, 1000)
     gui.setCamPos(0, 0, -1.2)
     gui.update()
     gui.screenshot(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / f"{params["scenario"]}_first_frame.png"))
