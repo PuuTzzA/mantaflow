@@ -9,7 +9,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/1_fixed_vel_shear_flow_low_cfl__/"
+    EXPORTS_BASE_DIR = "../exports/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -107,7 +107,7 @@ if GUI:
     gui.show( True )
 
     gui.nextRealGrid()
-    #gui.windowSize(1000, 1000)
+    gui.windowSize(1000, 1000)
     gui.setCamPos(0, 0, -1.2)
     gui.update()
     gui.screenshot(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / f"{params["scenario"]}_first_frame.png"))
@@ -117,7 +117,7 @@ if GUI:
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
                                  export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
                                  trackable_grid_names=[["testField", testField], ["vel_magnitude", velocity_magnitude], [], [], ["testPhi", testPhi]], 
-                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]])
+                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]], ignore_framelength=True)
 
 data_collector.init()
 

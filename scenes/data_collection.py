@@ -10,7 +10,7 @@ import math
 from graph_creation import *
 
 class Data_collectior:
-    def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], image_grids_indeces=[], graph_grids=[]):
+    def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], image_grids_indeces=[], graph_grids=[], ignore_framelength = False):
         self.title = title
         self.base_dir = Path(base_dir).expanduser().resolve() / self.title
 
@@ -29,6 +29,7 @@ class Data_collectior:
         self.tracked_grids_indeces = tracked_grids_indeces
         self.image_grids_indeces = image_grids_indeces
         self.graph_grids = graph_grids
+        self.ignore_framelength = ignore_framelength
 
     def init(self):
         #if self.export_data or self.export_images:
@@ -68,7 +69,9 @@ class Data_collectior:
                 grid = self.trackable_grids[i][1]
                 self.data["frame_data"][str(self.current_frame).zfill(4)][name] = json.loads(realGridStats(grid=grid, flags=flags))
 
-        if self.export_images and gui is not None and (self.last_framerate_frame != solver.frame):
+        condition_not_ignore = self.last_framerate_frame != solver.frame
+        condition_ignore = True #self.last_framerate_frame != int(solver.timeTotal * 0.4)
+        if self.export_images and gui is not None and (condition_ignore if self.ignore_framelength else condition_not_ignore):
         #if self.export_images and gui is not None:
             gui.windowSize(windowSize[0], windowSize[1])
             gui.setCamPos(camPos[0], camPos[1], camPos[2])
@@ -76,7 +79,11 @@ class Data_collectior:
             for i in range(len(self.trackable_grids)):
                 if i in self.image_grids_indeces:
                     name = self.trackable_grids[i][0]
-                    gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(solver.frame)).zfill(4)}.png"))
+                    if not self.ignore_framelength:
+                        gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(solver.frame)).zfill(4)}.png"))
+                    else:
+                        gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(int(solver.timeTotal * 0.4))).zfill(4)}.png"))
+
                     #gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(int(solver.timeTotal * 0.4))).zfill(4)}.png"))
                     #gui.screenshot(str(self.base_dir / f"{name}_frames" / f"{name}_{str(math.floor(self.current_frame)).zfill(4)}.png"))
                     
@@ -88,8 +95,7 @@ class Data_collectior:
             save( name=str(self.base_dir / "vdbs" / f"{self.title}_{solver.frame}.vdb"), objects=objects )
 
         self.current_frame += 1
-        self.last_framerate_frame = solver.frame
-        #self.last_framerate_frame = int(solver.timeTotal * 0.4)
+        self.last_framerate_frame = solver.frame if not self.ignore_framelength else int(solver.timeTotal * 0.4)
 
     def computeStats(self):
         frames = self.data["frame_data"]

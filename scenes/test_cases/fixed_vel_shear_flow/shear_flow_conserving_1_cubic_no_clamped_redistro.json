@@ -1,0 +1,19 @@
+{
+  "title": "shear_flow_conserving_1_cubic_no_clamped_redistro",
+  "dimension": 2,
+  "resolutionX": 128,
+  "resolutionY": 128,
+  "resolutionZ": 100,
+  "scenario": "shear_flow",
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 1,
+  "redistributeClamped": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 1000,
+  "maxCFL": 1,
+  "dt": 10000
+}

@@ -4,29 +4,29 @@ from itertools import product
 import shutil
 
 # Base directory to store JSONs
-CONTAINER_DIR = "fixed_vel_zalesak_rotation"
+CONTAINER_DIR = "fixed_vel_shear_flow"
 BASE_DIR = (Path(__file__).parent / CONTAINER_DIR).resolve()
 shutil.rmtree(BASE_DIR, ignore_errors=True)
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Constant settings
-BASE_TITLE = "zalesak_rotation"
-#BASE_TITLE = "shear_flow"
+#BASE_TITLE = "zalesak_rotation"
+BASE_TITLE = "shear_flow"
 dimension = 2
 resolutionX = 128
 resolutionY = 128
 resolutionZ = 100
 
-scenario = "zalesak_rotation"
-#scenario = "shear_flow"
+#scenario = "zalesak_rotation"
+scenario = "shear_flow"
 
 exportData = True
 exportImages = True
 exportVideos = True
 exportVDBs = False  # This is the flag we will output as True/False in the printed list
 
-max_time = 500
-maxCFL = 5
+max_time = 1000
+maxCFL = 1
 dt = 10000
 
 # Interpolation method names
