@@ -9,12 +9,13 @@
   "doConserving": true,
   "tracingMethod": "RK4",
   "tracingFunction": 0,
+  "redistributeClamped": true,
   "interpolationMethod": 2,
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
-  "max_time": 120,
-  "maxCFL": 40,
-  "dt": 4
+  "max_time": 100,
+  "maxCFL": 30,
+  "dt": 3
 }

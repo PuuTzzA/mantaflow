@@ -10,11 +10,12 @@
   "tracingMethod": "RK4",
   "interpolationMethod": 1,
   "tracingFunction": 1,
+  "redistributeClamped": false,
   "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
-  "max_time": 120,
-  "maxCFL": 40,
-  "dt": 4
+  "max_time": 100,
+  "maxCFL": 30,
+  "dt": 3
 }

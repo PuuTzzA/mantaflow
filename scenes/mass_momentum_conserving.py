@@ -11,7 +11,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
     #EXPORTS_BASE_DIR = "../exports/3d_final/simple_plume_3d_high"
-    EXPORTS_BASE_DIR = "../exports/"
+    EXPORTS_BASE_DIR = "../exports/3d_stuff"
 
 with open(param_path) as f:
     params = json.load(f)

@@ -1,0 +1,21 @@
+{
+  "title": "plume_3d_high_conserving_2_polynomial_no_clamped_redistro",
+  "dimension": 3,
+  "resolutionX": 128,
+  "resolutionY": 256,
+  "resolutionZ": 128,
+  "doOpen": true,
+  "doObstacle": true,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "tracingFunction": 0,
+  "redistributeClamped": false,
+  "interpolationMethod": 2,
+  "exportData": true,
+  "exportImages": false,
+  "exportVideos": false,
+  "exportVDBs": true,
+  "max_time": 100,
+  "maxCFL": 30,
+  "dt": 3
+}
