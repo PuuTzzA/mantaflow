@@ -133,22 +133,24 @@ def create_combined_graph_old(data_array, data_names, interested_fields, title, 
 #create_combined_graph(data_array=[data_1, data_2], data_names=["Traditional", "Mass Momemtum Conserving"], interested_fields=["testField"], 
 #                      title="Fixed Shear Flow Field", include_cfl=True, include_extra_stats=False)
 
-def set_custom_margins(ax, left=0.1, right=0.1, bottom=0.1, top=0.1):
-    """
-    Set asymmetric margins for an Axes, relative to data range.
-    Fractions are relative to (max - min).
-    """
-    xmin, xmax = ax.get_xlim()
-    ymin, ymax = ax.get_ylim()
+def set_custom_margins(ax, left=0, right=0, bottom=0, top=0):
+    ax.autoscale(enable=True, axis='both', tight=True)  # no built-in margins
 
-    dx = xmax - xmin
-    dy = ymax - ymin
+    x0, x1 = ax.get_xlim()
+    y0, y1 = ax.get_ylim()
+    dx = x1 - x0
+    dy = y1 - y0
 
-    ax.set_xlim(xmin - left*dx, xmax + right*dx)
-    ax.set_ylim(ymin - bottom*dy, ymax + top*dy)
+    ax.set_xlim(x0 - dx*left,  x1 + dx*right)
+    ax.set_ylim(y0 - dy*bottom, y1 + dy*top)
+
+    ax.set_autoscalex_on(False)
+    ax.set_autoscaley_on(False)
 
 def create_combined_graph(data_array, data_names, interested_fields, title, include_title=True, include_cfl=True, include_dt=True, include_extra_stats=True, export_path="./exports/combinded.png", figsize=(12,4), yAxisLabel = "---", 
-                          labelOrder = None, linestyles=['solid'], linewidths=[3.5], colors=plt.cm.tab10.colors[0], margins=(.1, .1), allTextSize = 10, data_array_2=None):
+                          labelOrder = None, linestyles=['solid'], linewidths=[3.5], colors=plt.cm.tab10.colors, allTextSize = 10, data_array_2=None,
+                          bBoxAnchor=(0, 0), margins=(0, 0, 0, 0), data_2_share_yAxis=True, data_names2="123456", linestyles2=['solid'], linewidths2=[3.5], 
+                          colors2=plt.cm.tab10.colors, margins2=(0, 0, 0, 0)):
     """
     Creates and saves a combined multi-line graph showing the evolution of various fields over time.
 
@@ -241,7 +243,8 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
     mpl.rcParams.update({
         "text.usetex": False,
         "font.family": "TeX Gyre Pagella",
-        "mathtext.fontset": "cm"   # uses Matplotlib’s Computer Modern lookalike
+        "mathtext.fontset": "cm",   # uses Matplotlib’s Computer Modern lookalike
+        "axes.xmargin": 0,
     })
 
     if False:
@@ -279,7 +282,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
 
     amount = len(interested_fields) + (1 if include_cfl else 0) + (1 if include_dt else 0)
     ncols = 2 if data_array_2 is not None else 1
-    fig, ax = plt.subplots(amount, ncols, figsize=(figsize[0] * ncols, figsize[1] * amount), sharex=True, sharey=True)
+    fig, ax = plt.subplots(amount, ncols, figsize=(figsize[0] * ncols, figsize[1] * amount), sharex=True, sharey=data_2_share_yAxis)
 
     ax = np.atleast_2d(ax)
 
@@ -307,11 +310,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
                 ax[current_ax, 0].axhline(maximum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
             ax[current_ax, 0].set_ylabel(yAxisLabel)
             #ax[current_ax].set_title(f"{key} Over Time")
-
-            ax[current_ax, 0].set_axisbelow(True)
-            ax[current_ax, 0].grid(True, linestyle="-", color='gray', linewidth=0.5, alpha=0.3)
-            ax[current_ax, 0].ticklabel_format(style='plain', axis='y', useOffset=False)
-            
+                    
         if data_array_2 is not None:
             for i in range(len(data_array_2)):     
                 frames = np.array(frames_sets_2[i][key])
@@ -320,11 +319,11 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
                 mean = np.mean(frames)
                 median = np.median(frames)
 
-                data_name = data_names[i]  # assumes you have names for second dataset
+                data_name = data_names2[i]  # assumes you have names for second dataset
                 ax[current_ax, 1].plot(np.array(frames_sets_2[i]["time"]), frames, 
-                                    color=colors[i % len(colors)], 
-                                    linewidth=linewidths[i % len(linewidths)], 
-                                    linestyle=linestyles[i % len(linestyles)], 
+                                    color=colors2[i % len(colors2)], 
+                                    linewidth=linewidths2[i % len(linewidths2)], 
+                                    linestyle=linestyles2[i % len(linestyles2)], 
                                     label=f'{data_name}', zorder=2)
                 if include_extra_stats:
                     ax[current_ax, 1].axhline(mean, color=COLOR_THEMES[i % len(COLOR_THEMES)]["mean"], linestyle='--', linewidth=1.2, label=f'Mean{data_name}: {mean:.2f}', zorder=1)
@@ -332,33 +331,41 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
                     ax[current_ax, 1].axhline(minimum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["min"], linestyle=':', linewidth=1.2, label=f'Min{data_name}: {minimum:.2f}', zorder=1)
                     ax[current_ax, 1].axhline(maximum, color=COLOR_THEMES[i % len(COLOR_THEMES)]["max"], linestyle=':', linewidth=1.2, label=f'Max{data_name}: {maximum:.2f}', zorder=1)
 
-                ax[current_ax, 1].set_axisbelow(True)
-                ax[current_ax, 1].grid(True, linestyle="-", color='gray', linewidth=0.5, alpha=0.3)
-                ax[current_ax, 1].ticklabel_format(style='plain', axis='y', useOffset=False)
-
         current_ax += 1
       
-    handles, labels = plt.gca().get_legend_handles_labels()
+    if data_array_2 is not None:
+        fig = plt.gcf()  
+        handles, labels = ax.flat[0].get_legend_handles_labels()
 
-    if labelOrder is not None:
-        plt.legend([handles[i] for i in labelOrder], [labels[i] for i in labelOrder], framealpha=1, edgecolor='black', 
-                   loc='upper center', bbox_to_anchor=(0.5, 1.23), fancybox=False, shadow=False)
-        pass
-    else:
-        plt.legend(loc='best')
+        fig.legend([handles[i] for i in labelOrder], [labels[i] for i in labelOrder], framealpha=1, edgecolor='black', 
+                    loc='upper center', bbox_to_anchor=bBoxAnchor, fancybox=False, shadow=False)
 
     #plt.margins(x=margins[0], y=margins[1])  # 5% padding on both axes
+    i = 0
     for axi in ax.flat:   # works whether ax is 1D or 2D
-        axi.margins(x=margins[0], y=margins[1])
+        #axi.margins(x=(extraMargins[0], extraMargins[1]), y=(extraMargins[2], extraMargins[3]))
+        axi.set_xlabel("Time")
 
-        set_custom_margins(axi, left=0, right=0, bottom=0.05, top=0.275)
+        axi.grid(True, linestyle="-", color='gray', linewidth=0.5, alpha=0.3)
 
-    plt.xlabel("Time")
+        if data_array_2 is None:
+            if labelOrder is not None:
+                handles, labels = axi.get_legend_handles_labels()
+                axi.legend([handles[i] for i in labelOrder], [labels[i] for i in labelOrder], framealpha=1, edgecolor='black', 
+                        loc='upper center', bbox_to_anchor=bBoxAnchor, fancybox=False, shadow=False)
+            else:
+                axi.legend(loc='best', bbox_to_anchor=(0.5, 1.23))
+
+        marginsCur = margins if i % 2 == 0 else margins2
+        set_custom_margins(axi, marginsCur[0], marginsCur[1], marginsCur[2], marginsCur[3])
+        i += 1
+        #set_xmargin(axi, left=extraMargins[0], right=extraMargins[1])
+
     if include_title:
         fig.suptitle(title, fontsize="x-large")
         plt.tight_layout(rect=[0, 0, 1, .99])
     else:
-        plt.tight_layout()
+        plt.tight_layout(w_pad=1)
     plt.savefig(export_path, bbox_inches="tight")
 
 
