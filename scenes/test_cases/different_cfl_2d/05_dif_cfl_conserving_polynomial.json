@@ -1,25 +1,21 @@
 {
-  "title": "testtest4",
-
+  "title": "05_dif_cfl_conserving_polynomial",
   "dimension": 2,
-  "resolutionX": 148,
-  "resolutionY": 148,
-  "resolutionZ": 148,
-
+  "resolutionX": 362,
+  "resolutionY": 362,
+  "resolutionZ": 362,
   "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "RK4",
+  "tracingFunction": 0,
+  "redistributeClamped": true,
   "interpolationMethod": 2,
-  "tracingFunction": 1,
-  "redistributeClamped":true,
-
   "exportData": true,
   "exportImages": true,
-  "exportVideos": false,
+  "exportVideos": true,
   "exportVDBs": false,
-
   "max_time": 180,
-  "maxCFL": 10, 
+  "maxCFL": 5, 
   "dt": 14
 }

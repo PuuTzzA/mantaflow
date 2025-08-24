@@ -1,25 +1,21 @@
 {
-  "title": "testtest4",
-
+  "title": "20_dif_cfl_traditional_polynomial_local_cfl",
   "dimension": 2,
-  "resolutionX": 148,
-  "resolutionY": 148,
-  "resolutionZ": 148,
-
+  "resolutionX": 181,
+  "resolutionY": 181,
+  "resolutionZ": 181,
   "doOpen": false,
   "doObstacle": true,
-  "doConserving": true,
+  "doConserving": false,
   "tracingMethod": "RK4",
   "interpolationMethod": 2,
   "tracingFunction": 1,
-  "redistributeClamped":true,
-
+  "redistributeClamped": false,
   "exportData": true,
   "exportImages": true,
-  "exportVideos": false,
+  "exportVideos": true,
   "exportVDBs": false,
-
   "max_time": 180,
-  "maxCFL": 10, 
+  "maxCFL": 20, 
   "dt": 14
 }

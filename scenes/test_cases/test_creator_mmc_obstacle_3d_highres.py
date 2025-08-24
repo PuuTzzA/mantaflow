@@ -6,26 +6,26 @@ import shutil
 # Base directory to store JSONs
 CONTAINER_DIR = "3d_highres"
 BASE_DIR = (Path(__file__).parent / CONTAINER_DIR).resolve()
-#shutil.rmtree(BASE_DIR, ignore_errors=True)
+shutil.rmtree(BASE_DIR, ignore_errors=True)
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Constant settings
-BASE_TITLE = "3d_highres_no_obstacle_cfl_40"
+BASE_TITLE = "3d_highres_obstacle_cfl_30"
 dimension = 3
-resolutionX = 300
-resolutionY = 300
-resolutionZ = 300
+resolutionX = 192
+resolutionY = 192
+resolutionZ = 192
 
 doOpen = True
-doObstacle = False
+doObstacle = True
 
 exportData = True
 exportImages = False
 exportVideos = False
 exportVDBs = True  # This is the flag we will output as True/False in the printed list
 
-max_time = 150
-maxCFL = 40
+max_time = 100
+maxCFL = 30
 dt = 3
 
 # Interpolation method names
@@ -43,8 +43,8 @@ tracing_function_names = {
 }
 
 # Settings to vary
-conserving_options = [True]
-tracing_methods = ["EE1", "EE2", "RK4"]
+conserving_options = [True, False]
+tracing_methods = ["RK4"]
 interpolation_methods = [0, 2]  # 3 is invalid when conserving=True
 tracing_functions = [1]
 

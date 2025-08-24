@@ -177,23 +177,36 @@ SIMPLE_PLUME_3D_HIGH = [
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_RK4_3_monotone_hermite_local_cfl.json', True],
 ]
 
-SIMPLE_PLUME_3D_HIGHRES = [
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_conserving_0_linear.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_conserving_0_linear_local_cfl.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_conserving_1_cubic.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_conserving_1_cubic_local_cfl.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_conserving_2_polynomial.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_conserving_2_polynomial_local_cfl.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_EE1.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_EE2.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_0_linear.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_0_linear_local_cfl.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_1_cubic.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_1_cubic_local_cfl.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_2_polynomial.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_2_polynomial_local_cfl.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_3_monotone_hermite.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high_highres/plume_3d_high_highres_traditional_RK4_3_monotone_hermite_local_cfl.json', True],
+DIFFERENT_CFL_2D_PATHS = [
+    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial.json', False],
+    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_traditional_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_traditional_polynomial.json', False],
+                          
+    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial.json', False],
+    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_traditional_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_traditional_polynomial.json', False],
+                           
+    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial.json', False],
+    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_traditional_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_traditional_polynomial.json', False],
+                          
+    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_conserving_polynomial.json', False],
+    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_traditional_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_traditional_polynomial.json', False],
+                           
+    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial.json', False],
+    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_traditional_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_traditional_polynomial.json', False],
+                          
+    ['../scenes/test_cases/different_cfl_2d/01_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/01_dif_cfl_conserving_polynomial.json', False],
+    ['../scenes/test_cases/different_cfl_2d/01_dif_cfl_traditional_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/01_dif_cfl_traditional_polynomial.json', False],
 ]
 
 """ 
@@ -229,7 +242,17 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
 
  """
 
-for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
+""" for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
+
+    if requiresVDB:
+        os.chdir(PATH_TO_MANTA_VDB)
+    else:
+        os.chdir(PATH_TO_MANTA)
+
+    subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
+ """
+
+for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)

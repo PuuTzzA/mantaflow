@@ -1,0 +1,21 @@
+{
+  "title": "40_dif_cfl_traditional_polynomial",
+  "dimension": 2,
+  "resolutionX": 128,
+  "resolutionY": 128,
+  "resolutionZ": 128,
+  "doOpen": false,
+  "doObstacle": true,
+  "doConserving": false,
+  "tracingMethod": "RK4",
+  "interpolationMethod": 2,
+  "tracingFunction": 0,
+  "redistributeClamped": false,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 180,
+  "maxCFL": 40, 
+  "dt": 14
+}
