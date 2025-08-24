@@ -76,7 +76,7 @@ if doOpen:
 
 if doObstacle:
     if dim == 3:
-        obsPos = vec3(0.5, 0.5, 0.5)
+        obsPos = vec3(0.5, 0.56, 0.5)
     else:
         obsPos = vec3(0.5, 0.5605, 0.5) # for 2d
     obsVelVec = vec3(0.6,0.2,0.0) * (1./100.) * float(res) # velocity in grid units for 100 steps
@@ -117,7 +117,7 @@ data_collector.init()
 firstFrame = True
 #main loop
 while s.timeTotal < params["max_time"]: #and data_collector.current_frame < 70:
-    break
+
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
 

@@ -24,8 +24,8 @@ exportImages = False
 exportVideos = False
 exportVDBs = True  # This is the flag we will output as True/False in the printed list
 
-max_time = 100
-maxCFL = 30
+max_time = 85
+maxCFL = 25
 dt = 3
 
 # Interpolation method names
