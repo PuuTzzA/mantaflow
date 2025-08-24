@@ -26,7 +26,7 @@ namespace Manta
 
         void calculateGamma(Grid<Real> &gamma);
 
-        void calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src, Grid<Real> &min, Grid<Real> &max);
+        void calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src, Grid<Real> &min, Grid<Real> &max, bool debug__=false);
 
         void distributeLostMass(Grid<Real>&grid, Grid<Real> &lostMass, Grid<Real>& min, Grid<Real>& max);
 

@@ -127,8 +127,10 @@ namespace Manta
         gamma.swap(newGamma);
     }
 
-    void MassMomentumWeights::calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src, Grid<Real> &min, Grid<Real> &max)
+    void MassMomentumWeights::calculateIntermediateResult(Grid<Real> &dest, Grid<Real> &src, Grid<Real> &min, Grid<Real> &max, bool debug__)
     {
+        Vec3i infocus = Vec3i(20, 2, 0);
+
         dest.clear();
         FOR_IJK(dest)
         {
@@ -141,6 +143,15 @@ namespace Manta
 
             for (const auto &[cellJ, w] : weights[index(cellI)])
             {
+                /* if (debug__ && src(cellI) > 0)
+                {
+                    std::cout << "source cell > 0 at: " << cellI << ", to " << cellJ << ", value: " << src(cellI) << ", dest atm: " << dest(cellJ) << ", w: " << w << std::endl;
+                }
+                if (debug__ && cellJ == infocus)
+                {
+                    std::cout << "sanity check: " << cellI << ", to " << cellJ << ", value: " << src(cellI) << ", dest atm: " << dest(cellJ) << ", w: " << w << std::endl;
+                } */
+
                 dest(cellJ) += src(cellI) * w;
                 min(cellJ) = std::min(min(cellJ), src(cellI));
                 max(cellJ) = std::max(max(cellJ), src(cellI));

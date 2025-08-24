@@ -1097,8 +1097,28 @@ namespace Manta
     }
 
     KERNEL()
-    void knVisualizeFlags(const FlagGrid &flags, Grid<Real> &grid)
+    void knVisualizeFlags(const FlagGrid &flags, Grid<Real> &grid, const FlagGrid *flags_n_plus_one)
     {
+        if (flags_n_plus_one)
+        {
+            if (flags.isFluid(i, j, k))
+            {
+                grid(i, j, k) = -1;
+            }
+            if (flags_n_plus_one->isFluid(i, j, k) && !flags.isFluid(i, j, k))
+            {
+                grid(i, j, k) = -100;
+            }
+            else if (flags.isEmpty(i, j, k))
+            {
+                grid(i, j, k) = 0;
+            }
+            else if (flags.isObstacle(i, j, k))
+            {
+                grid(i, j, k) = 1;
+            }
+            return;
+        }
         if (flags.isEmpty(i, j, k))
         {
             grid(i, j, k) = 0;
@@ -1118,8 +1138,8 @@ namespace Manta
     }
 
     PYTHON()
-    void visualizeFlags(const FlagGrid &flags, Grid<Real> &grid)
+    void visualizeFlags(const FlagGrid &flags, Grid<Real> &grid, const FlagGrid *flags_n_plus_one = nullptr)
     {
-        knVisualizeFlags(flags, grid);
+        knVisualizeFlags(flags, grid, flags_n_plus_one);
     }
 }

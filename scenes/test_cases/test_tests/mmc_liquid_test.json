@@ -7,7 +7,7 @@
   "resolutionZ": 70,
 
   "layout": "dam",
-  "doConserving": true,
+  "doConserving": false,
   "interpolationMethod": 2,
   "doParticleLevelSet": false,
 

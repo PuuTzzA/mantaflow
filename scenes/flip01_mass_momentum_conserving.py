@@ -219,6 +219,8 @@ while (s.timeTotal < params["max_time"]):
         extrapolateMACSimple( flags=flags_n, vel=vel )
         flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 )
 
+        visualizeFlags(flags=flags_n, grid=visualizerGrid)
+
     else:
         vel_extrapolated.copyFrom(vel)
         extrapolateMACSimple( flags=flags_n, vel=vel, distance=10, intoObs=True )
@@ -237,7 +239,7 @@ while (s.timeTotal < params["max_time"]):
             
             setFlagsFromDensity (flags=flags_n_plus_one, density=innen1außen0, level=0.15)       
         else:
-            advectParticleLevelSet( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, vel=vel_extrapolated, flags=flags_n )
+            advectParticleLevelSet( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags_n )
 
             if (data_collector.current_frame % 100 == 0):
                 pass
@@ -246,33 +248,28 @@ while (s.timeTotal < params["max_time"]):
             setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=0 )    
 
         interpolationMethod = 0
-        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, interpolationType=interpolationMethod)
+        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, 
+        #                                  interpolationType=interpolationMethod)
         
-        massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=vel, gammaCumulative=vel_gamma, interpolationType=interpolationMethod, tracingMethod=1)
+        #massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=vel, gammaCumulative=vel_gamma, interpolationType=interpolationMethod, tracingMethod=1)
         
-        #simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod, tracingMethod=1) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+        simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod, tracingMethod=1) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+
+        visualizeFlags(flags=flags_n, grid=visualizerGrid, flags_n_plus_one=flags_n_plus_one)
 
         flags_n.copyFrom(flags_n_plus_one)
 
-        #massMomentumConservingAdvect( flags=flags_n_plus_one, vel=vel_extrapolated, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod, tracingMethod=tracingMethod)
-
         print("Moin")
-        #setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n, level=0 )
-
-        
         # Apply grid-based forces (gravity)
         addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
-    
         extrapolateMACSimple( flags=flags_n, vel=vel, distance=10, intoObs=True )
 
-        # Solve for pressure to make the velocity field divergence-free     
         setWallBcs(flags=flags_n, vel=vel)    
         solvePressure(flags=flags_n, vel=vel, pressure=pressure)
-        #solvePressure(flags=flags_n, vel=vel, pressure=pressure, cgMaxIterFac=0.5, cgAccuracy=5e-4, phi=phi_fluid )
 
-        setWallBcs(flags=flags_n, vel=vel)      
+        printAtMACPos(vel)
+        #setWallBcs(flags=flags_n, vel=vel)      
 
-    visualizeFlags(flags=flags_n, grid=visualizerGrid)
     # Data Collection
     computeVelocityMagnitude(dest=curl, vel=vel)
     maxVel = getMaxVal(grid=curl, flags=flags_n) # flags param does nothign for now
