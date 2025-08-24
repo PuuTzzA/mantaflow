@@ -1,17 +1,17 @@
 {
-  "title": "cccdalsdkj",
+  "title": "cfl_1",
 
   "dimension": 2,
-  "resolutionX": 64,
-  "resolutionY": 64,
-  "resolutionZ": 128,
+  "resolutionX": 112,
+  "resolutionY": 112,
+  "resolutionZ": 12,
 
   "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "RK4",
   "interpolationMethod": 2,
-  "tracingFunction":0,
+  "tracingFunction": 1,
   "redistributeClamped":true,
 
   "exportData": false,
@@ -19,7 +19,7 @@
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 150,
-  "maxCFL": 6, 
-  "dt": 5
+  "max_time": 200,
+  "maxCFL": 40, 
+  "dt": 10
 }

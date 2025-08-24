@@ -1,9 +1,9 @@
 {
-  "title": "plume_3d_high_highres_conserving_0_linear_local_cfl",
+  "title": "3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl",
   "dimension": 3,
-  "resolutionX": 256,
-  "resolutionY": 512,
-  "resolutionZ": 256,
+  "resolutionX": 192,
+  "resolutionY": 192,
+  "resolutionZ": 192,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
@@ -14,7 +14,7 @@
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
-  "max_time": 150,
-  "maxCFL": 50,
-  "dt": 5
+  "max_time": 100,
+  "maxCFL": 30,
+  "dt": 3
 }

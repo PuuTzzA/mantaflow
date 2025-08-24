@@ -1,9 +1,9 @@
 {
-  "title": "3d_highres_obstacle_cfl_40_conserving_2_polynomial_local_cfl",
+  "title": "3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl",
   "dimension": 3,
-  "resolutionX": 256,
-  "resolutionY": 256,
-  "resolutionZ": 256,
+  "resolutionX": 192,
+  "resolutionY": 192,
+  "resolutionZ": 192,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": true,

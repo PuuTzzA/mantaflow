@@ -2,9 +2,9 @@
   "title": "cccdalsdkj",
 
   "dimension": 3,
-  "resolutionX": 56,
-  "resolutionY": 56,
-  "resolutionZ": 56,
+  "resolutionX": 192,
+  "resolutionY": 192,
+  "resolutionZ": 192,
 
   "doOpen": true,
   "doObstacle": true,
