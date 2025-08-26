@@ -974,15 +974,18 @@ namespace Manta
         }
 
         Vec3i infocus = Vec3i(20, 3, 0);
-        // std::cout << "Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
         if (component == MAC_Y && phi)
         {
             std::cout << infocus << "at the start: " << grid(infocus) << std::endl;
         }
-
         if (!phi && !phi_n_plus_one)
         {
             std::cout << "Not Water: Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
+        }
+        if (phi)
+        {
+            std::cout << "water" << std::endl;
+            knInitializeNewGamma(gammaCumulative, flags_n, flags_n_plus_one, component);
         }
 
         typedef typename GridType::BASETYPE T;
@@ -996,12 +999,6 @@ namespace Manta
 
         Grid<Real> min(parent);
         Grid<Real> max(parent);
-
-        if (phi)
-        {
-            std::cout << "water" << std::endl;
-            knInitializeNewGamma(gammaCumulative, flags_n, flags_n_plus_one, component);
-        }
 
         int bnd = 0;
         // Step 1: Backwards step
@@ -1188,11 +1185,6 @@ namespace Manta
                     beta(n) += w;
                 }
             }
-        }
-
-        if (!phi && !phi_n_plus_one)
-        {
-            std::cout << "not water! after trace back" << std::endl;
         }
 
         // Step 2: Forwards Step
