@@ -5,14 +5,14 @@
 from manta import *
 
 # solver params
-dim = 2
+dim = 3
 res = 64
 #res = 128 
 gs = Vec3(res,res,res)
 if (dim==2):
 	gs.z=1
 s = Solver(name='main', gridSize = gs, dim=dim)
-s.timestep  = 1
+s.timestep  = 0.15 
 
 # scene file params
 ghostFluid  = True
@@ -88,5 +88,4 @@ for t in range(1000):
 	
 	s.step()
 	#gui.screenshot( 'freesurface_%04d.png' % t );
-
 

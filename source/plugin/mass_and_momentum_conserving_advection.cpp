@@ -740,10 +740,10 @@ namespace Manta
         }
 
         pos += offset;
-        Vec3 newPos = rungeKutta4(pos, -dt, vel);
+        Vec3 newPos = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
 
         std::vector<std::tuple<Vec3i, Real>> resultVec{};
-        resultVec.reserve(4);
+        resultVec.reserve(64);
 
         // if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
         if (isSampleableFluid(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
@@ -757,10 +757,10 @@ namespace Manta
         switch (component)
         {
         case MAC_X:
-            neighbourOffset = Vec3(0.0, 0.5, 0.0);
+            neighbourOffset = Vec3(0.5, 0.0, 0.0);
             break;
         case MAC_Y:
-            neighbourOffset = Vec3(0.5, 0.0, 0.0);
+            neighbourOffset = Vec3(0.0, 0.5, 0.0);
             break;
         case MAC_Z:
             neighbourOffset = Vec3(0.0, 0.0, 0.5);
@@ -807,39 +807,13 @@ namespace Manta
             {
                 getCorrectInterpolationStencilWithWeights(resultVec, newPos2 - neighbourOffset, flags, offset, component, FLUID_ISH);
             }
-            return resultVec;
-        }
 
-        // Fallback, try finding the closest surface point
-        std::vector<std::tuple<Vec3i, Real>> testResultVec{};
-        testResultVec.reserve(4);
-
-        Vec3 current = pos;
-        Vec3 direction = newPos - pos;
-        Real totalDistance = norm(direction);
-
-        if (totalDistance < EPSILON)
-        {
-            return {};
-        }
-
-        int numSearchSteps = std::max(2, static_cast<int>(std::ceil(totalDistance / 0.25)));
-        for (int i = 0; i <= numSearchSteps; ++i)
-        {
-            Real t = static_cast<Real>(i) / static_cast<Real>(numSearchSteps);
-            current = pos + t * direction;
-
-            // if (getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH))
-            if (isValidFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, NONE))
+            if (!resultVec.empty())
             {
-                getCorrectInterpolationStencilWithWeights(testResultVec, current, flags, offset, component, FLUID_ISH);
-                resultVec = testResultVec;
-            }
-            else
-            {
-                break;
+                return resultVec;
             }
         }
+
         return resultVec;
     }
 
@@ -871,24 +845,6 @@ namespace Manta
         std::vector<std::tuple<Vec3i, Real>> vec{};
         getCorrectInterpolationStencilWithWeights(vec, newPos, flags, offset, component, FLUID_ISH);
 
-        if (doLiquid && vec.empty())
-        {
-            const Real step = 0.25;
-            pos += offset;
-            Vec3 dir = vel.getInterpolatedHi(pos, 2);
-            normalize(dir);
-            for (int i = 0; i < 50; i++)
-            {
-                Vec3 current = pos + i * dir;
-
-                if (isSampleableFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, component))
-                {
-                    getCorrectInterpolationStencilWithWeights(vec, current, flags, offset, component, FLUID_ISH);
-                    break;
-                }
-            }
-        }
-
         return vec;
     }
 
@@ -897,12 +853,15 @@ namespace Manta
         Vec3 startingPoint = originalPos + offset;
         Vec3 closestSurfacePoint = startingPoint;
 
+        // Iteratively project the point towards the phi = 0 surface.
+        // This moves the point along the gradient by the distance encoded in phi.
         const int projectionSteps = 5;
         for (int step = 0; step < projectionSteps; ++step)
         {
             Real phiVal = phi.getInterpolatedHi(closestSurfacePoint, 2);
             Vec3 grad = getGradient(phi, closestSurfacePoint.x, closestSurfacePoint.y, closestSurfacePoint.z);
 
+            // Stop if the gradient is too small to avoid division by zero or instability.
             if (normSquare(grad) < 1e-12)
             {
                 break;
@@ -911,8 +870,17 @@ namespace Manta
 
             closestSurfacePoint -= grad * phiVal;
         }
+
+        // Now that we have a point on the surface, get the standard interpolation weights
+        // from the valid fluid cells around it.
         std::vector<std::tuple<Vec3i, Real>> surfaceNeighboursAndWeights;
-        getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags, offset, component, FLUID_ISH);
+        getInterpolationStencilWithWeights(
+            surfaceNeighboursAndWeights,
+            closestSurfacePoint,
+            flags,
+            offset,
+            component,
+            FLUID_ISH);
 
         return surfaceNeighboursAndWeights;
     }
@@ -1004,16 +972,16 @@ namespace Manta
     }
 
     template <class GridType>
-    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool redistributeClamped)
+    void fnMassMomentumConservingAdvectUnified(FluidSolver *parent, const FlagGrid &flags_n, const FlagGrid &flags_n_plus_one, const MACGrid &vel, GridType &grid, Grid<Real> &gammaCumulative, Vec3 offset, Grid<Real> *phi, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool redistributeClamped, Grid<Real> *phi_n_plus_one = nullptr)
     {
         if (interpolationType == MONOTONE_CUBIC_HERMITE)
         {
             throw std::runtime_error("InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection");
         }
 
-        Vec3i infocus = Vec3i(28, 2, 0);
+        Vec3i infocus = Vec3i(20, 3, 0);
         // std::cout << "Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
-        if (component == MAC_Y)
+        if (component == MAC_Y && phi)
         {
             std::cout << infocus << "at the start: " << grid(infocus) << std::endl;
         }
@@ -1047,10 +1015,169 @@ namespace Manta
 
             auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod, flags_n_plus_one);
 
-            if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
+            if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
             {
-                std::cout << "EMPTY NEIGHBORS TRACE BACK at " << Vec3i(i, j, k) << std::endl;
-                // weights.insert(Vec3i(i, j, k), Vec3i(i, j, k), 1);
+                neighboursAndWeights = getClosestSurfacePoint(
+                    Vec3(i, j, k), // The destination grid point we are trying to fill.
+                    *phi,          // The level set for the SOURCE fluid (t^n).
+                    offset,        // The MAC component offset.
+                    flags_n,       // The flags for the SOURCE fluid (t^n).
+                    component);
+
+                if (neighboursAndWeights.empty())
+                {
+                    Vec3 pos = Vec3(i, j, k) + offset;
+
+                    const Real step = 0.05;
+                    Vec3 dir = vel.getInterpolatedHi(pos, 2);
+                    normalize(dir);
+                    for (int i = 0; i < 50; i++)
+                    {
+                        Vec3 current = pos - i * dir;
+                        if (isSampleableFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags_n, component))
+                        {
+                            getInterpolationStencilWithWeights(neighboursAndWeights, current, flags_n, offset, component, FLUID_ISH);
+                        }
+                    }
+
+                    Vec3 neighbourOffset;
+                    switch (component)
+                    {
+                    case MAC_X:
+                        neighbourOffset = Vec3(0.5, 0.0, 0.0);
+                        break;
+                    case MAC_Y:
+                        neighbourOffset = Vec3(0.0, 0.5, 0.0);
+                        break;
+                    case MAC_Z:
+                        neighbourOffset = Vec3(0.0, 0.0, 0.5);
+                        break;
+                    default:
+                        break;
+                    }
+
+                    if (neighboursAndWeights.empty() && component != NONE)
+                    {
+                        Vec3 start1 = pos - neighbourOffset;
+                        Vec3 start2 = pos + neighbourOffset;
+
+                        Vec3 dir1 = vel.getInterpolatedHi(start1, 2);
+                        Vec3 dir2 = vel.getInterpolatedHi(start2, 2);
+                        normalize(dir1);
+                        normalize(dir2);
+
+                        for (int i = 0; i < 50; i++)
+                        {
+                            Vec3 current1 = start1 - i * dir1;
+                            Vec3 current2 = start2 - i * dir2;
+
+                            if (isSampleableFluid(std::floor(current1.x), std::floor(current1.y), std::floor(current1.z), flags_n, component))
+                            {
+                                getInterpolationStencilWithWeights(neighboursAndWeights, current1 + neighbourOffset, flags_n, offset, component, FLUID_ISH);
+                                if (!neighboursAndWeights.empty())
+                                {
+                                    break;
+                                }
+                            }
+                            if (isSampleableFluid(std::floor(current2.x), std::floor(current2.y), std::floor(current2.z), flags_n, component))
+                            {
+                                getInterpolationStencilWithWeights(neighboursAndWeights, current2 - neighbourOffset, flags_n, offset, component, FLUID_ISH);
+                                if (!neighboursAndWeights.empty())
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Optional: Log a warning if even the fallback fails. This can happen if
+                // a cell is extremely far from any fluid.
+                for (const auto &[n, w] : neighboursAndWeights)
+                {
+                    weights.insert(n, Vec3i(i, j, k), w);
+                    beta(n) += w;
+                }
+
+                if (neighboursAndWeights.empty())
+                {
+                    std::cout << "WARNING: Backward trace fallback failed for cell " << Vec3i(i, j, k) << std::endl;
+                }
+
+                /* std::string comp = "";
+                switch (component)
+                {
+                case MAC_X:
+                    comp = "MAC_X";
+                    break;
+                case MAC_Y:
+                    comp = "MAC_Y";
+                    break;
+                case MAC_Z:
+                    comp = "MAC_Z";
+                    break;
+                default:
+                    comp = "NONE";
+                    break;
+                }
+                std::cout << "EMPTY NEIGHBORS TRACE BACK at " << Vec3i(i, j, k) << " that is a " << comp << std::endl;
+
+                Vec3 pos = Vec3(i, j, k) + offset;
+                Vec3 newPos = rungeKutta4(pos, -dt, vel);
+                Vec3 veloc = vel.getInterpolatedHi(pos, 2);
+                bool flagAtNewPos = isSampleableFluid(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags_n, component);
+
+                std::cout << "pos is: " << pos << ", newpos: " << newPos << ", vel: " << veloc << ", isSampleableFluid: " << flagAtNewPos << std::endl;
+
+                Vec3 neighbourOffset;
+                switch (component)
+                {
+                case MAC_X:
+                    neighbourOffset = Vec3(0.5, 0.0, 0.0);
+                    break;
+                case MAC_Y:
+                    neighbourOffset = Vec3(0.0, 0.5, 0.0);
+                    break;
+                case MAC_Z:
+                    neighbourOffset = Vec3(0.0, 0.0, 0.5);
+                    break;
+                default:
+                    break;
+                }
+
+                if (component != NONE)
+                {
+                    Vec3 start1 = pos - neighbourOffset;
+                    Vec3 start2 = pos + neighbourOffset;
+
+                    Vec3 newPos1 = rungeKutta4(start1, -dt, vel);
+                    Vec3 newPos2 = rungeKutta4(start2, -dt, vel);
+
+                    bool start1Valid = isValidFluid(std::floor(start1.x), std::floor(start1.y), std::floor(start1.z), flags_n_plus_one, NONE);
+                    bool start2Valid = isValidFluid(std::floor(start2.x), std::floor(start2.y), std::floor(start2.z), flags_n_plus_one, NONE);
+
+                    bool pos1Valid = isValidFluid(std::floor(newPos1.x), std::floor(newPos1.y), std::floor(newPos1.z), flags_n, NONE);
+                    bool pos2Valid = isValidFluid(std::floor(newPos2.x), std::floor(newPos2.y), std::floor(newPos2.z), flags_n, NONE);
+                    std::cout << "startPos1: " << start1 << ", startPos2: " << start2 << ", newPos1: " << newPos1 << ", newPos2: " << newPos2 << std::endl;
+
+                    const Real step = 0.25;
+                    Vec3 dir = vel.getInterpolatedHi(pos, 2);
+                    normalize(dir);
+                    std::cout << "Start last effort. dir: " << dir << std::endl;
+                    for (int i = 0; i < 50; i++)
+                    {
+                        Vec3 current = pos - i * dir;
+                        bool isSampleable = isSampleableFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags_n, component);
+                        std::cout << i << ") current: " << current << ", isSamp: " << isSampleable << std::endl;
+                        if (isSampleable)
+                        {
+                            std::vector<std::tuple<Vec3i, Real>> resultVec{};
+                            getInterpolationStencilWithWeights(resultVec, current, flags_n, offset, component, FLUID_ISH);
+                            std::cout << "result vec: " << resultVec.size() << ", empty?: " << resultVec.empty() << std::endl;
+                            break;
+                        }
+                    }
+                } */
             }
             else
             {
@@ -1076,10 +1203,42 @@ namespace Manta
 
                 auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod, phi);
 
-                if (neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
+                if (neighboursAndWeights.empty() && phi_n_plus_one) // Find the nearest surface point and dump the excess momentum there
                 {
-                    std::cout << "EMPTY NEIGHBORS TRACE FORWARD at " << Vec3i(i, j, k) << std::endl;
-                    // weights.add(Vec3i(i, j, k), Vec3i(i, j, k), amountToDistribute);
+                    neighboursAndWeights = getClosestSurfacePoint(
+                        Vec3(i, j, k),    // The source grid point we are tracing from.
+                        *phi_n_plus_one,  // The level set for the DESTINATION fluid (t^(n+1)).
+                        offset,           // The MAC component offset.
+                        flags_n_plus_one, // The flags for the DESTINATION fluid (t^(n+1)).
+                        component);
+
+                    if (neighboursAndWeights.empty())
+                    {
+                        const Real step = 0.05;
+                        Vec3 pos = Vec3(i, j, k) + offset;
+                        Vec3 dir = vel.getInterpolatedHi(pos, 2);
+                        normalize(dir);
+                        for (int i = 0; i < 50; i++)
+                        {
+                            Vec3 current = pos + i * dir;
+
+                            if (isSampleableFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags_n_plus_one, component))
+                            {
+                                getInterpolationStencilWithWeights(neighboursAndWeights, current, flags_n_plus_one, offset, component, FLUID_ISH);
+                                break;
+                            }
+                        }
+                    }
+
+                    for (const auto &[n, w] : neighboursAndWeights)
+                    {
+                        weights.add(Vec3i(i, j, k), n, w * amountToDistribute);
+                    }
+
+                    if (neighboursAndWeights.empty())
+                    {
+                        std::cout << "WARNING: Forward trace fallback failed for cell " << Vec3i(i, j, k) << std::endl;
+                    }
                 }
                 else
                 {
@@ -1140,11 +1299,6 @@ namespace Manta
         knInitializeMinMax(min, max);
         weights.calculateIntermediateResult(tempGrid, grid, min, max, (component == MAC_Y));
         grid.swap(tempGrid);
-
-        if (component == MAC_Y)
-        {
-            std::cout << infocus << "before diffusion: " << grid(infocus) << std::endl;
-        }
 
         // Step 6: Diffuse Gamma with per-axis sweeps
         weights.calculateGamma(gammaCumulative);
@@ -1287,27 +1441,12 @@ namespace Manta
             // weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
-        if (phi && component == MAC_Y)
-        {
-            FOR_IJK(grid)
-            {
-                if (grid(i, j, k) > 0)
-                {
-                    (*phi)(i, j, k) = 100;
-                }
-                else
-                {
-                    (*phi)(i, j, k) = 0;
-                }
-            }
-        }
-
         /* if (phi)
         {
             knClampToMinMaxDiff(grid, min, max, tempGrid);
         } */
 
-        if (component == MAC_Y)
+        if (component == MAC_Y && phi)
         {
             std::cout << infocus << "at the end: " << grid(infocus) << std::endl;
         }
@@ -1321,7 +1460,7 @@ namespace Manta
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
 
-    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, Grid<Real> *phi, InterpolationType interpolationType, TracingMethod tracingMethod, bool redistributeClamped)
+    void fnMassMomentumConservingAdvectMAC(FluidSolver *parent, const FlagGrid &flags, const FlagGrid &flags_n_plus_one, const MACGrid &vel, MACGrid &grid, MACGrid &gammaCumulative, bool water, Grid<Real> *phi, InterpolationType interpolationType, TracingMethod tracingMethod, bool redistributeClamped, Grid<Real> *phi_n_plus_one = nullptr)
     {
         Grid<Real> velX(parent);
         Grid<Real> velY(parent);
@@ -1378,9 +1517,9 @@ namespace Manta
             ty.join();
             tz.join();*/
 
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod, redistributeClamped);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod, redistributeClamped);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, phi, MAC_X, interpolationType, tracingMethod, redistributeClamped, phi_n_plus_one);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, phi, MAC_Y, interpolationType, tracingMethod, redistributeClamped, phi_n_plus_one);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velZ, gammaZ, offsetZ, phi, MAC_Z, interpolationType, tracingMethod, redistributeClamped, phi_n_plus_one);
         }
 
         knGrids2MAC(grid, velX, velY, velZ);
@@ -1407,15 +1546,15 @@ namespace Manta
     }
 
     PYTHON()
-    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi, int interpolationType = LINEAR)
+    void massMomentumConservingAdvectWater(const FlagGrid *flags_n, const FlagGrid *flags_n_plus_one, const MACGrid *vel, GridBase *grid, GridBase *gammaCumulative, Grid<Real> *phi, int interpolationType = LINEAR, Grid<Real> *phi_n_plus_one = nullptr)
     {
         if (grid->getType() & GridBase::TypeReal)
         {
-            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE, (InterpolationType)interpolationType, NORMAL, true);
+            fnMassMomentumConservingAdvectUnified<Grid<Real>>(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((Grid<Real> *)grid), *((Grid<Real> *)gammaCumulative), Vec3(0.5, 0.5, 0.5), phi, NONE, (InterpolationType)interpolationType, NORMAL, true, phi_n_plus_one);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
-            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi, (InterpolationType)interpolationType, NORMAL, true);
+            fnMassMomentumConservingAdvectMAC(flags_n->getParent(), *flags_n, *flags_n_plus_one, *vel, *((MACGrid *)grid), *((MACGrid *)gammaCumulative), true, phi, (InterpolationType)interpolationType, NORMAL, true, phi_n_plus_one);
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
@@ -1435,6 +1574,28 @@ namespace Manta
     void printAtMACPos(const MACGrid &vel)
     {
         std::cout << "print at mac pos: " << vel(28, 2, 0) << std::endl;
+    }
+
+    PYTHON()
+    void findPosVelY(MACGrid &vel, Grid<Real> &vis)
+    {
+        Grid<Real> velX(vel.getParent());
+        Grid<Real> velY(vel.getParent());
+        Grid<Real> velZ(vel.getParent());
+
+        knMAC2Grids(vel, velX, velY, velZ);
+
+        FOR_IJK(vis)
+        {
+            if (velY(i, j, k) > 0)
+            {
+                vis(i, j, k) = 100;
+            }
+            else
+            {
+                vis(i, j, k) = 0;
+            }
+        }
     }
 
     PYTHON()

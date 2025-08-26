@@ -248,12 +248,12 @@ while (s.timeTotal < params["max_time"]):
             setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=0 )    
 
         interpolationMethod = 0
-        #massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, 
-        #                                  interpolationType=interpolationMethod)
+        massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, 
+                                          interpolationType=interpolationMethod)
         
         #massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=vel, gammaCumulative=vel_gamma, interpolationType=interpolationMethod, tracingMethod=1)
         
-        simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod, tracingMethod=1) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+        #simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod, tracingMethod=1) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
         visualizeFlags(flags=flags_n, grid=visualizerGrid, flags_n_plus_one=flags_n_plus_one)
 
@@ -267,7 +267,7 @@ while (s.timeTotal < params["max_time"]):
         setWallBcs(flags=flags_n, vel=vel)    
         solvePressure(flags=flags_n, vel=vel, pressure=pressure)
 
-        printAtMACPos(vel)
+        #printAtMACPos(vel)
         #setWallBcs(flags=flags_n, vel=vel)      
 
     # Data Collection
@@ -276,6 +276,8 @@ while (s.timeTotal < params["max_time"]):
     calculateCurl(vel=vel, curl=curl, flags=flags_n)
 
     data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
+
+    findPosVelY(vel=vel, vis=phi_fluid)
 
     s.step()
 
