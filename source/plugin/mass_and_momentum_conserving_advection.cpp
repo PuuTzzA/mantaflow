@@ -705,7 +705,7 @@ namespace Manta
         return is3D ? interpolateMonotoneCubicHermite(yInterp[0], yInterp[1], yInterp[2], yInterp[3], fz) : yInterp[0];
     }
 
-    void traceBack(std::vector<std::tuple<Vec3i, Real>>& resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, TracingMethod tracingMethod, const FlagGrid& flags_n_plus_one)
+    void traceBack(std::vector<std::tuple<Vec3i, Real>> &resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, TracingMethod tracingMethod, const FlagGrid &flags_n_plus_one)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -812,7 +812,7 @@ namespace Manta
         return;
     }
 
-    void traceForward(std::vector<std::tuple<Vec3i, Real>>& resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool doLiquid)
+    void traceForward(std::vector<std::tuple<Vec3i, Real>> &resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool doLiquid)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -981,7 +981,7 @@ namespace Manta
 
         if (!phi && !phi_n_plus_one)
         {
-            std::cout << "not water!" << std::endl;
+            std::cout << "Not Water: Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
         }
 
         typedef typename GridType::BASETYPE T;
@@ -1013,7 +1013,7 @@ namespace Manta
             }
 
             neighboursAndWeights.clear();
-            traceBack(neighboursAndWeights , Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod, flags_n_plus_one);
+            traceBack(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod, flags_n_plus_one);
 
             if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
             {
