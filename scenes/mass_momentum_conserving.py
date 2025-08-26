@@ -47,7 +47,7 @@ title = params["title"]
 s.frameLength = params["dt"]     
 s.cfl         = params["maxCFL"]
 s.timestep    = s.frameLength
-s.timestepMin = 0.1 
+s.timestepMin = 0.025 
 s.timestepMax = s.frameLength
 
 timings = Timings()
@@ -116,7 +116,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] and data_collector.current_frame < 80:
+while s.timeTotal < params["max_time"] :#and data_collector.current_frame < 80:
 
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
@@ -136,7 +136,7 @@ while s.timeTotal < params["max_time"] and data_collector.current_frame < 80:
     if s.timeTotal<3000:
         source.applyToGrid(grid=density, value=1)
 
-    # optionally, dissolve smoke
+    # optionally, dissolve smoke    
     # dissolveSmoke(flags=flags, density=density, speed=4)
 
     #Advection

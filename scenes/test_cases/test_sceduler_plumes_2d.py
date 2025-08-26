@@ -252,7 +252,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
  """
 
-for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
+for param, requiresVDB in DIFFERENT_CFL_2D_PATHS + SIMPLE_PLUME_3D_HIGH:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
