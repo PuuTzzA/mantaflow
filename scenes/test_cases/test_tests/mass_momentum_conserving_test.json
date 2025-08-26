@@ -2,9 +2,9 @@
   "title": "testtest4",
 
   "dimension": 2,
-  "resolutionX": 148,
-  "resolutionY": 148,
-  "resolutionZ": 148,
+  "resolutionX": 50,
+  "resolutionY": 50,
+  "resolutionZ": 50,
 
   "doOpen": false,
   "doObstacle": true,
@@ -14,12 +14,12 @@
   "tracingFunction": 1,
   "redistributeClamped":true,
 
-  "exportData": true,
-  "exportImages": true,
+  "exportData": false,
+  "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,
 
   "max_time": 180,
-  "maxCFL": 10, 
+  "maxCFL": 5, 
   "dt": 14
 }

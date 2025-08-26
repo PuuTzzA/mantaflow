@@ -705,7 +705,7 @@ namespace Manta
         return is3D ? interpolateMonotoneCubicHermite(yInterp[0], yInterp[1], yInterp[2], yInterp[3], fz) : yInterp[0];
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceBack(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, TracingMethod tracingMethod, const FlagGrid flags_n_plus_one)
+    void traceBack(std::vector<std::tuple<Vec3i, Real>>& resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, TracingMethod tracingMethod, const FlagGrid& flags_n_plus_one)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -734,22 +734,17 @@ namespace Manta
                 newPos = customTraceLocalCFL(pos, -dt, vel, flags, offset, component, FLUID_ISH);
             }
 
-            std::vector<std::tuple<Vec3i, Real>> vec{};
-            getCorrectInterpolationStencilWithWeights(vec, newPos, flags, offset, component, FLUID_ISH);
-            return vec;
+            getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH);
         }
 
         pos += offset;
         Vec3 newPos = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
 
-        std::vector<std::tuple<Vec3i, Real>> resultVec{};
-        resultVec.reserve(64);
-
         // if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
         if (isSampleableFluid(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
         {
             getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH);
-            return resultVec;
+            return;
         }
 
         // Special trace back for MAC grid componets
@@ -810,14 +805,14 @@ namespace Manta
 
             if (!resultVec.empty())
             {
-                return resultVec;
+                return;
             }
         }
 
-        return resultVec;
+        return;
     }
 
-    std::vector<std::tuple<Vec3i, Real>> traceForward(Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool doLiquid)
+    void traceForward(std::vector<std::tuple<Vec3i, Real>>& resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool doLiquid)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -842,10 +837,8 @@ namespace Manta
         case LOCAL_CFL:
             newPos = customTraceLocalCFL(pos, dt, vel, flags, offset, component, FLUID_ISH);
         }
-        std::vector<std::tuple<Vec3i, Real>> vec{};
-        getCorrectInterpolationStencilWithWeights(vec, newPos, flags, offset, component, FLUID_ISH);
 
-        return vec;
+        getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH);
     }
 
     std::vector<std::tuple<Vec3i, Real>> getClosestSurfacePoint(Vec3 originalPos, const Grid<Real> &phi, Vec3 offset, const FlagGrid &flags, MACGridComponent component)
@@ -986,6 +979,11 @@ namespace Manta
             std::cout << infocus << "at the start: " << grid(infocus) << std::endl;
         }
 
+        if (!phi && !phi_n_plus_one)
+        {
+            std::cout << "not water!" << std::endl;
+        }
+
         typedef typename GridType::BASETYPE T;
         Real dt = parent->getDt();
         Vec3i gridSize = parent->getGridSize();
@@ -1006,6 +1004,7 @@ namespace Manta
 
         int bnd = 0;
         // Step 1: Backwards step
+        std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
         FOR_IJK_BND(grid, bnd)
         {
             if (!isSampleableFluid(i, j, k, flags_n_plus_one, component))
@@ -1013,7 +1012,8 @@ namespace Manta
                 continue;
             }
 
-            auto neighboursAndWeights = traceBack(Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod, flags_n_plus_one);
+            neighboursAndWeights.clear();
+            traceBack(neighboursAndWeights , Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod, flags_n_plus_one);
 
             if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
             {
@@ -1189,6 +1189,11 @@ namespace Manta
             }
         }
 
+        if (!phi && !phi_n_plus_one)
+        {
+            std::cout << "not water! after trace back" << std::endl;
+        }
+
         // Step 2: Forwards Step
         FOR_IJK_BND(grid, bnd)
         {
@@ -1201,7 +1206,8 @@ namespace Manta
             {
                 Real amountToDistribute = 1 - beta(i, j, k);
 
-                auto neighboursAndWeights = traceForward(Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod, phi);
+                neighboursAndWeights.clear();
+                traceForward(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod, phi);
 
                 if (neighboursAndWeights.empty() && phi_n_plus_one) // Find the nearest surface point and dump the excess momentum there
                 {

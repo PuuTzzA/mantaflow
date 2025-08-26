@@ -163,7 +163,7 @@ SIMPLE_PLUME_3D_HIGH = [
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_0_linear_local_cfl.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_1_cubic.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_1_cubic_local_cfl.json', True],
-    ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial_local_cfl.json', True],
+#    ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial_local_cfl.json', True],
     ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_EE1.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_EE2.json', True],
