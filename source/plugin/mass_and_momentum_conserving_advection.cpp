@@ -735,6 +735,7 @@ namespace Manta
             }
 
             getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH);
+            return;
         }
 
         pos += offset;
