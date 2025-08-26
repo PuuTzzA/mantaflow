@@ -11,7 +11,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/diffusion_test_schun/"
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
     #EXPORTS_BASE_DIR = "../exports/3d_final/simple_plume_3d_high"
-    EXPORTS_BASE_DIR = "../exports/6_different_cfl"
+    EXPORTS_BASE_DIR = "../exports/5_simple_obstacle_3D"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -116,7 +116,7 @@ data_collector.init()
 
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"]: #and data_collector.current_frame < 70:
+while s.timeTotal < params["max_time"] and data_collector.current_frame < 80:
 
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxvel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
