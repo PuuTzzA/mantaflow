@@ -21,7 +21,7 @@ namespace Manta
     }
 
 #define POSITIVE_SEED_CUTOFF 1.0f  // 3 * dx
-#define NEGATIVE_SEED_CUTOFF -1.0f // 3 * dx
+#define NEGATIVE_SEED_CUTOFF -3.0f // 3 * dx
 #define MIN_RADIUS 0.1f            // .1 * min(dx, dy, dz)
 #define MAX_RADIUS 0.5f            // .5 * min(dx, dy, dz)
 

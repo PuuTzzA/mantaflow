@@ -116,7 +116,7 @@ for t in range(1000):
     #advectSemiLagrange(flags=flags_n_plus_one, vel=vel, grid=vel, order=2)
 
     massMomentumConservingAdvectWater( flags_n=flags, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, 
-                                    phi=phi, interpolationType=0, phi_n_plus_one=phi_n_plus_one)
+                                   phi=phi, interpolationType=0, phi_n_plus_one=phi_n_plus_one)
 
     #simpleSLAdvect(flags=flags_n_plus_one, vel=vel, grid=vel, interpolationType=0, tracingMethod=0) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
@@ -128,23 +128,24 @@ for t in range(1000):
     interestedPos = Vec3(16, 2, 0)
     interestedPos2 = Vec3(16, 1, 0)
     print("right after advection")
-    printAtMACPos(vel=vel, pos=interestedPos)
+    #printAtMACPos(vel=vel, pos=interestedPos)
 
     addGravity(flags=flags, vel=vel, gravity=Vec3(0,-0.025,0))
     #addGravity(flags=flags, vel=vel, gravity=Vec3(-0.025,0,0)) # Y
     
     print("after adding Gravity")
-    printAtMACPos(vel=vel, pos=interestedPos)
+    #printAtMACPos(vel=vel, pos=interestedPos)
     # pressure solve
 
     extrapolateMACSimple( flags=flags, vel=vel, distance=10 )
     setWallBcs(flags=flags, vel=vel)
 
     print("after Extrapolation and Boundry conditions")
-    printAtMACPos(vel=vel, pos=interestedPos)
-    printAtMACPos(vel=vel, pos=interestedPos2)
-    printAtMACPos(vel=vel, pos=interestedPos + Vec3(1, 0, 0))
-    printAtMACPos(vel=vel, pos=interestedPos + Vec3(0, 1, 0))
+    #printAtMACPos(vel=vel, pos=interestedPos)
+    #printAtMACPos(vel=vel, pos=interestedPos2)
+    #printAtMACPos(vel=vel, pos=interestedPos + Vec3(1, 0, 0))
+    #printAtMACPos(vel=vel, pos=interestedPos + Vec3(0, 1, 0))
+    #printAtMACPos(vel=vel, pos=interestedPos + Vec3(-1, 0, 0))
 
     if ghostFluid and False:
         solvePressure(flags=flags, vel=vel, pressure=pressure, cgMaxIterFac=0.5, cgAccuracy=accuracy, phi=phi )
@@ -152,7 +153,7 @@ for t in range(1000):
         solvePressure(flags=flags, vel=vel, pressure=pressure, cgMaxIterFac=0.5, cgAccuracy=accuracy)
     
     print("after Pressure Projection")
-    printAtMACPos(vel=vel, pos=interestedPos)
+    #printAtMACPos(vel=vel, pos=interestedPos)
     # note: these meshes are created by fast marching only, should smooth
     #       geometry and normals before rendering (only in 3D for now)
     if (dim==3):

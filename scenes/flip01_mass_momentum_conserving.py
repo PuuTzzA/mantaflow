@@ -63,8 +63,12 @@ velOld           = s.create(MACGrid)
 tmpVec3          = s.create(VecGrid)
 
 phi_fluid = s.create(LevelsetGrid)
+phi_fluid_n_plus_one = s.create(LevelsetGrid)
+phi_visualization = s.create(LevelsetGrid)
 
 gIdx = s.create(IntGrid)
+
+mesh = s.create(Mesh)
 
 # FLIP particles
 pp       = s.create(BasicParticleSystem) 
@@ -104,7 +108,7 @@ if layout == 0:
     phiInit = fluidbox.computeLevelset()
 elif layout == 1:
     fluidbox = Sphere( parent=s , center=gs*Vec3(0.5,0.5,0.5), radius=params["resolutionX"]*0.125) # centered falling sphere
-    fluidbox2 = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(1, .1, 1)) # centered falling block
+    fluidbox2 = Box( parent=s, p0=gs*vec3(0,0,0), p1=gs*vec3(1, .2, 1)) # centered falling block
     phiInit = fluidbox.computeLevelset()
     phiInit.join(fluidbox2.computeLevelset())
     fb2 = fluidbox2
@@ -182,6 +186,7 @@ if layout == 1:
 
 data_collector.init()
 
+phi_fluid_n_plus_one.copyFrom(phi_fluid)
 firstFrame = True
 #main loop
 while (s.timeTotal < params["max_time"]):
@@ -224,12 +229,6 @@ while (s.timeTotal < params["max_time"]):
     else:
         vel_extrapolated.copyFrom(vel)
         extrapolateMACSimple( flags=flags_n, vel=vel, distance=10, intoObs=True )
-        #  _____ _        _____ _   _ ___ ____  _ _ _ 
-        # |  ___(_)_  __ |_   _| | | |_ _/ ___|| | | |
-        # | |_  | \ \/ /   | | | |_| || |\___ \| | | |
-        # |  _| | |>  <    | | |  _  || | ___) |_|_|_|
-        # |_|   |_/_/\_\   |_| |_| |_|___|____/(_|_|_)
-        # 
         #extrapolateVelFSM2D( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
 
         if not doParticleLevelSet:
@@ -239,33 +238,31 @@ while (s.timeTotal < params["max_time"]):
             
             setFlagsFromDensity (flags=flags_n_plus_one, density=innen1außen0, level=0.15)       
         else:
-            advectParticleLevelSet( phi=phi_fluid, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags_n )
+            advectParticleLevelSet( phi=phi_fluid_n_plus_one, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags_n )
 
-            if (data_collector.current_frame % 100 == 0):
+            if (data_collector.current_frame % 15 == 0):
                 pass
-                reseedParticles(phi=phi_fluid, flags=flags_n, particles=level_set_particles, radii=particle_radii )
+                reseedParticles(phi=phi_fluid_n_plus_one, flags=flags_n, particles=level_set_particles, radii=particle_radii )
 
-            setFlagsFromParticleLevelset( phi=phi_fluid, flags=flags_n_plus_one, level=0 )    
+            setFlagsFromParticleLevelset( phi=phi_fluid_n_plus_one, flags=flags_n_plus_one, level=0 )    
 
         interpolationMethod = 0
         massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, 
-                                          interpolationType=interpolationMethod)
-        
-        #massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=vel, gammaCumulative=vel_gamma, interpolationType=interpolationMethod, tracingMethod=1)
-        
+                                          interpolationType=interpolationMethod, phi_n_plus_one=phi_fluid_n_plus_one)
+               
         #simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod, tracingMethod=1) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
         visualizeFlags(flags=flags_n, grid=visualizerGrid, flags_n_plus_one=flags_n_plus_one)
 
         flags_n.copyFrom(flags_n_plus_one)
+        phi_fluid.copyFrom(phi_fluid_n_plus_one)
 
-        print("Moin")
         # Apply grid-based forces (gravity)
         addGravity(flags=flags_n, vel=vel, gravity=(0,-0.002,0))
         extrapolateMACSimple( flags=flags_n, vel=vel, distance=10, intoObs=True )
 
         setWallBcs(flags=flags_n, vel=vel)    
-        solvePressure(flags=flags_n, vel=vel, pressure=pressure)
+        solvePressure(flags=flags_n, vel=vel, pressure=pressure, phi=phi_fluid)
 
         #printAtMACPos(vel)
         #setWallBcs(flags=flags_n, vel=vel)      
@@ -277,7 +274,10 @@ while (s.timeTotal < params["max_time"]):
 
     data_collector.step(solver=s, flags=flags_n, maxVel=maxVel, gui=gui, objects=[flags_n])
 
-    findPosVelY(vel=vel, vis=phi_fluid)
+    findPosVelY(vel=vel, vis=phi_visualization)
+
+    if (dim==3):
+        phi_fluid.createMesh(mesh)
 
     s.step()
 

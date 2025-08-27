@@ -842,9 +842,9 @@ namespace Manta
         getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH);
     }
 
-    std::vector<std::tuple<Vec3i, Real>> getClosestSurfacePoint(Vec3 originalPos, const Grid<Real> &phi, Vec3 offset, const FlagGrid &flags, MACGridComponent component)
+    std::vector<std::tuple<Vec3i, Real>> getClosestSurfacePoint(Vec3 pos, const Grid<Real> &phi, const FlagGrid &flags, MACGridComponent component, Vec3 offset)
     {
-        Vec3 startingPoint = originalPos + offset;
+        Vec3 startingPoint = pos;
         Vec3 closestSurfacePoint = startingPoint;
 
         // Iteratively project the point towards the phi = 0 surface.
@@ -984,7 +984,7 @@ namespace Manta
         }
         if (phi)
         {
-            std::cout << "water" << std::endl;
+            std::cout << "Water: Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
             knInitializeNewGamma(gammaCumulative, flags_n, flags_n_plus_one, component);
         }
 
@@ -1013,84 +1013,18 @@ namespace Manta
             neighboursAndWeights.clear();
             traceBack(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod, flags_n_plus_one);
 
-            if (neighboursAndWeights.empty() && phi) // Find the nearest surface point and dump the excess momentum there
+            if (phi && neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
             {
+                Vec3 pos = Vec3(i, j, k) + offset;
+                Vec3 newPos = customTrace(pos, -dt, vel, flags_n, offset, component, FLUID_ISH);
+
                 neighboursAndWeights = getClosestSurfacePoint(
-                    Vec3(i, j, k), // The destination grid point we are trying to fill.
-                    *phi,          // The level set for the SOURCE fluid (t^n).
-                    offset,        // The MAC component offset.
-                    flags_n,       // The flags for the SOURCE fluid (t^n).
-                    component);
+                    newPos,  // The destination grid point we are trying to fill.
+                    *phi,    // The level set for the SOURCE fluid (t^n).
+                    flags_n, // The flags for the SOURCE fluid (t^n).
+                    component,
+                    offset);
 
-                if (neighboursAndWeights.empty())
-                {
-                    Vec3 pos = Vec3(i, j, k) + offset;
-
-                    const Real step = 0.05;
-                    Vec3 dir = vel.getInterpolatedHi(pos, 2);
-                    normalize(dir);
-                    for (int i = 0; i < 50; i++)
-                    {
-                        Vec3 current = pos - i * dir;
-                        if (isSampleableFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags_n, component))
-                        {
-                            getInterpolationStencilWithWeights(neighboursAndWeights, current, flags_n, offset, component, FLUID_ISH);
-                        }
-                    }
-
-                    Vec3 neighbourOffset;
-                    switch (component)
-                    {
-                    case MAC_X:
-                        neighbourOffset = Vec3(0.5, 0.0, 0.0);
-                        break;
-                    case MAC_Y:
-                        neighbourOffset = Vec3(0.0, 0.5, 0.0);
-                        break;
-                    case MAC_Z:
-                        neighbourOffset = Vec3(0.0, 0.0, 0.5);
-                        break;
-                    default:
-                        break;
-                    }
-
-                    if (neighboursAndWeights.empty() && component != NONE)
-                    {
-                        Vec3 start1 = pos - neighbourOffset;
-                        Vec3 start2 = pos + neighbourOffset;
-
-                        Vec3 dir1 = vel.getInterpolatedHi(start1, 2);
-                        Vec3 dir2 = vel.getInterpolatedHi(start2, 2);
-                        normalize(dir1);
-                        normalize(dir2);
-
-                        for (int i = 0; i < 50; i++)
-                        {
-                            Vec3 current1 = start1 - i * dir1;
-                            Vec3 current2 = start2 - i * dir2;
-
-                            if (isSampleableFluid(std::floor(current1.x), std::floor(current1.y), std::floor(current1.z), flags_n, component))
-                            {
-                                getInterpolationStencilWithWeights(neighboursAndWeights, current1 + neighbourOffset, flags_n, offset, component, FLUID_ISH);
-                                if (!neighboursAndWeights.empty())
-                                {
-                                    break;
-                                }
-                            }
-                            if (isSampleableFluid(std::floor(current2.x), std::floor(current2.y), std::floor(current2.z), flags_n, component))
-                            {
-                                getInterpolationStencilWithWeights(neighboursAndWeights, current2 - neighbourOffset, flags_n, offset, component, FLUID_ISH);
-                                if (!neighboursAndWeights.empty())
-                                {
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Optional: Log a warning if even the fallback fails. This can happen if
-                // a cell is extremely far from any fluid.
                 for (const auto &[n, w] : neighboursAndWeights)
                 {
                     weights.insert(n, Vec3i(i, j, k), w);
@@ -1101,81 +1035,6 @@ namespace Manta
                 {
                     std::cout << "WARNING: Backward trace fallback failed for cell " << Vec3i(i, j, k) << std::endl;
                 }
-
-                /* std::string comp = "";
-                switch (component)
-                {
-                case MAC_X:
-                    comp = "MAC_X";
-                    break;
-                case MAC_Y:
-                    comp = "MAC_Y";
-                    break;
-                case MAC_Z:
-                    comp = "MAC_Z";
-                    break;
-                default:
-                    comp = "NONE";
-                    break;
-                }
-                std::cout << "EMPTY NEIGHBORS TRACE BACK at " << Vec3i(i, j, k) << " that is a " << comp << std::endl;
-
-                Vec3 pos = Vec3(i, j, k) + offset;
-                Vec3 newPos = rungeKutta4(pos, -dt, vel);
-                Vec3 veloc = vel.getInterpolatedHi(pos, 2);
-                bool flagAtNewPos = isSampleableFluid(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags_n, component);
-
-                std::cout << "pos is: " << pos << ", newpos: " << newPos << ", vel: " << veloc << ", isSampleableFluid: " << flagAtNewPos << std::endl;
-
-                Vec3 neighbourOffset;
-                switch (component)
-                {
-                case MAC_X:
-                    neighbourOffset = Vec3(0.5, 0.0, 0.0);
-                    break;
-                case MAC_Y:
-                    neighbourOffset = Vec3(0.0, 0.5, 0.0);
-                    break;
-                case MAC_Z:
-                    neighbourOffset = Vec3(0.0, 0.0, 0.5);
-                    break;
-                default:
-                    break;
-                }
-
-                if (component != NONE)
-                {
-                    Vec3 start1 = pos - neighbourOffset;
-                    Vec3 start2 = pos + neighbourOffset;
-
-                    Vec3 newPos1 = rungeKutta4(start1, -dt, vel);
-                    Vec3 newPos2 = rungeKutta4(start2, -dt, vel);
-
-                    bool start1Valid = isValidFluid(std::floor(start1.x), std::floor(start1.y), std::floor(start1.z), flags_n_plus_one, NONE);
-                    bool start2Valid = isValidFluid(std::floor(start2.x), std::floor(start2.y), std::floor(start2.z), flags_n_plus_one, NONE);
-
-                    bool pos1Valid = isValidFluid(std::floor(newPos1.x), std::floor(newPos1.y), std::floor(newPos1.z), flags_n, NONE);
-                    bool pos2Valid = isValidFluid(std::floor(newPos2.x), std::floor(newPos2.y), std::floor(newPos2.z), flags_n, NONE);
-                    std::cout << "startPos1: " << start1 << ", startPos2: " << start2 << ", newPos1: " << newPos1 << ", newPos2: " << newPos2 << std::endl;
-
-                    const Real step = 0.25;
-                    Vec3 dir = vel.getInterpolatedHi(pos, 2);
-                    normalize(dir);
-                    std::cout << "Start last effort. dir: " << dir << std::endl;
-                    for (int i = 0; i < 50; i++)
-                    {
-                        Vec3 current = pos - i * dir;
-                        bool isSampleable = isSampleableFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags_n, component);
-                        std::cout << i << ") current: " << current << ", isSamp: " << isSampleable << std::endl;
-                        if (isSampleable)
-                        {
-                            std::vector<std::tuple<Vec3i, Real>> resultVec{};
-                            getInterpolationStencilWithWeights(resultVec, current, flags_n, offset, component, FLUID_ISH);
-                            std::cout << "result vec: " << resultVec.size() << ", empty?: " << resultVec.empty() << std::endl;
-                            break;
-                        }
-                    }
-                } */
             }
             else
             {
@@ -1202,32 +1061,17 @@ namespace Manta
                 neighboursAndWeights.clear();
                 traceForward(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod, phi);
 
-                if (neighboursAndWeights.empty() && phi_n_plus_one) // Find the nearest surface point and dump the excess momentum there
+                if (phi_n_plus_one && neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
                 {
+                    Vec3 pos = Vec3(i, j, k) + offset;
+                    Vec3 newPos = customTrace(pos, dt, vel, flags_n_plus_one, offset, component, FLUID_ISH);
+
                     neighboursAndWeights = getClosestSurfacePoint(
-                        Vec3(i, j, k),    // The source grid point we are tracing from.
+                        newPos,           // The source grid point we are tracing from.
                         *phi_n_plus_one,  // The level set for the DESTINATION fluid (t^(n+1)).
-                        offset,           // The MAC component offset.
                         flags_n_plus_one, // The flags for the DESTINATION fluid (t^(n+1)).
-                        component);
-
-                    if (neighboursAndWeights.empty())
-                    {
-                        const Real step = 0.05;
-                        Vec3 pos = Vec3(i, j, k) + offset;
-                        Vec3 dir = vel.getInterpolatedHi(pos, 2);
-                        normalize(dir);
-                        for (int i = 0; i < 50; i++)
-                        {
-                            Vec3 current = pos + i * dir;
-
-                            if (isSampleableFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags_n_plus_one, component))
-                            {
-                                getInterpolationStencilWithWeights(neighboursAndWeights, current, flags_n_plus_one, offset, component, FLUID_ISH);
-                                break;
-                            }
-                        }
-                    }
+                        component,
+                        offset);
 
                     for (const auto &[n, w] : neighboursAndWeights)
                     {
@@ -1286,6 +1130,11 @@ namespace Manta
                 continue;
             }
             if (std::abs(beta(i, j, k)) < EPSILON)
+            {
+                continue;
+            }
+
+            if (phi && (*phi)(i, j, k) > -1.0)
             {
                 continue;
             }
