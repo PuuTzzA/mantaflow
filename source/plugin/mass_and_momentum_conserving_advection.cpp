@@ -973,7 +973,7 @@ namespace Manta
             throw std::runtime_error("InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection");
         }
 
-        Vec3i infocus = Vec3i(20, 3, 0);
+        Vec3i infocus = Vec3i(16, 2, 0);
         if (component == MAC_Y && phi)
         {
             std::cout << infocus << "at the start: " << grid(infocus) << std::endl;
@@ -1570,9 +1570,9 @@ namespace Manta
     // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
 
     PYTHON()
-    void printAtMACPos(const MACGrid &vel)
+    void printAtMACPos(const MACGrid &vel, Vec3i pos)
     {
-        std::cout << "print at mac pos: " << vel(28, 2, 0) << std::endl;
+        std::cout << "print at mac pos: vel" << pos << " = " << vel(pos) << std::endl;
     }
 
     PYTHON()

@@ -14,6 +14,12 @@ if (dim==2):
 s = Solver(name='main', gridSize = gs, dim=dim)
 s.timestep  = 0.15 
 
+#s.frameLength = 0.6   # length of one frame (in "world time")
+#s.timestepMin = 0.01   # time step range
+#s.timestepMax = 2.0
+#s.cfl         = 0.1   # maximal velocity per cell
+#s.timestep    = (s.timestepMax+s.timestepMin)*0.5
+
 # scene file params
 ghostFluid  = True
 doOpen      = False
@@ -83,6 +89,9 @@ setAllEmptyFlagsToLiquid(flags=flags_all_fluid)
 phi_n_plus_one.copyFrom(phi)
 #main loop
 for t in range(1000):
+    #maxVel = vel.getMax()
+    #s.adaptTimestep( maxVel )
+
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
     
     # update and advect levelset
@@ -115,16 +124,35 @@ for t in range(1000):
 
     flags.copyFrom(flags_n_plus_one)
     phi.copyFrom(phi_n_plus_one)
+    
+    interestedPos = Vec3(16, 2, 0)
+    interestedPos2 = Vec3(16, 1, 0)
+    print("right after advection")
+    printAtMACPos(vel=vel, pos=interestedPos)
+
     addGravity(flags=flags, vel=vel, gravity=Vec3(0,-0.025,0))
     #addGravity(flags=flags, vel=vel, gravity=Vec3(-0.025,0,0)) # Y
     
+    print("after adding Gravity")
+    printAtMACPos(vel=vel, pos=interestedPos)
     # pressure solve
+
+    extrapolateMACSimple( flags=flags, vel=vel, distance=10 )
     setWallBcs(flags=flags, vel=vel)
-    if ghostFluid:
+
+    print("after Extrapolation and Boundry conditions")
+    printAtMACPos(vel=vel, pos=interestedPos)
+    printAtMACPos(vel=vel, pos=interestedPos2)
+    printAtMACPos(vel=vel, pos=interestedPos + Vec3(1, 0, 0))
+    printAtMACPos(vel=vel, pos=interestedPos + Vec3(0, 1, 0))
+
+    if ghostFluid and False:
         solvePressure(flags=flags, vel=vel, pressure=pressure, cgMaxIterFac=0.5, cgAccuracy=accuracy, phi=phi )
     else:
         solvePressure(flags=flags, vel=vel, pressure=pressure, cgMaxIterFac=0.5, cgAccuracy=accuracy)
     
+    print("after Pressure Projection")
+    printAtMACPos(vel=vel, pos=interestedPos)
     # note: these meshes are created by fast marching only, should smooth
     #       geometry and normals before rendering (only in 3D for now)
     if (dim==3):

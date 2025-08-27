@@ -340,9 +340,20 @@ PYTHON() void solvePressureSystem(
 	// setup matrix and boundaries
 	MakeLaplaceMatrix(flags, A0, Ai, Aj, Ak, fractions);
 
+    // Vec3i interestedGrid = Vec3i(16, 2, 0);
+    // Vec3i interesteGridNeighbor = interestedGrid - Vec3i(0, 1, 0);
+    // std::cout << "after MakeLaplaceMAtrix: A0" << interestedGrid << " = " << A0(interestedGrid) << ", Ai = " << Ai(interestedGrid) << 
+    // ", Aj = " << Aj(interestedGrid) << ", Ak = " << Ak(interestedGrid) << std::endl;
+
 	if(phi) {
 		ApplyGhostFluidDiagonal(A0, flags, *phi, gfClamp);
 	}
+
+    //	std::cout << "after apply Ghose Fluid Diag: A0" << interestedGrid << " = " << A0(interestedGrid) << ", Ai = " << Ai(interestedGrid) << 
+    //	", Aj = " << Aj(interestedGrid) << ", Ak = " << Ak(interestedGrid) << std::endl;
+    //
+    //	std::cout << "after apply Ghose Fluid Diag: A0" << interesteGridNeighbor << " = " << A0(interesteGridNeighbor) << ", Ai = " << Ai(interesteGridNeighbor) << 
+    //	", Aj = " << Aj(interesteGridNeighbor) << ", Ak = " << Ak(interesteGridNeighbor) << std::endl;
 
 	// check whether we need to fix some pressure value...
 	// (manually enable, or automatically for high accuracy, can cause asymmetries otherwise)
@@ -496,11 +507,17 @@ PYTHON() void solvePressure(
 {
 	Grid<Real> rhs(vel.getParent());
 
+	// std::cout << "fractions " << fractions << std::endl;
+
 	computePressureRhs(
 		rhs, vel, pressure, flags, cgAccuracy,
 		phi, perCellCorr, fractions, obvel, gfClamp,
 		cgMaxIterFac, precondition, preconditioner, enforceCompatibility,
 		useL2Norm, zeroPressureFixing, curv, surfTens);
+
+	// Vec3i interestedGrid = Vec3i(16, 2, 0);
+	// std::cout << "after compute Rhs: rhs" << interestedGrid << " = " << rhs(interestedGrid) << std::endl;
+	// std::cout << "after compute Rhs: rhs" << interestedGrid + Vec3i(0, -1, 0) << " = " << rhs(interestedGrid + Vec3i(-1, 0, 0)) << std::endl;
 
 	solvePressureSystem(
 		rhs, vel, pressure, flags, cgAccuracy,
@@ -508,11 +525,19 @@ PYTHON() void solvePressure(
 		cgMaxIterFac, precondition, preconditioner, enforceCompatibility,
 		useL2Norm, zeroPressureFixing, curv, surfTens);
 
+	// std::cout << "after solvePressureSystem: pressure" << interestedGrid << " = " << pressure(interestedGrid) << std::endl;
+	// std::cout << "after solvePressureSystem: pressure" << interestedGrid + Vec3i(0, -1, 0) << " = " << pressure(interestedGrid + Vec3i(0, -1, 0)) << std::endl;
+
+	// std::cout << "after solvePressureSystem: vel" << interestedGrid << " = " << vel(interestedGrid) << std::endl;
+	// std::cout << "after solvePressureSystem: vel" << interestedGrid + Vec3i(0, -1, 0) << " = " << vel(interestedGrid + Vec3i(-1, 0, 0)) << std::endl;
+
 	correctVelocity(
 		vel, pressure, flags, cgAccuracy,
 		phi, perCellCorr, fractions, gfClamp,
 		cgMaxIterFac, precondition, preconditioner, enforceCompatibility,
 		useL2Norm, zeroPressureFixing, curv, surfTens);
+
+	// std::cout << "after correctVelocity: vel" << interestedGrid << " = " << vel(interestedGrid) << std::endl;
 
 	// optionally , return RHS
 	if(retRhs) {
