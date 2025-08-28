@@ -29,6 +29,8 @@ namespace Manta
 
 #define ESCAPE_CONDITION 1 // a particle counts as escaped, if it is further than ESCAPE_CONDITION * radius on the wrong side
 
+#define RANDOM_SEED 1
+
     // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
     // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
     // LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET LEVEL SET
@@ -539,6 +541,8 @@ namespace Manta
     PYTHON()
     void sampleLevelsetBorderWithParticles(const Grid<Real> &phi, const FlagGrid &flags, BasicParticleSystem &particles, ParticleDataImpl<Real> &radii)
     {
+        srand(RANDOM_SEED);
+
         FOR_IJK_BND(flags, 0)
         {
             if (flags.isObstacle(i, j, k))
@@ -552,7 +556,20 @@ namespace Manta
         }
 
         particles.insertBufferedParticles();
-        knSetTargetPhi(particles, radii); // store phi_target in radii for now, later the actual radii
+
+        for (IndexInt idx = 0, max = particles.size(); idx < particles.size(); idx++) // do this for a repeatable random seed, with threads not random
+        {
+            if (particles[idx].flag & ParticleBase::PDELETE)
+            {
+                continue;
+            }
+
+            Real randomNum = static_cast<Real>(rand()) / static_cast<Real>(RAND_MAX);
+
+            randomNum = randomNum * (std::abs(particles.isInside(idx) ? NEGATIVE_SEED_CUTOFF : POSITIVE_SEED_CUTOFF) - MIN_RADIUS) + MIN_RADIUS;
+            radii[idx] = (particles.isInside(idx) ? -1. : 1.) * randomNum;
+        }
+        // knSetTargetPhi(particles, radii); // store phi_target in radii for now, later the actual radii
 
         for (int __ = 0; __ < 10; __++)
         {
