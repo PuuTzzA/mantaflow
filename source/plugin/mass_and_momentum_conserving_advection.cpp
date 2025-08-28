@@ -1112,7 +1112,7 @@ namespace Manta
                 continue; // avoid division by 0
             }
             Real factor = 1 / gammaCumulative(i, j, k);
-            // factor = Manta::clamp(factor, 0.5, 1.5);
+            //factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
@@ -1140,7 +1140,7 @@ namespace Manta
                 continue;
             }
             Real factor = 1 / beta(i, j, k);
-            // factor = Manta::clamp(factor, 0.5, 1.5);
+            //factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
 
             weights.scaleAllWeightsAt(Vec3i(i, j, k), factor);
         }

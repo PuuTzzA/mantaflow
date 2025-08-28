@@ -210,6 +210,23 @@ DIFFERENT_CFL_2D_PATHS = [
     ['../scenes/test_cases/different_cfl_2d/02_dif_cfl_traditional_polynomial.json', False],
 ]
 
+HIGHRES_PATHS = [
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl.json', True],
+    # ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl.json', True],
+
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl.json', True],
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_0_linear_local_cfl.json', True],
+]
+
+WATER_PATHS = [
+    ['../scenes/test_cases/simple_water/simple_water_dam_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_dam_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_dam_NO_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_drop_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
+]
+
 """ 
 for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS + FIXED_VEL_ZALESAK_ROTATION_PATHS:
 
@@ -263,15 +280,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
  """
 
-HIGHRES_PATHS = [
-    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl.json', True],
-    # ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl.json', True],
-
-    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl.json', True],
-    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_0_linear_local_cfl.json', True],
-]
-
-for param, requiresVDB in HIGHRES_PATHS:
+""" for param, requiresVDB in HIGHRES_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -279,10 +288,10 @@ for param, requiresVDB in HIGHRES_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_HIGHRES_SCENE, param])
+ """
 
 
-""" 
-for param, requiresVDB in SIMPLE_WATER_PATHS:
+for param, requiresVDB in WATER_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -290,4 +299,3 @@ for param, requiresVDB in SIMPLE_WATER_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_WATER_SCENE, param]) 
- """

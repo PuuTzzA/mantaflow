@@ -16,7 +16,7 @@ resolutionX = 150
 resolutionY = 150
 resolutionZ = 150
 
-layout = "dam"
+layout_options = ["dam", "drop"]
 doPLS = False
 
 exportData = True
@@ -41,6 +41,8 @@ tracing_function_names = {
     1 : "local_cfl",
 }
 
+flip_not_flip = [True, False]
+
 # Settings to vary
 conserving_options = [True, False]
 interpolation_methods = [0, 1, 2]  # 3 is invalid when conserving=True
@@ -48,13 +50,13 @@ interpolation_methods = [0, 1, 2]  # 3 is invalid when conserving=True
 
 generated_paths = []
 
-for doConserving in conserving_options:
-    if doConserving:
-        for interp in interpolation_methods:
-            #for tracing_function in tracing_functions:
-            interp_name = interpolation_method_names[interp]
+for layout in layout_options:
+    for doFlip in flip_not_flip:
+        conserving_options = [False] if doFlip else [True, False]
+        
+        for doConserving in conserving_options: 
             #    tracing_function_name = tracing_function_names[tracing_function]
-            title = f"{BASE_TITLE}_conserving{"_" if interp_name != "" else ""}{interp_name}"
+            title = f"{BASE_TITLE}_{layout}_{"FLIP" if doFlip else "NO_FLIP"}_{"conserving" if doConserving else "traditional"}"
             config = {
                 "title": title,
                 "dimension": dimension,
@@ -63,8 +65,8 @@ for doConserving in conserving_options:
                 "resolutionZ": resolutionZ,
                 "layout" : layout,
                 "doParticleLevelSet" : doPLS,
+                "doFLIP": doFlip,
                 "doConserving": True,
-                "interpolationMethod": interp,
                 "exportData": exportData,
                 "exportImages": exportImages,
                 "exportVideos": exportVideos,
@@ -81,35 +83,6 @@ for doConserving in conserving_options:
             # Store relative path with exportVDBs flag
             relative_path = f"../scenes/test_cases/{CONTAINER_DIR}/{title}.json"
             generated_paths.append([relative_path, exportVDBs])
-
-    else:
-        title = f"{BASE_TITLE}_flip"
-        config = {
-            "title": title,
-            "dimension": dimension,
-            "resolutionX": resolutionX,
-            "resolutionY": resolutionY,
-            "resolutionZ": resolutionZ,
-            "layout" : layout,
-            "doParticleLevelSet" : doPLS,
-            "doConserving": False,
-            "interpolationMethod": interp,
-            "exportData": exportData,
-            "exportImages": exportImages,
-            "exportVideos": exportVideos,
-            "exportVDBs": exportVDBs,
-            "max_time": max_time,
-            "maxCFL": maxCFL,
-            "dt": dt,
-        }
-
-        path = BASE_DIR / f"{title}.json"
-        with open(path, "w") as f:
-            json.dump(config, f, indent=2)
-
-        # Store relative path with exportVDBs flag
-        relative_path = f"../scenes/test_cases/{CONTAINER_DIR}/{title}.json"
-        generated_paths.append([relative_path, exportVDBs])
 
 # Output the list
 for entry in generated_paths:

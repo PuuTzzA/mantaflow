@@ -9,16 +9,16 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/test/simple_liquid/"
+    EXPORTS_BASE_DIR = "../exportsIgnore/water_tests"
 
 with open(param_path) as f:
     params = json.load(f)
 
 
 LEVEL = 0
+doFLIP = params["doFLIP"]
 doConserving = params["doConserving"]
 doParticleLevelSet = params["doParticleLevelSet"]
-interpolationMethod = params["interpolationMethod"]
 
 exportData = params["exportData"]
 exportImages = params["exportImages"]
@@ -161,11 +161,11 @@ if (GUI):
     if layout == 1:
         pass
 
-    if doConserving and doParticleLevelSet:
+    if not doFLIP and doParticleLevelSet:
         gui.nextParts()
         gui.nextParts()
     
-    if doConserving and not doParticleLevelSet:
+    if not doFLIP and not doParticleLevelSet:
         gui.nextParts()
         
     gui.pause()
@@ -175,14 +175,14 @@ data_collector = None
 if layout == 0: #dam
     data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                     export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], []], 
-                                    tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["innen1außen0", "sum"]])
+                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], [], [], []], 
+                                    tracked_grids_indeces=[0], image_grids_indeces=[0, 6], graph_grids=[["flags_viz", "sum"]])
 
 if layout == 1:
     data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                     export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-                                    trackable_grid_names=[["phi_fluid", phi_fluid], [], ["fixed_volume", innen1außen0], [], ["curl", curl], [], []], 
-                                    tracked_grids_indeces=[0, 2], image_grids_indeces=[0], graph_grids=[["fixed_volume", "max"]])
+                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], [], []], 
+                                    tracked_grids_indeces=[0], image_grids_indeces=[0, 6], graph_grids=[["flags_viz", "max"]])
 
 data_collector.init()
 
@@ -202,7 +202,7 @@ while (s.timeTotal < params["max_time"]):
     print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}")
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
-    if not doConserving:
+    if doFLIP:
         ## set (just for visualization)
         markPhiFromFlagGrid(phi_fluid, flags_n)
         reinitializeLevelset( phi=phi_fluid, flags=flags_n )
@@ -247,10 +247,12 @@ while (s.timeTotal < params["max_time"]):
             setFlagsFromParticleLevelset( phi=phi_fluid_n_plus_one, flags=flags_n_plus_one, level=0 )    
 
         interpolationMethod = 0
-        massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, 
-                                          interpolationType=interpolationMethod, phi_n_plus_one=phi_fluid_n_plus_one)
-               
-        #simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod, tracingMethod=0) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
+
+        if doConserving:
+            massMomentumConservingAdvectWater( flags_n=flags_n, flags_n_plus_one=flags_n_plus_one, vel=vel, grid=vel, gammaCumulative=vel_gamma, phi=phi_fluid, 
+                                            interpolationType=interpolationMethod, phi_n_plus_one=phi_fluid_n_plus_one)
+        else:     
+            simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
         visualizeFlags(flags=flags_n, grid=visualizerGrid, flags_n_plus_one=flags_n_plus_one)
 

@@ -7,8 +7,8 @@
   "resolutionZ": 20,
 
   "layout": "drop",
+  "doFLIP": false,
   "doConserving": true,
-  "interpolationMethod": 2,
   "doParticleLevelSet": true,
 
   "exportData": false,
