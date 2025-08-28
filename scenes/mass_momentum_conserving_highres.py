@@ -110,7 +110,7 @@ data_collector.init()
 num_steps = 0
 firstFrame = True
 #main loop
-while s.timeTotal < params["max_time"] and num_steps < 120:
+while s.timeTotal < params["max_time"] and num_steps < 150:
     num_steps += 1
     
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)

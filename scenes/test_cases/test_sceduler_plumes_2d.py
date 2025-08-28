@@ -23,6 +23,7 @@ PATH_TO_MANTA_VDB = Path("../../mantaVDB").expanduser().resolve()
 PATH_TO_SIMPLE_PLUME_SCENE = "../scenes/mass_momentum_conserving.py"
 PATH_TO_FIXEL_VELOCITY_SCENE = "../scenes/mmc_fixed_velocity_field.py"
 PATH_TO_WATER_SCENE = "../scenes/flip01_mass_momentum_conserving.py"
+PATH_TO_SIMPLE_PLUME_HIGHRES_SCENE = "../scenes/mass_momentum_conserving_highres.py"
 
 FIXED_VEL_ZALESAK_ROTATION_PATHS = [
     ['../scenes/test_cases/fixed_vel_zalesak_rotation/zalesak_rotation_conserving_0_linear.json', False], 
@@ -252,7 +253,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
  """
 
-for param, requiresVDB in DIFFERENT_CFL_2D_PATHS + SIMPLE_PLUME_3D_HIGH:
+""" for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -260,6 +261,24 @@ for param, requiresVDB in DIFFERENT_CFL_2D_PATHS + SIMPLE_PLUME_3D_HIGH:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
+ """
+
+HIGHRES_PATHS = [
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl.json', True],
+    # ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl.json', True],
+
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl.json', True],
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_0_linear_local_cfl.json', True],
+]
+
+for param, requiresVDB in HIGHRES_PATHS:
+
+    if requiresVDB:
+        os.chdir(PATH_TO_MANTA_VDB)
+    else:
+        os.chdir(PATH_TO_MANTA)
+
+    subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_HIGHRES_SCENE, param])
 
 
 """ 

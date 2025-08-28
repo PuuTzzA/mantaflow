@@ -1112,6 +1112,7 @@ namespace Manta
                 continue; // avoid division by 0
             }
             Real factor = 1 / gammaCumulative(i, j, k);
+            // factor = Manta::clamp(factor, 0.5, 1.5);
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
@@ -1139,6 +1140,7 @@ namespace Manta
                 continue;
             }
             Real factor = 1 / beta(i, j, k);
+            // factor = Manta::clamp(factor, 0.5, 1.5);
 
             weights.scaleAllWeightsAt(Vec3i(i, j, k), factor);
         }
@@ -1294,10 +1296,10 @@ namespace Manta
             knClampToMinMaxDiff(grid, min, max, tempGrid);
         } */
 
-        if (component == MAC_Y && phi)
-        {
-            std::cout << infocus << "at the end: " << grid(infocus) << std::endl;
-        }
+        /*  if (component == MAC_Y && phi)
+         {
+             std::cout << infocus << "at the end: " << grid(infocus) << std::endl;
+        } */
 
         knSetOutflowToZero(grid, flags_n_plus_one, component);
     }
