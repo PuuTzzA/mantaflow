@@ -16,6 +16,7 @@
 namespace Manta
 {
 #define EPSILON 1e-6
+//#define NO_KERNEL
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
@@ -776,22 +777,62 @@ namespace Manta
             bool start1Valid = isValidFluid(std::floor(start1.x), std::floor(start1.y), std::floor(start1.z), flags_n_plus_one, NONE);
             bool start2Valid = isValidFluid(std::floor(start2.x), std::floor(start2.y), std::floor(start2.z), flags_n_plus_one, NONE);
 
+            bool averageValid = isValidFluid(std::floor(((newPos1 + newPos2) * 0.5).x), std::floor(((newPos1 + newPos2) * 0.5).y), std::floor(((newPos1 + newPos2) * 0.5).z), flags, NONE);
+
             bool pos1Valid = isValidFluid(std::floor(newPos1.x), std::floor(newPos1.y), std::floor(newPos1.z), flags, NONE);
             bool pos2Valid = isValidFluid(std::floor(newPos2.x), std::floor(newPos2.y), std::floor(newPos2.z), flags, NONE);
+            // bool averageValid = pos1Valid && pos2Valid;
 
-            if (start1Valid && start2Valid && pos1Valid && pos2Valid)
+            const int stepAmount = 1000;
+            if (start1Valid && start2Valid && averageValid)
             {
                 getCorrectInterpolationStencilWithWeights(resultVec, (newPos1 + newPos2) * 0.5, flags, offset, component, FLUID_ISH);
             }
             else if (start1Valid && pos1Valid)
             {
-                getCorrectInterpolationStencilWithWeights(resultVec, newPos1 + neighbourOffset, flags, offset, component, FLUID_ISH);
+                Vec3 startpoint = newPos1;
+                Vec3 stepLen = neighbourOffset / static_cast<Real>(stepAmount);
+
+                Vec3 lastFluidPos = newPos1;
+
+                for (int step = 0; step < stepAmount; step++)
+                {
+                    Vec3 current = startpoint + static_cast<Real>(step) * stepLen;
+                    if (isValidFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, NONE))
+                    {
+                        lastFluidPos = current;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                getCorrectInterpolationStencilWithWeights(resultVec, lastFluidPos, flags, offset, component, FLUID_ISH);
             }
             else if (start2Valid && pos2Valid)
             {
-                getCorrectInterpolationStencilWithWeights(resultVec, newPos2 - neighbourOffset, flags, offset, component, FLUID_ISH);
+                Vec3 startpoint = newPos2;
+                Vec3 stepLen = -neighbourOffset / static_cast<Real>(stepAmount);
+
+                Vec3 lastFluidPos = newPos2;
+
+                for (int step = 0; step < stepAmount; step++)
+                {
+                    Vec3 current = startpoint + static_cast<Real>(step) * stepLen;
+                    if (isValidFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, NONE))
+                    {
+                        lastFluidPos = current;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                getCorrectInterpolationStencilWithWeights(resultVec, lastFluidPos, flags, offset, component, FLUID_ISH);
             }
-            else if (pos1Valid && pos2Valid)
+            /* else if (pos1Valid && pos2Valid)
             {
                 getCorrectInterpolationStencilWithWeights(resultVec, (newPos1 + newPos2) * 0.5, flags, offset, component, FLUID_ISH);
             }
@@ -802,7 +843,7 @@ namespace Manta
             else if (pos2Valid)
             {
                 getCorrectInterpolationStencilWithWeights(resultVec, newPos2 - neighbourOffset, flags, offset, component, FLUID_ISH);
-            }
+            } */
 
             if (!resultVec.empty())
             {
@@ -917,11 +958,60 @@ namespace Manta
         deltaGrid(i, j, k) += phiToMove;
     }
 
+    void diffuseGammaNoKernel(Grid<Real> &gamma, Grid<Real> &grid, const FlagGrid &flags, Vec3i &d, Grid<Real> &deltaGrid, Grid<Real> &deltaGamma, Grid<Real> &deltaGridNeighbour, Grid<Real> &deltaGammaNeighbour, MACGridComponent component)
+    {
+        FOR_IJK(grid)
+        {
+            if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags, component))
+            {
+                continue;
+            }
+
+            Vec3i idx_moved = Vec3i(i + d.x, j + d.y, k + d.z);
+
+            Real gammaToMove = (gamma(idx_moved) - gamma(i, j, k)) / 2.;
+            Real denominator = gamma(idx_moved);
+
+            if (abs(denominator) < EPSILON)
+            {
+                continue;
+            }
+
+            Real fraction_to_move = gammaToMove / denominator;
+
+            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.5), static_cast<Real>(0.5));
+
+            Real phiToMove = grid(idx_moved) * fraction_to_move;
+
+            if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
+            {
+                continue;
+            }
+
+            gammaToMove = gamma(idx_moved) * fraction_to_move;
+
+            deltaGammaNeighbour(idx_moved) -= gammaToMove;
+            deltaGamma(i, j, k) += gammaToMove;
+
+            deltaGridNeighbour(idx_moved) -= phiToMove;
+            deltaGrid(i, j, k) += phiToMove;
+        }
+    }
+
     KERNEL()
     void knInitializeMinMax(Grid<Real> &min, Grid<Real> &max)
     {
         min(i, j, k) = std::numeric_limits<Real>::max();
         max(i, j, k) = -std::numeric_limits<Real>::max();
+    }
+
+    void initializeMinMaxNoKernel(Grid<Real> &min, Grid<Real> &max)
+    {
+        FOR_IJK(min)
+        {
+            min(i, j, k) = std::numeric_limits<Real>::max();
+            max(i, j, k) = -std::numeric_limits<Real>::max();
+        }
     }
 
     KERNEL()
@@ -931,6 +1021,18 @@ namespace Manta
         if (min(i, j, k) == std::numeric_limits<Real>::max())
         {
             val(i, j, k) = 0;
+        }
+    }
+
+    void clampToMinMaxNoKernel(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max)
+    {
+        FOR_IJK(val)
+        {
+            val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
+            if (min(i, j, k) == std::numeric_limits<Real>::max())
+            {
+                val(i, j, k) = 0;
+            }
         }
     }
 
@@ -945,6 +1047,21 @@ namespace Manta
         Real start = val(i, j, k);
         val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
         diff(i, j, k) = val(i, j, k) - start;
+    }
+
+    void clampToMinMaxDiffNoKernel(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff)
+    {
+        FOR_IJK(val)
+        {
+            if (min(i, j, k) == std::numeric_limits<Real>::max())
+            {
+                diff(i, j, k) = 0;
+                return;
+            }
+            Real start = val(i, j, k);
+            val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
+            diff(i, j, k) = val(i, j, k) - start;
+        }
     }
 
     KERNEL()
@@ -981,6 +1098,11 @@ namespace Manta
         if (!phi && !phi_n_plus_one)
         {
             std::cout << "Not Water: Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
+#ifdef NO_KERNEL
+            std::cout << "No Kernel" << std::endl;
+#else
+            std::cout << "With Kernels" << std::endl;
+#endif
         }
         if (phi)
         {
@@ -1094,11 +1216,19 @@ namespace Manta
         }
 
         // Step 3: clamp gamma
+#ifdef NO_KERNEL
+        initializeMinMaxNoKernel(min, max);
+#else
         knInitializeMinMax(min, max);
+#endif
         weights.calculateIntermediateResult(tempGrid, gammaCumulative, min, max);
         if (interpolationType != LINEAR)
         {
+#ifdef NO_KERNEL
+            clampToMinMaxNoKernel(tempGrid, min, max);
+#else
             knClampToMinMax(tempGrid, min, max);
+#endif
         }
         gammaCumulative.swap(tempGrid);
         FOR_IJK_BND(grid, bnd)
@@ -1112,7 +1242,7 @@ namespace Manta
                 continue; // avoid division by 0
             }
             Real factor = 1 / gammaCumulative(i, j, k);
-            //factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
@@ -1135,24 +1265,38 @@ namespace Manta
                 continue;
             }
 
-            if (phi && (*phi)(i, j, k) > -1.0)
-            {
-                continue;
-            }
             Real factor = 1 / beta(i, j, k);
-            //factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
+            if (phi)
+            {
+                if ((*phi)(i + offset.x, j + offset.y, k + offset.z) > -1.0)
+                {
+                    continue;
+                }
+
+                // factor = Manta::clamp(factor, (Real)0.1, (Real)4);
+            }
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
+
+            if (factor == 0 || std::isnan(factor) || std::isinf(factor))
+            {
+                factor = 1;
+            }
 
             weights.scaleAllWeightsAt(Vec3i(i, j, k), factor);
         }
 
         // Step 5: intermediate Result
+#ifdef NO_KERNEL
+        initializeMinMaxNoKernel(min, max);
+#else
         knInitializeMinMax(min, max);
+#endif
         weights.calculateIntermediateResult(tempGrid, grid, min, max, (component == MAC_Y));
         grid.swap(tempGrid);
 
         // Step 6: Diffuse Gamma with per-axis sweeps
         weights.calculateGamma(gammaCumulative);
-        for (int _ = 0; _ < 10; _++)
+        for (int _ = 0; _ < 7; _++)
         {
             std::array<Vec3i, 3> dirs{{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}};
 
@@ -1170,8 +1314,11 @@ namespace Manta
                 deltaGridNeighbour.clear();
                 deltaGammaNeighbour.clear();
 
+#ifdef NO_KERNEL
+                diffuseGammaNoKernel(gammaCumulative, grid, flags_n_plus_one, d, deltaGrid, deltaGamma, deltaGridNeighbour, deltaGammaNeighbour, component);
+#else
                 knDiffuseGamma(gammaCumulative, grid, flags_n_plus_one, d, deltaGrid, deltaGamma, deltaGridNeighbour, deltaGammaNeighbour, component);
-
+#endif
                 gammaCumulative.add(deltaGamma);
                 gammaCumulative.add(deltaGammaNeighbour);
 
@@ -1185,7 +1332,11 @@ namespace Manta
         {
             tempGrid.clear();
 
+#ifdef NO_KERNEL
+            clampToMinMaxDiffNoKernel(grid, min, max, tempGrid);
+#else
             knClampToMinMaxDiff(grid, min, max, tempGrid);
+#endif
 
             if (redistributeClamped)
             {
@@ -1579,11 +1730,13 @@ namespace Manta
         knGrids2MAC(grid, newGridX, newGridY, newGridZ);
     }
 
+#ifndef NO_KERNEL
     PYTHON()
     void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false, int tracingMethod = NORMAL)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();
+        std::cout << "With Kernel version of simpleSLAdvect" << std::endl;
 
         if (grid->getType() & GridBase::TypeReal)
         {
@@ -1599,4 +1752,122 @@ namespace Manta
         else
             errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");
     }
+#endif
+
+    void fnSimpleSLAdvectNoKernel(const FlagGrid &flags, const MACGrid &vel, const Grid<Real> &oldGrid, Grid<Real> &newGrid, Vec3 &offset, Real dt, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, bool all, TracingMethod tracingMethod)
+    {
+        std::cout << "No Kernel: SL-Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
+
+        FOR_IJK(newGrid)
+        {
+            if (all ? !isNotObstacle(i, j, k, flags, component) : !isSampleableFluid(i, j, k, flags, component))
+            {
+                continue;
+            }
+
+            Vec3 pos;
+
+            switch (tracingMethod)
+            {
+            case NORMAL:
+                pos = customTrace(Vec3(i, j, k), -dt, vel, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                break;
+            case LOCAL_CFL:
+                pos = customTraceLocalCFL(Vec3(i, j, k), -dt, vel, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                break;
+            }
+
+            if (interpolationType != MONOTONE_CUBIC_HERMITE)
+            {
+                std::vector<std::tuple<Vec3i, Real>> neighboursAndWeights{};
+
+                switch (interpolationType)
+                {
+                case LINEAR:
+                    getInterpolationStencilWithWeights(neighboursAndWeights, pos, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                    break;
+                case CUBIC_POLYNOMIAL:
+                    getInterpolationStencilWithWeightsCubicPolynomial(neighboursAndWeights, pos, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                    break;
+                case CUBIC_CONVOLUTIONAL:
+                    getInterpolationStencilWithWeightsCubicConvolutional(neighboursAndWeights, pos, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+                    break;
+                }
+
+                newGrid(i, j, k) = 0;
+
+                if (neighboursAndWeights.empty())
+                {
+                    continue;
+                }
+
+                Real max = -std::numeric_limits<Real>::max();
+                Real min = std::numeric_limits<Real>::max();
+
+                for (const auto &[n, w] : neighboursAndWeights)
+                {
+                    newGrid(i, j, k) += w * oldGrid(n);
+                    max = std::max(max, oldGrid(n));
+                    min = std::min(min, oldGrid(n));
+                }
+
+                newGrid(i, j, k) = Manta::clamp(newGrid(i, j, k), min, max);
+            }
+            else if (interpolationType == MONOTONE_CUBIC_HERMITE)
+            {
+                newGrid(i, j, k) = interpolateMonotoneCubicHermite(pos, oldGrid, flags, offset, component, all ? NOT_OBSTACLE : FLUID_ISH);
+            }
+        }
+    }
+
+    void fnSimpleSLAdcetMACNoKernel(const FlagGrid &flags, const MACGrid &vel, MACGrid &grid, FluidSolver *parent, Real dt, InterpolationType interpolationType, bool all, TracingMethod tracingMethod)
+    {
+        Grid<Real> gridX(parent);
+        Grid<Real> gridY(parent);
+        Grid<Real> gridZ(parent);
+
+        Grid<Real> newGridX(parent);
+        Grid<Real> newGridY(parent);
+        Grid<Real> newGridZ(parent);
+
+        knMAC2Grids(grid, gridX, gridY, gridZ);
+
+        /* Vec3 offsetX = Vec3(0.5, 0.0, 0.0);
+        Vec3 offsetY = Vec3(0.0, 0.5, 0.0);
+        Vec3 offsetZ = Vec3(0.0, 0.0, 0.5); */
+
+        Vec3 offsetX = Vec3(0.0, 0.5, 0.5);
+        Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
+        Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
+
+        fnSimpleSLAdvectNoKernel(flags, vel, gridX, newGridX, offsetX, dt, MAC_X, false, interpolationType, all, tracingMethod);
+        fnSimpleSLAdvectNoKernel(flags, vel, gridY, newGridY, offsetY, dt, MAC_Y, false, interpolationType, all, tracingMethod);
+        fnSimpleSLAdvectNoKernel(flags, vel, gridZ, newGridZ, offsetZ, dt, MAC_Z, false, interpolationType, all, tracingMethod);
+
+        knGrids2MAC(grid, newGridX, newGridY, newGridZ);
+    }
+
+#ifdef NO_KERNEL
+    PYTHON()
+    void simpleSLAdvect(const FlagGrid *flags, const MACGrid *vel, GridBase *grid, int interpolationType, bool all = false, int tracingMethod = NORMAL)
+    {
+        Manta::FluidSolver *parent = flags->getParent();
+        Real dt = parent->getDt();
+        std::cout << "No Kernel version of simpleSLAdvect" << std::endl;
+
+        if (grid->getType() & GridBase::TypeReal)
+        {
+            Grid<Real> newGrid(parent);
+            Vec3 offset = Vec3(0.5, 0.5, 0.5);
+            fnSimpleSLAdvectNoKernel(*flags, *vel, *((Grid<Real> *)grid), newGrid, offset, dt, NONE, false, (InterpolationType)interpolationType, all, (TracingMethod)tracingMethod);
+            ((Grid<Real> *)grid)->swap(newGrid);
+        }
+        else if (grid->getType() & GridBase::TypeMAC)
+        {
+            fnSimpleSLAdcetMACNoKernel(*flags, *vel, *((MACGrid *)grid), parent, dt, (InterpolationType)interpolationType, all, (TracingMethod)tracingMethod);
+        }
+        else
+            errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");
+    }
+#endif
 }

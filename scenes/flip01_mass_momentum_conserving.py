@@ -9,7 +9,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exportsIgnore/water_tests"
+    EXPORTS_BASE_DIR = "../exportsIgnore/water_tests1"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -26,6 +26,7 @@ exportVideos = params["exportVideos"]
 exportVDBs = params["exportVDBs"]
 
 layout = 0 if params["layout"] == "dam" else 1 # 0=dam break, 1=falling drop
+print(params["layout"])
 
 title = params["title"]
 
@@ -65,6 +66,7 @@ tmpVec3          = s.create(VecGrid)
 phi_fluid = s.create(LevelsetGrid)
 phi_fluid_n_plus_one = s.create(LevelsetGrid)
 phi_visualization = s.create(LevelsetGrid)
+phi_mass_tracking = s.create(LevelsetGrid)
 
 gIdx = s.create(IntGrid)
 
@@ -175,14 +177,14 @@ data_collector = None
 if layout == 0: #dam
     data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                     export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], [], [], []], 
-                                    tracked_grids_indeces=[0], image_grids_indeces=[0, 6], graph_grids=[["flags_viz", "sum"]])
+                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], [], ["fluid_mass", phi_mass_tracking], [], []], 
+                                    tracked_grids_indeces=[0, 9], image_grids_indeces=[0, 6], graph_grids=[["flags_viz", "sum"], ["fluid_mass", "sum"]])
 
 if layout == 1:
     data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                     export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
-                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], [], []], 
-                                    tracked_grids_indeces=[0], image_grids_indeces=[0, 6], graph_grids=[["flags_viz", "max"]])
+                                    trackable_grid_names=[["flags_viz", visualizerGrid], ["innen1außen0", innen1außen0], [], ["curl", curl], [], [], ["phi_fluid", phi_fluid], [], [], ["fluid_mass", phi_mass_tracking], []], 
+                                    tracked_grids_indeces=[0, 9], image_grids_indeces=[0, 6], graph_grids=[["flags_viz", "max"], ["fluid_mass", "sum"]])
 
 data_collector.init()
 
@@ -225,6 +227,7 @@ while (s.timeTotal < params["max_time"]):
         flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 )
 
         visualizeFlags(flags=flags_n, grid=visualizerGrid)
+        visualizeFlags(flags=flags_n, grid=phi_mass_tracking, flags_n_plus_one=flags_n_plus_one, onlyFluid=True)
 
     else:
         vel_extrapolated.copyFrom(vel)
@@ -240,7 +243,7 @@ while (s.timeTotal < params["max_time"]):
         else:
             advectParticleLevelSet( phi=phi_fluid_n_plus_one, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags_n )
 
-            if (data_collector.current_frame % 15 == 0):
+            if (data_collector.current_frame % (17 if layout == 0 else 25) == 0): #layout 0 == dam
                 pass
                 reseedParticles(phi=phi_fluid_n_plus_one, flags=flags_n, particles=level_set_particles, radii=particle_radii )
 
@@ -255,6 +258,7 @@ while (s.timeTotal < params["max_time"]):
             simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
         visualizeFlags(flags=flags_n, grid=visualizerGrid, flags_n_plus_one=flags_n_plus_one)
+        visualizeFlags(flags=flags_n, grid=phi_mass_tracking, flags_n_plus_one=flags_n_plus_one, onlyFluid=True)
 
         flags_n.copyFrom(flags_n_plus_one)
         phi_fluid.copyFrom(phi_fluid_n_plus_one)

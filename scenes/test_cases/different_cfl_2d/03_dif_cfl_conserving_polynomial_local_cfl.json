@@ -1,9 +1,9 @@
 {
-  "title": "40_dif_cfl_conserving_polynomial_local_cfl",
+  "title": "03_dif_cfl_conserving_polynomial_local_cfl",
   "dimension": 2,
-  "resolutionX": 75,
-  "resolutionY": 75,
-  "resolutionZ": 75,
+  "resolutionX": 1000,
+  "resolutionY": 1000,
+  "resolutionZ": 1000,
   "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
@@ -15,7 +15,7 @@
   "exportImages": true,
   "exportVideos": true,
   "exportVDBs": false,
-  "max_time": 120,
-  "maxCFL": 40, 
+  "max_time": 112,
+  "maxCFL": 3, 
   "dt": 10
 }

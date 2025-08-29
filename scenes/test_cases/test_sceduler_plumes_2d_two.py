@@ -179,32 +179,32 @@ SIMPLE_PLUME_3D_HIGH = [
 ]
 
 DIFFERENT_CFL_2D_PATHS = [
-    # Same Resolution 200
-    ['../scenes/test_cases/different_cfl_2d_res_200/40_dif_cfl_conserving_polynomial_local_cfl.json', False],                        
-    ['../scenes/test_cases/different_cfl_2d_res_200/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
-
-    # Different cfl and resolution
-    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                          
-    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                           
-    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                          
-    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                           
-    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                          
-    ['../scenes/test_cases/different_cfl_2d/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
-#    ['../scenes/test_cases/different_cfl_2d/03_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#    # Same Resolution 200
+#    ['../scenes/test_cases/different_cfl_2d_res_200/40_dif_cfl_conserving_polynomial_local_cfl.json', False],                        
+#    ['../scenes/test_cases/different_cfl_2d_res_200/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#
+#    # Different cfl and resolution
+#    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                          
+#    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                           
+#    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                          
+#    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                           
+#    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                          
+#    ['../scenes/test_cases/different_cfl_2d/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/03_dif_cfl_traditional_polynomial_local_cfl.json', False],
 ]
 
 HIGHRES_PATHS = [

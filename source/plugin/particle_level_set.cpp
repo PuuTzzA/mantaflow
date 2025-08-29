@@ -21,7 +21,7 @@ namespace Manta
     }
 
 #define POSITIVE_SEED_CUTOFF 1.0f  // 3 * dx
-#define NEGATIVE_SEED_CUTOFF -3.0f // 3 * dx
+#define NEGATIVE_SEED_CUTOFF -2.5f // 3 * dx
 #define MIN_RADIUS 0.1f            // .1 * min(dx, dy, dz)
 #define MAX_RADIUS 0.5f            // .5 * min(dx, dy, dz)
 
@@ -1114,8 +1114,21 @@ namespace Manta
     }
 
     KERNEL()
-    void knVisualizeFlags(const FlagGrid &flags, Grid<Real> &grid, const FlagGrid *flags_n_plus_one)
+    void knVisualizeFlags(const FlagGrid &flags, Grid<Real> &grid, const FlagGrid *flags_n_plus_one, bool onlyFluid)
     {
+        if (onlyFluid)
+        {
+            if (flags.isFluid(i, j, k) || (flags_n_plus_one && flags_n_plus_one->isFluid(i, j, k)))
+            {
+                grid(i, j, k) = 1;
+            }
+            else
+            {
+                grid(i, j, k) = 0;
+            }
+            return;
+        }
+
         if (flags_n_plus_one)
         {
             if (flags.isFluid(i, j, k))
@@ -1155,8 +1168,8 @@ namespace Manta
     }
 
     PYTHON()
-    void visualizeFlags(const FlagGrid &flags, Grid<Real> &grid, const FlagGrid *flags_n_plus_one = nullptr)
+    void visualizeFlags(const FlagGrid &flags, Grid<Real> &grid, const FlagGrid *flags_n_plus_one = nullptr, bool onlyFluid = false)
     {
-        knVisualizeFlags(flags, grid, flags_n_plus_one);
+        knVisualizeFlags(flags, grid, flags_n_plus_one, onlyFluid);
     }
 }

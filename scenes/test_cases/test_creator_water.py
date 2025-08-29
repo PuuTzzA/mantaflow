@@ -12,12 +12,12 @@ BASE_DIR.mkdir(parents=True, exist_ok=True)
 # Constant settings
 BASE_TITLE = "simple_water"
 dimension = 2
-resolutionX = 150
-resolutionY = 150
-resolutionZ = 150
+resolutionX = 64
+resolutionY = 64
+resolutionZ = 64
 
 layout_options = ["dam", "drop"]
-doPLS = False
+doPLS = True
 
 exportData = True
 exportImages = True
@@ -26,7 +26,7 @@ exportVDBs = False  # This is the flag we will output as True/False in the print
 
 max_time = 150
 maxCFL = 0.5
-dt = 2
+dt = 1
 
 # Interpolation method names
 interpolation_method_names = {
@@ -66,7 +66,7 @@ for layout in layout_options:
                 "layout" : layout,
                 "doParticleLevelSet" : doPLS,
                 "doFLIP": doFlip,
-                "doConserving": True,
+                "doConserving": doConserving,
                 "exportData": exportData,
                 "exportImages": exportImages,
                 "exportVideos": exportVideos,

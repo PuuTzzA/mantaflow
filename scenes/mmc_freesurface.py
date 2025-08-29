@@ -102,8 +102,8 @@ for t in range(1000):
         extrapolateLsSimple(phi=phi_n_plus_one, distance=10, inside=True )
         extrapolateMACSimple( flags=flags, vel=vel, distance=10 )
 
-    advectSemiLagrange(flags=flags, vel=vel, grid=phi_n_plus_one, order=2, clampMode=2) 
-    #massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=phi, gammaCumulative=phi_gamma,interpolationType=0, tracingMethod=0)
+    #advectSemiLagrange(flags=flags, vel=vel, grid=phi_n_plus_one, order=2, clampMode=2) 
+    massMomentumConservingAdvect( flags=flags_all_fluid, vel=vel, grid=phi_n_plus_one, gammaCumulative=phi_gamma,interpolationType=0, tracingMethod=0)
     #simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=phi, interpolationType=0, tracingMethod=0) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
     phi.setBound(bWidth, 1.) # enforce outside values at border
