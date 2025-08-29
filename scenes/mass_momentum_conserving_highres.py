@@ -49,7 +49,7 @@ title = params["title"]
 s.frameLength = params["dt"]     
 s.cfl         = params["maxCFL"]
 s.timestep    = s.frameLength
-s.timestepMin = 0.1 
+s.timestepMin = 0.5 
 s.timestepMax = s.frameLength
 
 timings = Timings()
@@ -62,6 +62,7 @@ pressure = s.create(RealGrid)
 curl = s.create(RealGrid)
 velocity_magnitude = s.create(RealGrid)
 phiObs = s.create(LevelsetGrid)
+phiObsHelper = s.create(LevelsetGrid)
 
 vel_gamma = s.create(MACGrid)
 density_gamma = s.create(RealGrid)
@@ -73,7 +74,14 @@ if doObstacle:
     mesh.scale( vec3(res) )
     mesh.offset( gs* (Vec3(0.5, 0.5, 0.5)) ) # center + slight offset
 
+    boolBox = Box( parent=s, p0=gs*Vec3(0.1,0.1,0.3), p1=gs*Vec3(0.9, 0.9, 0.7))
+
     mesh.computeLevelset(phiObs, 1)
+
+    phiObsHelper.copyFrom(phiObs)
+    phiObsHelper.subtract(boolBox.computeLevelset())
+
+    phiObs.subtract(phiObsHelper)
 
 #prepare grids
 bWidth=0
@@ -98,7 +106,7 @@ gui = None
 if (GUI) and not exportVDBs:
     gui = Gui()
     gui.show( True ) 
-    #gui.pause()
+    gui.pause()
 
 data_collector = Data_collectior(title=title ,base_dir=EXPORTS_BASE_DIR, params=params, export_data=exportData, 
                                  export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs, 
@@ -173,6 +181,7 @@ while s.timeTotal < params["max_time"] and num_steps < 150:
 
     data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density, velocity_magnitude])
 
+    timings.saveJson(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "timings" / f"timings_{str(data_collector.current_frame - 1).zfill(4)}.json"))
     timings.display()    
     s.step()
 

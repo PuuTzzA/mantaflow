@@ -2,8 +2,8 @@
   "title": "testtest4",
 
   "dimension": 2,
-  "resolutionX": 75,
-  "resolutionY": 75,
+  "resolutionX": 133,
+  "resolutionY": 133,
   "resolutionZ": 150,
 
   "doOpen": false,
@@ -20,6 +20,6 @@
   "exportVDBs": false,
 
   "max_time": 180,
-  "maxCFL": 40, 
+  "maxCFL": 5, 
   "dt": 10
 }
