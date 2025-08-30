@@ -130,6 +130,11 @@ s.adaptTimestep(maxvel)
 #main loop
 while (s.timeTotal < params["max_time"]):
     relError = calculateRelativeError(phi0=testField0, phin=testField)
+    
+    computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
+    maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
+
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[], relError=relError)
 
     maxvel = vel.getMax()
     s.adaptTimestep(maxvel)
@@ -153,10 +158,6 @@ while (s.timeTotal < params["max_time"]):
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod, redistributeClamped=redistributeClamped)
 
     #timings.display()    
-    computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
-    maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
-
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[], relError=relError)
 
     print("rel error:", relError)
 
