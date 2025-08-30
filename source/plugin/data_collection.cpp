@@ -168,7 +168,7 @@ namespace Manta
         return knGetMaxVal(grid, flags);
     }
 
-    KERNEL(bnd=2)
+    KERNEL(bnd = 2)
     void knComputeVelocityMagnitude(Grid<Real> &dest, const MACGrid &vel)
     {
         dest(i, j, k) = norm(vel.getCentered(i, j, k));
@@ -190,5 +190,20 @@ namespace Manta
     void storeVelocityMagnitude(Grid<Real> &dest, const MACGrid &vel)
     {
         knStoreVelocityMagnitude(dest, vel);
+    }
+
+    PYTHON()
+    double calculateRelativeError(Grid<Real> &phi0, Grid<Real> &phin)
+    {
+        double sum0squared{0.};
+        double differenceSquared{0.};
+
+        FOR_IJK(phi0)
+        {
+            sum0squared += phi0(i, j, k) * phi0(i, j, k);
+            differenceSquared += (phin(i, j, k) - phi0(i, j, k)) * (phin(i, j, k) - phi0(i, j, k));
+        }
+
+        return std::sqrt(differenceSquared / sum0squared);
     }
 }

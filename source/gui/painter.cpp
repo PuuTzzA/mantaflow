@@ -426,7 +426,7 @@ template<> void GridPainter<int>::paint() {
 		}
 		glEnd();    
 	} else{
-		//return; //THOMAS
+		return; //THOMAS
 		float dx = mLocalGrid->getDx();
 		Vec3 box[4];
 		glColor3f(0.5,0,0);

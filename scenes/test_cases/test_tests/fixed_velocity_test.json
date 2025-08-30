@@ -9,7 +9,7 @@
   "scenario" : "zalesak_rotation",
   "doConserving": false,
   "tracingMethod": "RK4",
-  "interpolationMethod": 0,
+  "interpolationMethod": 2,
   "redistributeClamped": true,
 
   "exportData": false,
@@ -19,5 +19,5 @@
 
   "max_time": 10000,
   "maxCFL": 1, 
-  "dt": 20
+  "dt": 1
 }

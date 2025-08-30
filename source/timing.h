@@ -26,6 +26,7 @@ public:
 	static TimingData& instance() { static TimingData a; return a; }
 
 	void print();
+	void saveJson(const std::string& filename);
 	void saveMean(const std::string& filename);
 	void start(FluidSolver* parent, const std::string& name);
 	void stop(FluidSolver* parent, const std::string& name);
@@ -53,6 +54,7 @@ public:
 	
 	PYTHON() void display() { TimingData::instance().print(); }
 	PYTHON() void saveMean(std::string file) { TimingData::instance().saveMean(file); }
+	PYTHON() void saveJson(std::string file) {TimingData::instance().saveJson(file); }
 };
 
 }

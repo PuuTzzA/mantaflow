@@ -16,7 +16,7 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-//#define NO_KERNEL
+// #define NO_KERNEL
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
@@ -1242,7 +1242,7 @@ namespace Manta
                 continue; // avoid division by 0
             }
             Real factor = 1 / gammaCumulative(i, j, k);
-            // factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-3, (Real)-0.2) : Manta::clamp(factor, (Real)0.2, (Real)3);
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
@@ -1275,7 +1275,8 @@ namespace Manta
 
                 // factor = Manta::clamp(factor, (Real)0.1, (Real)4);
             }
-            // factor = factor < 0 ? Manta::clamp(factor, (Real)-1.5, (Real)-0.5) : Manta::clamp(factor, (Real)0.5, (Real)1.5);
+
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-3, (Real)-0.2) : Manta::clamp(factor, (Real)0.2, (Real)3);
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
