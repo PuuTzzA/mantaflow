@@ -1,0 +1,21 @@
+{
+  "title": "30_dif_cfl_conserving_polynomial_local_cfl_res_150",
+  "dimension": 2,
+  "resolutionX": 150,
+  "resolutionY": 150,
+  "resolutionZ": 150,
+  "doOpen": false,
+  "doObstacle": true,
+  "doConserving": true,
+  "tracingMethod": "RK4",
+  "tracingFunction": 1,
+  "redistributeClamped": true,
+  "interpolationMethod": 2,
+  "exportData": true,
+  "exportImages": true,
+  "exportVideos": true,
+  "exportVDBs": false,
+  "max_time": 120,
+  "maxCFL": 30, 
+  "dt": 10
+}
