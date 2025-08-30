@@ -9,7 +9,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/"
+    EXPORTS_BASE_DIR = "../exports/2_fixed_vel_zalesak_rotation/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -101,6 +101,9 @@ fillWithOnes( grid=testPhiGamma )
 fillWithOnes( grid=testFieldGamma )
 setVelocityField(vel=vel, flags=flags, functionName=scenario)
 
+testField0 = s.create(RealGrid)
+testField0.copyFrom(testField)
+
 #Data Colleciton and Export
 if GUI:
     gui = Gui()
@@ -116,8 +119,8 @@ if GUI:
 
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
                                  export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
-                                 trackable_grid_names=[["testField", testField], ["vel_magnitude", velocity_magnitude], [], [], ["testPhi", testPhi]], 
-                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]], ignore_framelength=True)
+                                 trackable_grid_names=[["testField", testField], ["vel_magnitude", velocity_magnitude], [], [], ["testPhi", testPhi], []], 
+                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]], ignore_framelength=False)
 
 data_collector.init()
 
@@ -126,6 +129,10 @@ s.adaptTimestep(maxvel)
 
 #main loop
 while (s.timeTotal < params["max_time"]):
+    relError = calculateRelativeError(phi0=testField0, phin=testField)
+
+    maxvel = vel.getMax()
+    s.adaptTimestep(maxvel)
 
     print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxVel: {maxvel}")
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
@@ -149,7 +156,9 @@ while (s.timeTotal < params["max_time"]):
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
 
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[])
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[], relError=relError)
+
+    print("rel error:", relError)
 
     s.step()
 

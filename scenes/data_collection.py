@@ -56,12 +56,16 @@ class Data_collectior:
         if self.export_vdbs:
             (self.base_dir / "vdbs").mkdir(parents=True, exist_ok=True)
 
-    def step(self, solver, flags, maxVel, gui=None, windowSize=[1000, 1000], camPos=[0, 0, -1.2], objects=[]):
+    def step(self, solver, flags, maxVel, gui=None, windowSize=[1000, 1000], camPos=[0, 0, -1.2], objects=[], relError=-1):
         #self.current_frame = math.floor(solver.timeTotal)
 
         self.data["frame_data"][str(self.current_frame).zfill(4)] = {}
         self.data["frame_data"][str(self.current_frame).zfill(4)]["cfl"] = maxVel * solver.timestep
         self.data["frame_data"][str(self.current_frame).zfill(4)]["dt"] = solver.timestep
+
+        if (relError != -1):
+            self.data["frame_data"][str(self.current_frame).zfill(4)]["current_time"] = solver.timeTotal
+            self.data["frame_data"][str(self.current_frame).zfill(4)]["relative_error"] = relError
 
         for i in range(len(self.trackable_grids)):
             if i in self.tracked_grids_indeces:    

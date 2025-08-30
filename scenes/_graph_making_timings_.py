@@ -2,11 +2,11 @@ import os
 import glob
 import json
 import re
-import statistics
+import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-BASEDIR = (Path(__file__).parent.parent / "exportsIgnore/").resolve()   
+BASEDIR = (Path(__file__).parent.parent / "exports/").resolve()   
 
 def extract_index(filename):
     """Return integer index found in filename (last group of digits), or inf if none."""
@@ -49,7 +49,7 @@ def main():
 
     files.sort(key=lambda p: extract_index(os.path.basename(p)))
 
-    name_keys = ["solvePressure", "massMomentumConservingAdvect"]
+    name_keys = [CATEGORY_SOLVE_PRESSURE, CATEGORY_ADVECTION]
 
     steps = []
     solve_list, advect_list, other_list = [], [], []
@@ -61,8 +61,8 @@ def main():
         step_label = step if step is not None else i
         steps.append(step_label)
 
-        solve_ms = matched["solvePressure"]
-        advect_ms = matched["massMomentumConservingAdvect"]
+        solve_ms = matched[CATEGORY_SOLVE_PRESSURE]
+        advect_ms = matched[CATEGORY_ADVECTION]
         other_ms = total_ms - solve_ms - advect_ms
         if other_ms < 0:
             other_ms = 0
@@ -74,15 +74,23 @@ def main():
 
     n = len(solve_list)
 
-    avg_solve = statistics.mean(solve_list)
-    avg_advect = statistics.mean(advect_list)
-    avg_other = statistics.mean(other_list)
+    solve_list = np.array(solve_list  , dtype=np.float64)
+    advect_list = np.array(advect_list, dtype=np.float64)
+    other_list = np.array(other_list  , dtype=np.float64)
+
+    solve_list /= (1000)
+    advect_list /= (1000)
+    other_list /= (1000)
+
+    avg_solve = np.mean(solve_list)
+    avg_advect = np.mean(advect_list)
+    avg_other = np.mean(other_list)
 
     print(f"Frames parsed: {n}")
-    print(f"Average solvePressure : {avg_solve:.3f} ms")
-    print(f"Average advect        : {avg_advect:.3f} ms")
-    print(f"Average other         : {avg_other:.3f} ms")
-    print(f"Average total         : {(avg_solve + avg_advect + avg_other):.3f} ms")
+    print(f"Average solvePressure : {avg_solve:.3f} s")
+    print(f"Average advect        : {avg_advect:.3f} s")
+    print(f"Average other         : {avg_other:.3f} s")
+    print(f"Average total         : {(avg_solve + avg_advect + avg_other):.3f} s")
 
     # plotting
     x = list(range(n))
@@ -99,11 +107,11 @@ def main():
 
     # averages
     ax.axhline(avg_solve, linestyle="--", linewidth=1,
-               label=f"avg solve: {avg_solve:.2f} ms")
+               label=f"avg solve: {avg_solve:.2f} s")
     ax.axhline(avg_solve + avg_advect, linestyle="-.", linewidth=1,
-               label=f"avg solve+advect top: {(avg_solve+avg_advect):.2f} ms")
+               label=f"avg advect: {avg_advect:.2f} s")
     ax.axhline(avg_solve + avg_advect + avg_other, color="gray", linestyle=":",
-               linewidth=1, label=f"avg total: {(avg_solve+avg_advect+avg_other):.2f} ms")
+               linewidth=1, label=f"avg total: {(avg_solve+avg_advect+avg_other):.2f} s")
 
     ax.legend(loc="upper right")
     plt.tight_layout()
@@ -115,9 +123,13 @@ def main():
         plt.show()
 
 
-FOLDER = BASEDIR / "testtest4/timings"
-OUTFILE = BASEDIR / "testtest4/timings_plot.png"
-# ----------------------------------------
+FOLDER = BASEDIR /  "7_highres_3d/3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl/timings"
+OUTFILE = BASEDIR / "7_highres_3d/3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl/timings_plot.png"
+# ----------------
+
+CATEGORY_SOLVE_PRESSURE = "solvePressure"
+CATEGORY_ADVECTION = "simpleSLAdvect"
+#CATEGORY_ADVECTION = "massMomentumConservingAdvect"
 
 if __name__ == "__main__":
     main()

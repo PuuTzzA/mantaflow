@@ -1,9 +1,9 @@
 {
   "title": "3d_highres_obstacle_cfl_30_traditional_RK4_0_linear_local_cfl",
   "dimension": 3,
-  "resolutionX": 192,
-  "resolutionY": 192,
-  "resolutionZ": 192,
+  "resolutionX": 175,
+  "resolutionY": 175,
+  "resolutionZ": 175,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": false,

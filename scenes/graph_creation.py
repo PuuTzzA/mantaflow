@@ -282,7 +282,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
 
     amount = len(interested_fields) + (1 if include_cfl else 0) + (1 if include_dt else 0)
     ncols = 2 if data_array_2 is not None else 1
-    fig, ax = plt.subplots(amount, ncols, figsize=(figsize[0] * ncols, figsize[1] * amount), sharex=True, sharey=data_2_share_yAxis)
+    fig, ax = plt.subplots(amount, ncols, figsize=(figsize[0] * ncols, figsize[1] * amount), sharex=False, sharey=data_2_share_yAxis)
 
     ax = np.atleast_2d(ax)
 
@@ -294,6 +294,13 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         for i in range(len(data_array)):     
 
             frames = np.array(frames_sets[i][key])
+
+            start = frames[0]
+            start = 2060.000024
+
+            frames -= start
+            frames /= start
+
             minimum = np.min(frames)
             maximum = np.max(frames)
             mean = np.mean(frames)
@@ -314,13 +321,24 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
         if data_array_2 is not None:
             for i in range(len(data_array_2)):     
                 frames = np.array(frames_sets_2[i][key])
+                time = np.array(frames_sets_2[i]["time"])
+
+                end = 1065
+                frames = frames[:end]
+                time = time[:end]
+
+                start = frames[0]
+                start = 4324.000008
+                frames -= start
+                frames /= start
+
                 minimum = np.min(frames)
                 maximum = np.max(frames)
                 mean = np.mean(frames)
                 median = np.median(frames)
 
                 data_name = data_names2[i]  # assumes you have names for second dataset
-                ax[current_ax, 1].plot(np.array(frames_sets_2[i]["time"]), frames, 
+                ax[current_ax, 1].plot(time, frames, 
                                     color=colors2[i % len(colors2)], 
                                     linewidth=linewidths2[i % len(linewidths2)], 
                                     linestyle=linestyles2[i % len(linestyles2)], 
