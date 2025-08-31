@@ -6,15 +6,15 @@ import shutil
 # Base directory to store JSONs
 CONTAINER_DIR = "simple_water"
 BASE_DIR = (Path(__file__).parent / CONTAINER_DIR).resolve()
-shutil.rmtree(BASE_DIR, ignore_errors=True)
+#shutil.rmtree(BASE_DIR, ignore_errors=True)
 BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Constant settings
-BASE_TITLE = "simple_water"
+BASE_TITLE = "simple_water_highres"
 dimension = 2
-resolutionX = 64
-resolutionY = 64
-resolutionZ = 64
+resolutionX = 256
+resolutionY = 256
+resolutionZ = 256
 
 layout_options = ["dam", "drop"]
 doPLS = True
@@ -24,7 +24,7 @@ exportImages = True
 exportVideos = True
 exportVDBs = False  # This is the flag we will output as True/False in the printed list
 
-max_time = 150
+max_time = 200
 maxCFL = 0.5
 dt = 1
 

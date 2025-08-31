@@ -9,7 +9,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exportsIgnore/water_tests1"
+    EXPORTS_BASE_DIR = "../exports/8_simple_liquid"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -45,7 +45,7 @@ s.timestepMin = 0.001
 s.timestepMax = 20000
 
 # prepare grids and particles
-visualizerGrid = s.create(LevelsetGrid)
+visualizerGrid = s.create(RealGrid)
 
 flags_all_fluid  = s.create(FlagGrid)
 flags_n          = s.create(FlagGrid)
@@ -170,7 +170,11 @@ if (GUI):
     if not doFLIP and not doParticleLevelSet:
         gui.nextParts()
         
-    gui.pause()
+    gui.nextPdata()
+    gui.nextPdata()
+    gui.nextPdata()
+
+    #gui.pause()
 
 # Data collection and exportation
 data_collector = None
@@ -226,12 +230,12 @@ while (s.timeTotal < params["max_time"]):
         extrapolateMACSimple( flags=flags_n, vel=vel )
         flipVelocityUpdate(vel=vel, velOld=velOld, flags=flags_n, parts=pp, partVel=pVel, flipRatio=0.97 )
 
-        visualizeFlags(flags=flags_n, grid=visualizerGrid)
+        visualizeFlags(flags=flags_n, grid=visualizerGrid, onlyFluid=True)
         visualizeFlags(flags=flags_n, grid=phi_mass_tracking, flags_n_plus_one=flags_n_plus_one, onlyFluid=True)
 
     else:
         vel_extrapolated.copyFrom(vel)
-        extrapolateMACSimple( flags=flags_n, vel=vel, distance=10, intoObs=True )
+        extrapolateMACSimple( flags=flags_n, vel=vel, distance=20, intoObs=True )
         #extrapolateVelFSM2D( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
 
         if not doParticleLevelSet:
@@ -243,7 +247,7 @@ while (s.timeTotal < params["max_time"]):
         else:
             advectParticleLevelSet( phi=phi_fluid_n_plus_one, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags_n )
 
-            if (data_collector.current_frame % (17 if layout == 0 else 25) == 0): #layout 0 == dam
+            if (data_collector.current_frame % (30 if layout == 0 else 30) == 0): #layout 0 == dam
                 pass
                 reseedParticles(phi=phi_fluid_n_plus_one, flags=flags_n, particles=level_set_particles, radii=particle_radii )
 
@@ -257,7 +261,7 @@ while (s.timeTotal < params["max_time"]):
         else:     
             simpleSLAdvect(flags=flags_all_fluid, vel=vel, grid=vel, interpolationType=interpolationMethod) # 0 = Trilinear, 1 = Cubic, 2= Polynomial Interpolation, 3 = monotonue cubib (hermite)
 
-        visualizeFlags(flags=flags_n, grid=visualizerGrid, flags_n_plus_one=flags_n_plus_one)
+        visualizeFlags(flags=flags_n, grid=visualizerGrid, flags_n_plus_one=flags_n_plus_one, onlyFluid=True)
         visualizeFlags(flags=flags_n, grid=phi_mass_tracking, flags_n_plus_one=flags_n_plus_one, onlyFluid=True)
 
         flags_n.copyFrom(flags_n_plus_one)

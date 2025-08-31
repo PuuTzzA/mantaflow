@@ -11,7 +11,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/"
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
     #EXPORTS_BASE_DIR = "../exports/3d_final/simple_plume_3d_high"
-    EXPORTS_BASE_DIR = "../exports/6_different_cfl"
+    EXPORTS_BASE_DIR = "../exports/5.2_simple_obstacle_3d_cfl_40"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -32,6 +32,8 @@ exportData = params["exportData"]
 exportImages = params["exportImages"]
 exportVideos = params["exportVideos"]
 exportVDBs = params["exportVDBs"]
+
+print(params["maxCFL"])
 
 if exportVDBs and (exportImages or exportVideos):
     raise Exception("Cannot export both VDBs and Images") 
@@ -159,7 +161,7 @@ while s.timeTotal < params["max_time"] :#and data_collector.current_frame < 80:
     else:
         #simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
-        massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
+        # massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
 
     if doOpen:
@@ -182,8 +184,8 @@ while s.timeTotal < params["max_time"] :#and data_collector.current_frame < 80:
 
     data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density])
 
-    #save_current_ram_usage(data_collector.current_frame - 1, str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "ram_usage.json"))
-    #timings.saveJson(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "timings" / f"timings_{str(data_collector.current_frame - 1).zfill(4)}.json"))
+    save_current_ram_usage(data_collector.current_frame - 1, str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "ram_usage.json"))
+    timings.saveJson(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "timings" / f"timings_{str(data_collector.current_frame - 1).zfill(4)}.json"))
     timings.display()    
     #timings.saveMean(EXPORTS_BASE_DIR + "timings.txt")
     s.step()

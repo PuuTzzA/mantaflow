@@ -122,7 +122,7 @@ data_different_cfl_fixed_res = [
     '/6_different_cfl/03_dif_cfl_conserving_polynomial_local_cfl_res_200',
 ]
 
-data = data_different_cfl_fixed_res
+data = data_simple_obstacle_cfl_5
 #interested_fields = [["testField", "sum"]] # for fixed vel Field
 interested_fields = [["fixed_volume", "sum"]] # for plume
 
@@ -141,7 +141,7 @@ for d in data:
 	    input_datas.append(json.load(f))
 
 
-data_2 = data_zalesak_rotation
+data_2 = data_simple_obstacle_cfl_30
 input_datas_2 = []
 for d in data_2:
     path = (BASEDIR / d.strip('/') / FILENAME).resolve()
@@ -207,7 +207,7 @@ create_combined_graph(data_array=input_datas, data_names=input_titles, intereste
  """
 
 """ #shear flow and zalesak rotation
-input_titles = ["not conserving, polynomial interpolation", "conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "not conserving, linear interpolation"]
+input_titles = ["not conserving, cubic interpolation", "conserving, cubic interpolation, no redistribution", "conserving, linear interpolation", "conserving, cubic interpolation", "not conserving, linear interpolation"]
 title = "shear_flow_zalesak_total_mass"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
 labelOrder = [4, 0, 2, 1, 3]
@@ -230,9 +230,9 @@ linewidths2 = [5.5]
 figsize = (7.7, 6)
 allTextSize = 24
 
-bBoxAnchor = (0.525, 1.207)
+bBoxAnchor = (0.525, 1.21)
 margins = (0.1, 0.1, 0.128, 0.6) #left, right, bottom, top
-margins2 = (0.1, 0.1, 0.128, 0.4)
+margins2 = (0.1, 0.1, 0.128, 0.128)
 
 create_combined_graph(data_array=input_datas, data_array_2=input_datas_2, data_names=input_titles, interested_fields=interested_fields, 
                       title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=figsize, 
@@ -268,12 +268,12 @@ create_combined_graph(data_array=input_datas, data_names=input_titles, intereste
                       allTextSize=allTextSize, data_array_2=None)
  """
 
-""" #3_simple_obstacle_cfl_5
-#input_titles = ["conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "semi-Lagrangian, linear interpolation"]
+#3_simple_obstacle_cfl_5
+input_titles = ["not conserving, cubic interpolation", "conserving, cubic interpolation, no redistribution", "not conserving, linear interpolation", "conserving, linear interpolation", "conserving, cubic interpolation"]
 title = "simple_obstacle_cfl_05"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
-labelOrder = [1, 2, 0, 3]
-labelOrder = None
+labelOrder = [2, 0, 3, 1, 4]
+#labelOrder = None
 
 linestyles = ['solid', DASHED, 'solid', 'solid', DASHED]
 linewidths = [5.5]
@@ -284,16 +284,24 @@ red =       plt.cm.tab10.colors[3]
 violett =   plt.cm.tab10.colors[4] 
 colors = [green, red, violett, blue, orange]
 
-margins = (0.1, 0.1, 0.15, 0.15) #left, right, bottom, top
-figsize = (7.5, 5)
-
+figsize = (13, 7.5)
 allTextSize = 24
+
+bBoxAnchor = (0.5, 1.309)
+margins = (0.1, 0.1, 0.128, 0.6) #left, right, bottom, top
+margins2 = (0.1, 0.1, 0.128, 0.6)
 
 create_combined_graph(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
                       title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=figsize, 
-                      yAxisLabel="Total mass", labelOrder=labelOrder, linestyles=linestyles, linewidths=linewidths, colors=colors, margins=margins, 
-                      allTextSize=allTextSize, data_array_2=None)
- """
+                      yAxisLabel="Relative change in mass", labelOrder=labelOrder, linestyles=linestyles, linewidths=linewidths, colors=colors, margins=margins, 
+                      allTextSize=allTextSize, data_array_2=None, bBoxAnchor=bBoxAnchor)
+
+#create_combined_graph(data_array=input_datas, data_array_2=input_datas_2, data_names=input_titles, interested_fields=interested_fields, 
+#                      title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, figsize=figsize, 
+#                      yAxisLabel="Total mass", labelOrder=labelOrder, linestyles=linestyles, linewidths=linewidths, colors=colors,
+#                      allTextSize=allTextSize, bBoxAnchor=bBoxAnchor, margins=margins, data_2_share_yAxis=True, 
+#                      linestyles2=linestyles, colors2=colors, linewidths2=linewidths, margins2=margins2)
+
 
 """ #simple plume and simple obstacle
 input_titles = ["not conserving, polynomial interpolation", "conserving, polynomial interpolation, no redistribution", "not conserving, linear interpolation", "conserving, linear interpolation", "conserving, polynomial interpolation"]
@@ -327,14 +335,14 @@ create_combined_graph(data_array=input_datas, data_array_2=input_datas_2, data_n
  """
 
 
-# different cfl 2d
+""" # different cfl 2d
 #input_titles = ["not conserving, polynomial interpolation", "conserving, polynomial interpolation, no redistribution", "conserving, linear interpolation", "conserving, polynomial interpolation", "not conserving, linear interpolation"]
 title = "different_cfl_fixed_res"
 output_path = input_paths[0].parent.parent / f"{title}.pdf"
 
 create_combined_graph_old(data_array=input_datas, data_names=input_titles, interested_fields=interested_fields, 
                       title=title, include_title=False, include_cfl=False, include_dt=False, include_extra_stats=False, export_path=output_path, 
-                      figsize=(12, 6))
+                      figsize=(12, 6)) """
 
 
 

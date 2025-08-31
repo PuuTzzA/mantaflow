@@ -1,9 +1,9 @@
 {
   "title": "simple_water_dam_NO_FLIP_traditional",
   "dimension": 2,
-  "resolutionX": 64,
-  "resolutionY": 64,
-  "resolutionZ": 64,
+  "resolutionX": 128,
+  "resolutionY": 128,
+  "resolutionZ": 128,
   "layout": "dam",
   "doParticleLevelSet": true,
   "doFLIP": false,
@@ -12,7 +12,7 @@
   "exportImages": true,
   "exportVideos": true,
   "exportVDBs": false,
-  "max_time": 150,
+  "max_time": 200,
   "maxCFL": 0.5,
   "dt": 1
 }

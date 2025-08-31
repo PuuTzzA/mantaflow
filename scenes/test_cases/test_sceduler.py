@@ -56,7 +56,7 @@ FIXED_VEL_SHEAR_FLOW_LOW_PATHS = [
 SIMPLE_PLUME_3D_HIGH = [
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_0_linear.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_0_linear_local_cfl.json', True],
-    #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial.json', True],
+    ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial.json', True],
     ['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_conserving_2_polynomial_local_cfl.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_EE1.json', True],
     #['../scenes/test_cases/simple_plume_3d_high/plume_3d_high_traditional_EE2.json', True],
@@ -79,6 +79,17 @@ HIGHRES_PATHS = [
     #['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_0_linear_local_cfl.json', True],
     #['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl.json', True],
 ]
+
+
+for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
+
+    if requiresVDB:
+        os.chdir(PATH_TO_MANTA_VDB)
+    else:
+        os.chdir(PATH_TO_MANTA)
+
+    subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
+
 
 for param, requiresVDB in HIGHRES_PATHS:
 

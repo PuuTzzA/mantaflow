@@ -236,8 +236,15 @@ WATER_PATHS = [
     #['../scenes/test_cases/simple_water/simple_water_dam_NO_FLIP_conserving.json', False],
     #['../scenes/test_cases/simple_water/simple_water_dam_NO_FLIP_traditional.json', False],
     #['../scenes/test_cases/simple_water/simple_water_drop_FLIP_traditional.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_conserving.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
+    #['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_conserving.json', False],
+    #['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
+
+    ['../scenes/test_cases/simple_water/simple_water_highres_dam_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_drop_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_traditional.json', False],
 ]
 
 
@@ -273,7 +280,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
  """
 
 
-for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
+""" for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -281,7 +288,7 @@ for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
-
+ """
 
 """ for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
 
@@ -304,7 +311,7 @@ for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
  """
 
 
-""" for param, requiresVDB in WATER_PATHS:
+for param, requiresVDB in WATER_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -312,4 +319,3 @@ for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_WATER_SCENE, param]) 
- """

@@ -296,7 +296,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
             frames = np.array(frames_sets[i][key])
 
             start = frames[0]
-            start = 2060.000024
+            #start = 2060.000024
 
             frames -= start
             frames /= start
@@ -323,7 +323,7 @@ def create_combined_graph(data_array, data_names, interested_fields, title, incl
                 frames = np.array(frames_sets_2[i][key])
                 time = np.array(frames_sets_2[i]["time"])
 
-                end = 1065
+                end = 1120
                 frames = frames[:end]
                 time = time[:end]
 

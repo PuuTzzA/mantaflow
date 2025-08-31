@@ -739,7 +739,6 @@ namespace Manta
             return;
         }
 
-        pos += offset;
         Vec3 newPos = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
 
         // if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
@@ -768,6 +767,7 @@ namespace Manta
 
         if (component != NONE)
         {
+            pos += offset;
             Vec3 start1 = pos - neighbourOffset;
             Vec3 start2 = pos + neighbourOffset;
 
@@ -854,7 +854,7 @@ namespace Manta
         return;
     }
 
-    void traceForward(std::vector<std::tuple<Vec3i, Real>> &resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod, bool doLiquid)
+    void traceForward(std::vector<std::tuple<Vec3i, Real>> &resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, InterpolationType interpolationType, TracingMethod tracingMethod)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
         switch (interpolationType)
@@ -1137,7 +1137,7 @@ namespace Manta
 
             if (phi && neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
             {
-                Vec3 pos = Vec3(i, j, k) + offset;
+                Vec3 pos = Vec3(i, j, k);
                 Vec3 newPos = customTrace(pos, -dt, vel, flags_n, offset, component, FLUID_ISH);
 
                 neighboursAndWeights = getClosestSurfacePoint(
@@ -1181,11 +1181,11 @@ namespace Manta
                 Real amountToDistribute = 1 - beta(i, j, k);
 
                 neighboursAndWeights.clear();
-                traceForward(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod, phi);
+                traceForward(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod);
 
                 if (phi_n_plus_one && neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
                 {
-                    Vec3 pos = Vec3(i, j, k) + offset;
+                    Vec3 pos = Vec3(i, j, k);
                     Vec3 newPos = customTrace(pos, dt, vel, flags_n_plus_one, offset, component, FLUID_ISH);
 
                     neighboursAndWeights = getClosestSurfacePoint(
@@ -1268,7 +1268,7 @@ namespace Manta
             Real factor = 1 / beta(i, j, k);
             if (phi)
             {
-                if ((*phi)(i + offset.x, j + offset.y, k + offset.z) > -1.0)
+                if ((*phi)(i + offset.x, j + offset.y, k + offset.z) > -1.5)
                 {
                     continue;
                 }
