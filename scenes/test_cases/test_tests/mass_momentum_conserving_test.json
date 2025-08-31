@@ -14,7 +14,7 @@
   "tracingFunction": 1,
   "redistributeClamped":true,
 
-  "exportData": false,
+  "exportData": true,
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": false,

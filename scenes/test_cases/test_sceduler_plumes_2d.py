@@ -180,30 +180,46 @@ SIMPLE_PLUME_3D_HIGH = [
 
 DIFFERENT_CFL_2D_PATHS = [
     # Same Resolution 200
-    ['../scenes/test_cases/different_cfl_2d_res_200/40_dif_cfl_conserving_polynomial_local_cfl.json', False],                        
-    ['../scenes/test_cases/different_cfl_2d_res_200/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d_res_200/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
-
-    # Different cfl and resolution
-    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                          
-    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                           
-    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                          
-    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                           
-    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
-    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_traditional_polynomial_local_cfl.json', False],
-                          
-    ['../scenes/test_cases/different_cfl_2d/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/40_dif_cfl_conserving_polynomial_local_cfl.json', False],                        
+#    ['../scenes/test_cases/different_cfl_2d_res_200/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_200/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#
+#    # Same Resolution 150
+#    ['../scenes/test_cases/different_cfl_2d_res_150/40_dif_cfl_conserving_polynomial_local_cfl.json', False],                        
+#    ['../scenes/test_cases/different_cfl_2d_res_150/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_150/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_150/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_150/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d_res_150/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#
+    # Same Resolution 150
+    ['../scenes/test_cases/different_cfl_2d_res_100/40_dif_cfl_conserving_polynomial_local_cfl.json', False],                        
+    ['../scenes/test_cases/different_cfl_2d_res_100/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d_res_100/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d_res_100/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d_res_100/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d_res_100/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    
+#    # Different cfl and resolution
+#    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                          
+#    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                           
+#    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                          
+#    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/10_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                           
+#    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_traditional_polynomial_local_cfl.json', False],
+#                          
+#    ['../scenes/test_cases/different_cfl_2d/03_dif_cfl_conserving_polynomial_local_cfl.json', False],
 #    ['../scenes/test_cases/different_cfl_2d/03_dif_cfl_traditional_polynomial_local_cfl.json', False],
 ]
 
@@ -225,7 +241,7 @@ WATER_PATHS = [
 ]
 
 
-for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
+""" for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -233,7 +249,7 @@ for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param])
-
+ """
 """ for param, requiresVDB in PLUME_2D_LOW_PATHS:
 
     if requiresVDB:
@@ -257,7 +273,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
  """
 
 
-""" for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
+for param, requiresVDB in DIFFERENT_CFL_2D_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -265,7 +281,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
- """
+
 
 """ for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
 

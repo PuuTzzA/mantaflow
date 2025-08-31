@@ -1,9 +1,9 @@
 {
   "title": "3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl",
   "dimension": 3,
-  "resolutionX": 175,
-  "resolutionY": 175,
-  "resolutionZ": 175,
+  "resolutionX": 160,
+  "resolutionY": 160,
+  "resolutionZ": 160,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": false,

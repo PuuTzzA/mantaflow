@@ -8,6 +8,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 from graph_creation import *
+import psutil
+import os
+
 
 class Data_collectior:
     def __init__(self, title="no_title_specified", base_dir="../exports/experiments/", params=None, export_data=True, export_images=False, export_videos=False, export_vdbs=False, trackable_grid_names=[], tracked_grids_indeces=[], image_grids_indeces=[], graph_grids=[], ignore_framelength = False):
@@ -227,3 +230,35 @@ class Data_collectior:
 
     def printStats(self):
         print(self.format_results(self.data["results"]))
+
+
+def get_current_ram_usage():
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss  # in bytes
+
+def get_current_ram_usage_pss():
+    return psutil.Process(os.getpid()).memory_full_info().pss  # in bytes
+
+def save_current_ram_usage(timestep, path):
+    entry = {
+        "timestep": timestep,
+        "ram_usage_rss": get_current_ram_usage(),
+        "ram_usage_pss": get_current_ram_usage_pss()
+    }
+
+    # If file exists, load existing list
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                data = []
+    else:
+        data = []
+
+    # Append new entry
+    data.append(entry)
+
+    # Write back to file
+    with open(path, "w") as f:
+        json.dump(data, f, indent=4)
