@@ -1,5 +1,5 @@
 {
-  "title": "40_dif_cfl_conserving_polynomial_local_cfl",
+  "title": "80_dif_cfl_conserving_polynomial_local_cfl",
   "dimension": 2,
   "resolutionX": 256,
   "resolutionY": 256,
@@ -16,6 +16,6 @@
   "exportVideos": true,
   "exportVDBs": false,
   "max_time": 120,
-  "maxCFL": 40, 
+  "maxCFL": 80, 
   "dt": 10
 }

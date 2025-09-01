@@ -1268,7 +1268,7 @@ namespace Manta
             Real factor = 1 / beta(i, j, k);
             if (phi)
             {
-                if ((*phi)(i + offset.x, j + offset.y, k + offset.z) > -1.5)
+                if ((*phi)(i + offset.x, j + offset.y, k + offset.z) > -1.0)
                 {
                     continue;
                 }

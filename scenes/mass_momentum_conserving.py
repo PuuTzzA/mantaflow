@@ -184,8 +184,8 @@ while s.timeTotal < params["max_time"] :#and data_collector.current_frame < 80:
 
     data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density])
 
-    #save_current_ram_usage(data_collector.current_frame - 1, str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "ram_usage.json"))
-    #timings.saveJson(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "timings" / f"timings_{str(data_collector.current_frame - 1).zfill(4)}.json"))
+    save_current_ram_usage(data_collector.current_frame - 1, str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "ram_usage.json"))
+    timings.saveJson(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "timings" / f"timings_{str(data_collector.current_frame - 1).zfill(4)}.json"))
     timings.display()    
     #timings.saveMean(EXPORTS_BASE_DIR + "timings.txt")
     s.step()

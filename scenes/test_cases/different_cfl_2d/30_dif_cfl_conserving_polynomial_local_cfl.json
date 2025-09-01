@@ -1,9 +1,9 @@
 {
   "title": "30_dif_cfl_conserving_polynomial_local_cfl",
   "dimension": 2,
-  "resolutionX": 512,
-  "resolutionY": 512,
-  "resolutionZ": 512,
+  "resolutionX": 256,
+  "resolutionY": 256,
+  "resolutionZ": 256,  
   "doOpen": false,
   "doObstacle": true,
   "doConserving": true,

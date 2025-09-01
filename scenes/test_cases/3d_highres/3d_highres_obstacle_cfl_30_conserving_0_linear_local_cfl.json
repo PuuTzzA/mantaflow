@@ -1,9 +1,9 @@
 {
   "title": "3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl",
   "dimension": 3,
-  "resolutionX": 160,
-  "resolutionY": 160,
-  "resolutionZ": 160,
+  "resolutionX": 162,
+  "resolutionY": 162,
+  "resolutionZ": 162,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
@@ -15,6 +15,6 @@
   "exportVideos": false,
   "exportVDBs": true,
   "max_time": 80,
-  "maxCFL": 30,
+  "maxCFL": 40,
   "dt": 3
 }
