@@ -234,8 +234,12 @@ namespace Manta
         Real signDt = signum(dt);
         Real timeLeft = std::fabs(dt);
 
-        while (timeLeft > EPSILON)
+        const int maxSteps = 100;
+        int step = 0;
+        while (timeLeft > EPSILON && step < maxSteps)
         {
+            step++;
+
             Vec3 localVel = vel.getInterpolatedHi(oldNewPos, 2);
             Real localCFL = norm(localVel) * timeLeft;
 
@@ -1056,7 +1060,7 @@ namespace Manta
             if (min(i, j, k) == std::numeric_limits<Real>::max())
             {
                 diff(i, j, k) = 0;
-                return;
+                continue;
             }
             Real start = val(i, j, k);
             val(i, j, k) = Manta::clamp(val(i, j, k), min(i, j, k), max(i, j, k));
@@ -1090,11 +1094,6 @@ namespace Manta
             throw std::runtime_error("InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection");
         }
 
-        Vec3i infocus = Vec3i(16, 2, 0);
-        if (component == MAC_Y && phi)
-        {
-            std::cout << infocus << "at the start: " << grid(infocus) << std::endl;
-        }
         if (!phi && !phi_n_plus_one)
         {
             std::cout << "Not Water: Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
@@ -1442,16 +1441,6 @@ namespace Manta
 
             // weights.distributeLostMass(grid, tempGrid, min, max);
         }
-
-        /* if (phi)
-        {
-            knClampToMinMaxDiff(grid, min, max, tempGrid);
-        } */
-
-        /*  if (component == MAC_Y && phi)
-         {
-             std::cout << infocus << "at the end: " << grid(infocus) << std::endl;
-        } */
 
         knSetOutflowToZero(grid, flags_n_plus_one, component);
     }

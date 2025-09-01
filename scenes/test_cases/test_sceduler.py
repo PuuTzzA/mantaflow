@@ -73,8 +73,8 @@ SIMPLE_PLUME_3D_HIGH = [
 ]
 
 HIGHRES_PATHS = [
-    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl.json', True],
     ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl.json', True],
+    ['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl.json', True],
     
     #['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_traditional_RK4_0_linear_local_cfl.json', True],
     #['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl.json', True],
