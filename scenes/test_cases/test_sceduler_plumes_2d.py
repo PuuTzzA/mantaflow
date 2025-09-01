@@ -239,12 +239,12 @@ WATER_PATHS = [
     #['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_conserving.json', False],
     #['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
 
-    ['../scenes/test_cases/simple_water/simple_water_highres_dam_FLIP_traditional.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_conserving.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_traditional.json', False],
     ['../scenes/test_cases/simple_water/simple_water_highres_drop_FLIP_traditional.json', False],
     ['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_conserving.json', False],
     ['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_dam_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_traditional.json', False],
 ]
 
 

@@ -235,7 +235,7 @@ while (s.timeTotal < params["max_time"]):
 
     else:
         vel_extrapolated.copyFrom(vel)
-        extrapolateMACSimple( flags=flags_n, vel=vel, distance=20, intoObs=True )
+        extrapolateMACSimple( flags=flags_n, vel=vel, distance=25, intoObs=True )
         #extrapolateVelFSM2D( phi=phi_fluid, flags=flags_n, vel=vel_extrapolated, steps=10)
 
         if not doParticleLevelSet:
@@ -246,6 +246,15 @@ while (s.timeTotal < params["max_time"]):
             setFlagsFromDensity (flags=flags_n_plus_one, density=innen1außen0, level=0.15)       
         else:
             advectParticleLevelSet( phi=phi_fluid_n_plus_one, particles=level_set_particles, radii=particle_radii, vel=vel, flags=flags_n )
+
+            # for resolution 128x128: reseeding every 30 frames works well-ish
+            #define POSITIVE_SEED_CUTOFF 1.0f  // 3 * dx
+            #define NEGATIVE_SEED_CUTOFF -2.0f // 3 * dx
+            #define MIN_RADIUS 0.1f            // .1 * min(dx, dy, dz)
+            #define MAX_RADIUS 0.5f            // .5 * min(dx, dy, dz)
+
+            # 37 mit 1.5, 3.0
+            # 30 mit 1, -3.0 -> sehr sehr gut
 
             if (data_collector.current_frame % (30 if layout == 0 else 30) == 0): #layout 0 == dam
                 pass

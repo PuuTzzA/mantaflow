@@ -1,9 +1,9 @@
 {
   "title": "20_dif_cfl_traditional_polynomial_local_cfl",
   "dimension": 2,
-  "resolutionX": 150,
-  "resolutionY": 150,
-  "resolutionZ": 150,
+  "resolutionX": 512,
+  "resolutionY": 512,
+  "resolutionZ": 512,
   "doOpen": false,
   "doObstacle": true,
   "doConserving": false,

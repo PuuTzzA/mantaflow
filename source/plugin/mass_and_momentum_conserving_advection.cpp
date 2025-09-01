@@ -16,7 +16,7 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-#define NO_KERNEL
+    // #define NO_KERNEL
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
@@ -792,28 +792,6 @@ namespace Manta
             {
                 getCorrectInterpolationStencilWithWeights(resultVec, (newPos1 + newPos2) * 0.5, flags, offset, component, FLUID_ISH);
             }
-            else if (start1Valid && pos1Valid)
-            {
-                Vec3 startpoint = newPos1;
-                Vec3 stepLen = neighbourOffset / static_cast<Real>(stepAmount);
-
-                Vec3 lastFluidPos = newPos1;
-
-                for (int step = 0; step < stepAmount; step++)
-                {
-                    Vec3 current = startpoint + static_cast<Real>(step) * stepLen;
-                    if (isValidFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, NONE))
-                    {
-                        lastFluidPos = current;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                getCorrectInterpolationStencilWithWeights(resultVec, lastFluidPos, flags, offset, component, FLUID_ISH);
-            }
             else if (start2Valid && pos2Valid)
             {
                 Vec3 startpoint = newPos2;
@@ -836,6 +814,29 @@ namespace Manta
 
                 getCorrectInterpolationStencilWithWeights(resultVec, lastFluidPos, flags, offset, component, FLUID_ISH);
             }
+            else if (start1Valid && pos1Valid)
+            {
+                Vec3 startpoint = newPos1;
+                Vec3 stepLen = neighbourOffset / static_cast<Real>(stepAmount);
+
+                Vec3 lastFluidPos = newPos1;
+
+                for (int step = 0; step < stepAmount; step++)
+                {
+                    Vec3 current = startpoint + static_cast<Real>(step) * stepLen;
+                    if (isValidFluid(std::floor(current.x), std::floor(current.y), std::floor(current.z), flags, NONE))
+                    {
+                        lastFluidPos = current;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                getCorrectInterpolationStencilWithWeights(resultVec, lastFluidPos, flags, offset, component, FLUID_ISH);
+            }
+
             /* else if (pos1Valid && pos2Valid)
             {
                 getCorrectInterpolationStencilWithWeights(resultVec, (newPos1 + newPos2) * 0.5, flags, offset, component, FLUID_ISH);

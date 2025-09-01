@@ -1,8 +1,8 @@
 {
   "title": "simple_water_highres_drop_NO_FLIP_traditional",
   "dimension": 2,
-  "resolutionX": 256,
-  "resolutionY": 256,
+  "resolutionX": 192,
+  "resolutionY": 192,
   "resolutionZ": 256,
   "layout": "drop",
   "doParticleLevelSet": true,
