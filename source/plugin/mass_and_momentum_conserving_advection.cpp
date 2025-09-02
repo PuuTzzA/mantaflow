@@ -16,7 +16,7 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-//#define NO_KERNEL
+#define NO_KERNEL
 #define CLAMP
 
     /// @brief is not an obstacle and tagged as fluid
@@ -1108,6 +1108,10 @@ namespace Manta
 #else
             std::cout << "With Kernels" << std::endl;
 #endif
+#ifdef CLAMP
+            std::cout << "Clamping" << std::endl;
+#endif
+
         }
         if (phi)
         {
