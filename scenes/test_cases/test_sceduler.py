@@ -81,7 +81,7 @@ HIGHRES_PATHS = [
 ]
 
 
-for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
+""" for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -89,7 +89,7 @@ for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
-
+ """
 
 for param, requiresVDB in HIGHRES_PATHS:
 

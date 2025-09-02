@@ -8,8 +8,8 @@ params = {}
 param_path = "../scenes/test_cases/test_tests/mass_momentum_conserving_highres_3d_test.json"
 EXPORTS_BASE_DIR = "../exportsIgnore/highres_3d_yay/"
 
-#OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated.obj"
-OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated_low.obj"
+OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated.obj"
+#OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated_low.obj"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]

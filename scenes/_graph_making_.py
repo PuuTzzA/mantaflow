@@ -123,8 +123,8 @@ data_different_cfl_fixed_res = [
 ]
 
 data = data_shear_flow
-#interested_fields = [["testField", "sum"]] # for fixed vel Field
-interested_fields = [["fixed_volume", "sum"]] # for plume
+interested_fields = [["testField", "sum"]] # for fixed vel Field
+#interested_fields = [["fixed_volume", "sum"]] # for plume
 
 # Resolve full paths
 input_paths = []
