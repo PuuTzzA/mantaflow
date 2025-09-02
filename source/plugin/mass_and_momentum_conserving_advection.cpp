@@ -1252,7 +1252,7 @@ namespace Manta
             }
             Real factor = 1 / gammaCumulative(i, j, k);
 #ifdef CLAMP
-            factor = factor < 0 ? Manta::clamp(factor, (Real)-3, (Real)-0.2) : Manta::clamp(factor, (Real)0.2, (Real)3);
+            factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.25) : Manta::clamp(factor, (Real)0.25, (Real)4);
 #endif
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
@@ -1287,7 +1287,7 @@ namespace Manta
             }
 
 #ifdef CLAMP
-            factor = factor < 0 ? Manta::clamp(factor, (Real)-3, (Real)-0.2) : Manta::clamp(factor, (Real)0.2, (Real)3);
+            factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.25) : Manta::clamp(factor, (Real)0.25, (Real)4);
 #endif
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
