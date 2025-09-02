@@ -106,7 +106,7 @@ OBSTACLE_2D_LOW_PATHS = [
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_local_cfl_no_clamped_redistro.json', False],
-    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial.json', False],
+#    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_local_cfl.json', False],
     ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_local_cfl_no_clamped_redistro.json', False],
@@ -239,7 +239,7 @@ WATER_PATHS = [
     ['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
 ]
 
-for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
+""" for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -247,7 +247,7 @@ for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param])
-
+ """
 """ for param, requiresVDB in PLUME_2D_LOW_PATHS:
 
     if requiresVDB:
