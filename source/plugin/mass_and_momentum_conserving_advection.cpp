@@ -16,7 +16,7 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-    // #define NO_KERNEL
+//#define NO_KERNEL
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
@@ -928,78 +928,82 @@ namespace Manta
     KERNEL()
     void knDiffuseGamma(Grid<Real> &gamma, Grid<Real> &grid, const FlagGrid &flags, Vec3i &d, Grid<Real> &deltaGrid, Grid<Real> &deltaGamma, Grid<Real> &deltaGridNeighbour, Grid<Real> &deltaGammaNeighbour, MACGridComponent component)
     {
-        if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags, component))
+        Vec3i current_idx = Vec3i(i, j, k);
+        Vec3i neighbor_idx = Vec3i(i + d.x, j + d.y, k + d.z);
+
+        if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(neighbor_idx.x, neighbor_idx.y, neighbor_idx.z, flags, component))
         {
             return;
         }
 
-        Vec3i idx_moved = Vec3i(i + d.x, j + d.y, k + d.z);
+        Real gamma_avg = (gamma(current_idx) + gamma(neighbor_idx)) / 2.0;
 
-        Real gammaToMove = (gamma(idx_moved) - gamma(i, j, k)) / 2.;
-        Real denominator = gamma(idx_moved);
-
-        if (abs(denominator) < EPSILON)
+        if (std::abs(gamma_avg) < EPSILON)
         {
             return;
         }
 
-        Real fraction_to_move = gammaToMove / denominator;
+        Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
+        Real fraction_to_move = gamma_to_equalize / gamma_avg;
         fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.5), static_cast<Real>(0.5));
 
-        Real phiToMove = grid(idx_moved) * fraction_to_move;
+        Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
-        if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
+        Real phi_to_move_helper = (grid(neighbor_idx) * (gamma(current_idx) + gamma(neighbor_idx))) / (2 * gamma(neighbor_idx));
+        Real final_phi_to_move = phi_to_move_helper * fraction_to_move;
+
+        if (!std::isfinite(final_phi_to_move) || std::isnan(final_phi_to_move) || !std::isfinite(final_gamma_to_move) || std::isnan(final_gamma_to_move))
         {
             return;
         }
 
-        gammaToMove = gamma(idx_moved) * fraction_to_move;
+        deltaGammaNeighbour(neighbor_idx) -= final_gamma_to_move;
+        deltaGamma(current_idx) += final_gamma_to_move;
 
-        deltaGammaNeighbour(idx_moved) -= gammaToMove;
-        deltaGamma(i, j, k) += gammaToMove;
-
-        deltaGridNeighbour(idx_moved) -= phiToMove;
-        deltaGrid(i, j, k) += phiToMove;
+        deltaGridNeighbour(neighbor_idx) -= final_phi_to_move;
+        deltaGrid(current_idx) += final_phi_to_move;
     }
 
     void diffuseGammaNoKernel(Grid<Real> &gamma, Grid<Real> &grid, const FlagGrid &flags, Vec3i &d, Grid<Real> &deltaGrid, Grid<Real> &deltaGamma, Grid<Real> &deltaGridNeighbour, Grid<Real> &deltaGammaNeighbour, MACGridComponent component)
     {
         FOR_IJK(grid)
         {
-            if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(i + d.x, j + d.y, k + d.z, flags, component))
+            Vec3i current_idx = Vec3i(i, j, k);
+            Vec3i neighbor_idx = Vec3i(i + d.x, j + d.y, k + d.z);
+
+            if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(neighbor_idx.x, neighbor_idx.y, neighbor_idx.z, flags, component))
             {
                 continue;
             }
 
-            Vec3i idx_moved = Vec3i(i + d.x, j + d.y, k + d.z);
+            Real gamma_avg = (gamma(current_idx) + gamma(neighbor_idx)) / 2.0;
 
-            Real gammaToMove = (gamma(idx_moved) - gamma(i, j, k)) / 2.;
-            Real denominator = gamma(idx_moved);
-
-            if (abs(denominator) < EPSILON)
+            if (std::abs(gamma_avg) < EPSILON)
             {
                 continue;
             }
 
-            Real fraction_to_move = gammaToMove / denominator;
+            Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
+            Real fraction_to_move = gamma_to_equalize / gamma_avg;
             fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.5), static_cast<Real>(0.5));
 
-            Real phiToMove = grid(idx_moved) * fraction_to_move;
+            Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
-            if (!std::isfinite(phiToMove) || std::isnan(phiToMove))
+            Real phi_to_move_helper = (grid(neighbor_idx) * (gamma(current_idx) + gamma(neighbor_idx))) / (2 * gamma(neighbor_idx));
+            Real final_phi_to_move = phi_to_move_helper * fraction_to_move;
+
+            if (!std::isfinite(final_phi_to_move) || std::isnan(final_phi_to_move) || !std::isfinite(final_gamma_to_move) || std::isnan(final_gamma_to_move))
             {
                 continue;
             }
 
-            gammaToMove = gamma(idx_moved) * fraction_to_move;
+            deltaGammaNeighbour(neighbor_idx) -= final_gamma_to_move;
+            deltaGamma(current_idx) += final_gamma_to_move;
 
-            deltaGammaNeighbour(idx_moved) -= gammaToMove;
-            deltaGamma(i, j, k) += gammaToMove;
-
-            deltaGridNeighbour(idx_moved) -= phiToMove;
-            deltaGrid(i, j, k) += phiToMove;
+            deltaGridNeighbour(neighbor_idx) -= final_phi_to_move;
+            deltaGrid(current_idx) += final_phi_to_move;
         }
     }
 
@@ -1054,11 +1058,11 @@ namespace Manta
         diff(i, j, k) = val(i, j, k) - start;
     }
 
-    void clampToMinMaxDiffNoKernel(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff)
+    void clampToMinMaxDiffNoKernel(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff, const FlagGrid &flags, MACGridComponent component)
     {
         FOR_IJK(val)
         {
-            if (min(i, j, k) == std::numeric_limits<Real>::max())
+            if (!isValidFluid(i, j, k, flags, component) || min(i, j, k) == std::numeric_limits<Real>::max())
             {
                 diff(i, j, k) = 0;
                 continue;
@@ -1334,7 +1338,7 @@ namespace Manta
             tempGrid.clear();
 
 #ifdef NO_KERNEL
-            clampToMinMaxDiffNoKernel(grid, min, max, tempGrid);
+            clampToMinMaxDiffNoKernel(grid, min, max, tempGrid, flags_n_plus_one, component);
 #else
             knClampToMinMaxDiff(grid, min, max, tempGrid);
 #endif
@@ -1363,7 +1367,7 @@ namespace Manta
                 {
                     FOR_IJK(grid)
                     {
-                        if (!isSampleableFluid(i, j, k, flags_n_plus_one, component) || std::abs(tempGrid(i, j, k)) < EPSILON * EPSILON)
+                        if (!isValidFluid(i, j, k, flags_n_plus_one, component) || std::abs(tempGrid(i, j, k)) < EPSILON * EPSILON)
                         {
                             continue; // no mass to distribute
                         }

@@ -9,7 +9,8 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/2_fixed_vel_zalesak_rotation/"
+    #EXPORTS_BASE_DIR = "../exports/2_fixed_vel_zalesak_rotation/"
+    EXPORTS_BASE_DIR = "../exports/1_fixed_vel_shear_flow/"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -120,7 +121,7 @@ if GUI:
 data_collector = Data_collectior(title=title, base_dir=EXPORTS_BASE_DIR, params=params, 
                                  export_data=exportData, export_images=exportImages, export_videos=exportVideos, export_vdbs=exportVDBs,
                                  trackable_grid_names=[["testField", testField], ["vel_magnitude", velocity_magnitude], [], [], ["testPhi", testPhi], []], 
-                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]], ignore_framelength=False)
+                                 tracked_grids_indeces=[0, 1], image_grids_indeces=[0], graph_grids=[["vel_magnitude", "max"], ["testField", "sum"]], ignore_framelength=True)
 
 data_collector.init()
 
@@ -129,15 +130,10 @@ s.adaptTimestep(maxvel)
 
 #main loop
 while (s.timeTotal < params["max_time"]):
-    relError = calculateRelativeError(phi0=testField0, phin=testField)
+    #relError = calculateRelativeError(phi0=testField0, phin=testField)
     
-    computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
-    maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
-
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[], relError=relError)
-
-    maxvel = vel.getMax()
-    s.adaptTimestep(maxvel)
+    #maxvel = vel.getMax()
+    #s.adaptTimestep(maxvel)
 
     print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxVel: {maxvel}")
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
@@ -157,9 +153,15 @@ while (s.timeTotal < params["max_time"]):
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=testPhi, gammaCumulative=testPhiGamma    ,interpolationType=interpolationMethod, redistributeClamped=redistributeClamped)
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=testField, gammaCumulative=testFieldGamma,interpolationType=interpolationMethod, redistributeClamped=redistributeClamped)
 
-    #timings.display()    
+    #timings.display() 
+    # 
+    # 
+    computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
+    maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
+   
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[])
 
-    print("rel error:", relError)
+    #print("rel error:", relError)
 
     s.step()
 
