@@ -2,11 +2,11 @@
   "title": "liquid_no_flip_semiLagrangian",
 
   "dimension": 2,
-  "resolutionX": 192,
-  "resolutionY": 192,
+  "resolutionX": 256,
+  "resolutionY": 256,
   "resolutionZ": 20,
 
-  "layout": "drop",
+  "layout": "dam",
   "doFLIP": false,
   "doConserving": true,
   "doParticleLevelSet": true,

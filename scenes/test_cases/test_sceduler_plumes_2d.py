@@ -239,14 +239,34 @@ WATER_PATHS = [
     #['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_conserving.json', False],
     #['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
 
-    ['../scenes/test_cases/simple_water/simple_water_highres_drop_FLIP_traditional.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_conserving.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_traditional.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_highres_dam_FLIP_traditional.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_conserving.json', False],
-    ['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_traditional.json', False],
-]
+    #['../scenes/test_cases/simple_water/simple_water_highres_drop_FLIP_traditional.json', False],
+    #['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_conserving.json', False],
+    #['../scenes/test_cases/simple_water/simple_water_highres_drop_NO_FLIP_traditional.json', False],
+    #['../scenes/test_cases/simple_water/simple_water_highres_dam_FLIP_traditional.json', False],
+    #['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_conserving.json', False],
+    #['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_traditional.json', False],
 
+    ['../scenes/test_cases/simple_water/128_simple_water_dam_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/128_simple_water_dam_NO_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/128_simple_water_drop_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/128_simple_water_drop_NO_FLIP_traditional.json', False],
+
+    ['../scenes/test_cases/simple_water/192_simple_water_dam_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/192_simple_water_dam_NO_FLIP_traditional.json', False],
+    #['../scenes/test_cases/simple_water/192_simple_water_drop_NO_FLIP_conserving.json', False],
+    #['../scenes/test_cases/simple_water/192_simple_water_drop_NO_FLIP_traditional.json', False],
+
+    ['../scenes/test_cases/simple_water/256_simple_water_dam_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/256_simple_water_dam_NO_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/256_simple_water_drop_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/256_simple_water_drop_NO_FLIP_traditional.json', False],
+
+    ['../scenes/test_cases/simple_water/320_simple_water_dam_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/320_simple_water_dam_NO_FLIP_traditional.json', False],
+    ['../scenes/test_cases/simple_water/320_simple_water_drop_NO_FLIP_conserving.json', False],
+    ['../scenes/test_cases/simple_water/320_simple_water_drop_NO_FLIP_traditional.json', False],
+
+]
 
 """ for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
 

@@ -16,8 +16,8 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-#define NO_KERNEL
-#define CLAMP
+//#define NO_KERNEL
+//#define CLAMP
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
@@ -1278,7 +1278,7 @@ namespace Manta
             Real factor = 1 / beta(i, j, k);
             if (phi)
             {
-                if ((*phi)(i + offset.x, j + offset.y, k + offset.z) > -1.0)
+                if ((*phi)(i + offset.x, j + offset.y, k + offset.z) > -1.5)
                 {
                     continue;
                 }

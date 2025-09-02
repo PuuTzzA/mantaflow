@@ -10,6 +10,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
     EXPORTS_BASE_DIR = "../exports/8_simple_liquid"
+    #EXPORTS_BASE_DIR = "../exports/9_simple_liquid"
 
 with open(param_path) as f:
     params = json.load(f)
@@ -256,7 +257,8 @@ while (s.timeTotal < params["max_time"]):
             # 37 mit 1.5, 3.0
             # 30 mit 1, -3.0 -> sehr sehr gut
 
-            if (data_collector.current_frame % (30 if layout == 0 else 30) == 0): #layout 0 == dam
+            #30
+            if (data_collector.current_frame % (30 if layout == 0 else 20) == 0): #layout 0 == dam
                 pass
                 reseedParticles(phi=phi_fluid_n_plus_one, flags=flags_n, particles=level_set_particles, radii=particle_radii )
 
