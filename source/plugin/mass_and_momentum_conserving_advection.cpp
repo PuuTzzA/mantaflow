@@ -1059,11 +1059,11 @@ namespace Manta
         diff(i, j, k) = val(i, j, k) - start;
     }
 
-    void clampToMinMaxDiffNoKernel(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff, const FlagGrid &flags, MACGridComponent component)
+    void clampToMinMaxDiffNoKernel(Grid<Real> &val, Grid<Real> &min, Grid<Real> &max, Grid<Real> &diff)
     {
         FOR_IJK(val)
         {
-            if (!isValidFluid(i, j, k, flags, component) || min(i, j, k) == std::numeric_limits<Real>::max())
+            if (min(i, j, k) == std::numeric_limits<Real>::max())
             {
                 diff(i, j, k) = 0;
                 continue;
@@ -1346,7 +1346,7 @@ namespace Manta
             tempGrid.clear();
 
 #ifdef NO_KERNEL
-            clampToMinMaxDiffNoKernel(grid, min, max, tempGrid, flags_n_plus_one, component);
+            clampToMinMaxDiffNoKernel(grid, min, max, tempGrid);
 #else
             knClampToMinMaxDiff(grid, min, max, tempGrid);
 #endif
