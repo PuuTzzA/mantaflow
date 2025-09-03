@@ -1455,7 +1455,7 @@ namespace Manta
             // weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
-        knSetOutflowToZero(grid, flags_n_plus_one, component);
+        //knSetOutflowToZero(grid, flags_n_plus_one, component);
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON

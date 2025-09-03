@@ -1,16 +1,16 @@
 {
   "title": "testtest4",
 
-  "dimension": 2,
-  "resolutionX": 64,
-  "resolutionY": 64,
-  "resolutionZ": 64,
+  "dimension": 3,
+  "resolutionX": 30,
+  "resolutionY": 30,
+  "resolutionZ": 30,
 
-  "doOpen": false,
+  "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "RK4",
-  "interpolationMethod": 2,
+  "interpolationMethod": 0,
   "tracingFunction": 1,
   "redistributeClamped":true,
 
@@ -19,7 +19,7 @@
   "exportVideos": false,
   "exportVDBs": false,
 
-  "max_time": 180,
-  "maxCFL": 1, 
+  "max_time": 1800,
+  "maxCFL": 50, 
   "dt": 10
 }
