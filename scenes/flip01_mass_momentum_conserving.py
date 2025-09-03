@@ -15,6 +15,8 @@ if len(sys.argv) > 1:
 with open(param_path) as f:
     params = json.load(f)
 
+print("exports base path: ", EXPORTS_BASE_DIR)
+print("title: ", params["title"])
 
 LEVEL = 0
 doFLIP = params["doFLIP"]

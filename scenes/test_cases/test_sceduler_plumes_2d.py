@@ -246,17 +246,17 @@ WATER_PATHS = [
     #['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_conserving.json', False],
     #['../scenes/test_cases/simple_water/simple_water_highres_dam_NO_FLIP_traditional.json', False],
 
-    ['../scenes/test_cases/simple_water/128_simple_water_dam_NO_FLIP_conserving.json', False],
-    ['../scenes/test_cases/simple_water/128_simple_water_dam_NO_FLIP_traditional.json', False],
-    ['../scenes/test_cases/simple_water/128_simple_water_drop_NO_FLIP_conserving.json', False],
-    ['../scenes/test_cases/simple_water/128_simple_water_drop_NO_FLIP_traditional.json', False],
-
-    ['../scenes/test_cases/simple_water/192_simple_water_dam_NO_FLIP_conserving.json', False],
-    ['../scenes/test_cases/simple_water/192_simple_water_dam_NO_FLIP_traditional.json', False],
+#    ['../scenes/test_cases/simple_water/128_simple_water_dam_NO_FLIP_conserving.json', False],
+#    ['../scenes/test_cases/simple_water/128_simple_water_dam_NO_FLIP_traditional.json', False],
+#    ['../scenes/test_cases/simple_water/128_simple_water_drop_NO_FLIP_conserving.json', False],
+#    ['../scenes/test_cases/simple_water/128_simple_water_drop_NO_FLIP_traditional.json', False],
+#
+#    ['../scenes/test_cases/simple_water/192_simple_water_dam_NO_FLIP_conserving.json', False],
+#    ['../scenes/test_cases/simple_water/192_simple_water_dam_NO_FLIP_traditional.json', False],
     #['../scenes/test_cases/simple_water/192_simple_water_drop_NO_FLIP_conserving.json', False],
     #['../scenes/test_cases/simple_water/192_simple_water_drop_NO_FLIP_traditional.json', False],
 
-    ['../scenes/test_cases/simple_water/256_simple_water_dam_NO_FLIP_conserving.json', False],
+#    ['../scenes/test_cases/simple_water/256_simple_water_dam_NO_FLIP_conserving.json', False],
     ['../scenes/test_cases/simple_water/256_simple_water_dam_NO_FLIP_traditional.json', False],
     ['../scenes/test_cases/simple_water/256_simple_water_drop_NO_FLIP_conserving.json', False],
     ['../scenes/test_cases/simple_water/256_simple_water_drop_NO_FLIP_traditional.json', False],
