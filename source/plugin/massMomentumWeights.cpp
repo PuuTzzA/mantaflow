@@ -49,6 +49,8 @@ namespace Manta
 
     void MassMomentumWeights::insert(Vec3i cellI, Vec3i cellJ, Real value)
     {
+        value = Manta::clamp(value, (Real)-0.5, (Real)1);
+
         getOrInsert(weights[index(cellI)], cellJ) = value;
         std::vector<Vec3i> &rev = reverseWeights[index(cellJ)];
         if (std::find(rev.begin(), rev.end(), cellI) == rev.end())
@@ -59,6 +61,8 @@ namespace Manta
 
     void MassMomentumWeights::add(Vec3i cellI, Vec3i cellJ, Real value)
     {
+        value = Manta::clamp(value, (Real)-0.5, (Real)1);
+
         getOrInsert(weights[index(cellI)], cellJ) += value;
         std::vector<Vec3i> &rev = reverseWeights[index(cellJ)];
         if (std::find(rev.begin(), rev.end(), cellI) == rev.end())

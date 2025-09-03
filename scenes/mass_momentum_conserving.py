@@ -126,6 +126,8 @@ while s.timeTotal < params["max_time"] :#and data_collector.current_frame < 80:
     if doConserving == False and tracingMethod == "EE1":
         maxvel = vel.getMax()
 
+    #maxvel = vel.getMax()
+
     if firstFrame:
         maxvel = 20     
         firstFrame = False

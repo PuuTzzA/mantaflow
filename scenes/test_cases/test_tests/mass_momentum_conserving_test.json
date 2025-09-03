@@ -1,9 +1,9 @@
 {
   "title": "testtest4",
 
-  "dimension": 3,
-  "resolutionX": 30,
-  "resolutionY": 30,
+  "dimension": 2,
+  "resolutionX": 164,
+  "resolutionY": 164,
   "resolutionZ": 30,
 
   "doOpen": true,

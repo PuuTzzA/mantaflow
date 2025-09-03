@@ -16,7 +16,7 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-//#define NO_KERNEL
+#define NO_KERNEL
 #define CLAMP
 
     /// @brief is not an obstacle and tagged as fluid
@@ -1252,6 +1252,7 @@ namespace Manta
             }
             Real factor = 1 / gammaCumulative(i, j, k);
 #ifdef CLAMP
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.24) : Manta::clamp(factor, (Real)0.25, (Real)4);
             factor = factor < 0 ? Manta::clamp(factor, (Real)-8, (Real)-0.125) : Manta::clamp(factor, (Real)0.125, (Real)8);
 #endif
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
@@ -1287,6 +1288,7 @@ namespace Manta
             }
 
 #ifdef CLAMP
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.24) : Manta::clamp(factor, (Real)0.25, (Real)4);
             factor = factor < 0 ? Manta::clamp(factor, (Real)-8, (Real)-0.125) : Manta::clamp(factor, (Real)0.125, (Real)8);
 #endif
 
@@ -1455,7 +1457,9 @@ namespace Manta
             // weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
-        //knSetOutflowToZero(grid, flags_n_plus_one, component);
+        clampToMinMaxNoKernel(grid, min, max);
+
+        // knSetOutflowToZero(grid, flags_n_plus_one, component);
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
