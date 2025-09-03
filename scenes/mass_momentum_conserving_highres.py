@@ -137,6 +137,10 @@ while s.timeTotal < params["max_time"] and num_steps < 150:
     print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxvel: {maxvel}")
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
+    if maxvel * s.timestep > 5000:
+        print(f"cfl number was t00 big, was {maxvel * s.timestep}")
+        break
+
     if s.timeTotal<3000:
         source.applyToGrid(grid=density, value=1)
 
