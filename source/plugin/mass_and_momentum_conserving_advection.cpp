@@ -17,7 +17,7 @@ namespace Manta
 {
 #define EPSILON 1e-6
 //#define NO_KERNEL
-//#define CLAMP
+#define CLAMP
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
