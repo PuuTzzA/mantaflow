@@ -947,7 +947,7 @@ namespace Manta
         Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
         Real fraction_to_move = gamma_to_equalize / gamma_avg;
-        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.5), static_cast<Real>(0.5));
+        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.75), static_cast<Real>(0.75));
 
         Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
@@ -988,7 +988,7 @@ namespace Manta
             Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
             Real fraction_to_move = gamma_to_equalize / gamma_avg;
-            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.5), static_cast<Real>(0.5));
+            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.75), static_cast<Real>(0.75));
 
             Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
@@ -1075,11 +1075,18 @@ namespace Manta
     }
 
     KERNEL()
-    void knSetOutflowToZero(Grid<Real> &grid, const FlagGrid &flags, MACGridComponent c)
+    void knDampOutflowToZero(Grid<Real> &grid, const FlagGrid &flags, MACGridComponent c)
     {
         if (isSampleableFluid(i, j, k, flags, c) && !isValidFluid(i, j, k, flags, c))
         {
-            grid(i, j, k) = 0.;
+            if (std::abs(grid(i, j, k) > 5))
+            {
+                grid(i, j, k) = Manta::clamp(grid(i, j, k), (Real)-5., (Real)5.);
+            }
+            else
+            {
+                grid(i, j, k) *= 0.5;
+            }
         }
     }
 
@@ -1111,7 +1118,6 @@ namespace Manta
 #ifdef CLAMP
             std::cout << "Clamping" << std::endl;
 #endif
-
         }
         if (phi)
         {
@@ -1457,9 +1463,10 @@ namespace Manta
             // weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
-        clampToMinMaxNoKernel(grid, min, max);
+        // clampToMinMaxNoKernel(grid, min, max)
+        knClampToMinMax(tempGrid, min, max);
 
-        // knSetOutflowToZero(grid, flags_n_plus_one, component);
+        knDampOutflowToZero(grid, flags_n_plus_one, component);
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
@@ -1614,7 +1621,7 @@ namespace Manta
 
         if (grid->getType() & GridBase::TypeReal)
         {
-            knSetOutflowToZero(*((Grid<Real> *)grid), *flags, NONE);
+            knDampOutflowToZero(*((Grid<Real> *)grid), *flags, NONE);
         }
         else if (grid->getType() & GridBase::TypeMAC)
         {
@@ -1624,9 +1631,9 @@ namespace Manta
 
             knMAC2Grids(*((MACGrid *)grid), gridX, gridY, gridZ);
 
-            knSetOutflowToZero(gridX, *flags, NONE);
-            knSetOutflowToZero(gridY, *flags, NONE);
-            knSetOutflowToZero(gridZ, *flags, NONE);
+            knDampOutflowToZero(gridX, *flags, NONE);
+            knDampOutflowToZero(gridY, *flags, NONE);
+            knDampOutflowToZero(gridZ, *flags, NONE);
 
             knGrids2MAC(*((MACGrid *)grid), gridX, gridY, gridZ);
         }

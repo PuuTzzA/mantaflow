@@ -10,7 +10,7 @@
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "RK4",
-  "interpolationMethod": 0,
+  "interpolationMethod": 2,
   "tracingFunction": 1,
   "redistributeClamped":true,
 

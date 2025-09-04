@@ -85,11 +85,11 @@ if doObstacle:
     phiObs.subtract(phiObsHelper)
 
 #prepare grids
-bWidth=0
+bWidth=3
 flags.initDomain(boundaryWidth=bWidth) 
 
 if doObstacle:
-    setObstacleFlags(flags=flags, phiObs=phiObs) #, fractions=fractions)
+    setObstacleFlags(flags=flags, phiObs=phiObs, boundaryWidth=bWidth) #, fractions=fractions)
 
 if doOpen or True:
     setOpenBound(flags, bWidth,'xXYzZ',FlagOutflow|FlagEmpty) 
