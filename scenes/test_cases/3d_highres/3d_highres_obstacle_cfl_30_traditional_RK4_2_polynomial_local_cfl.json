@@ -1,5 +1,5 @@
 {
-  "title": "3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl",
+  "title": "3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl_v2",
   "dimension": 3,
   "resolutionX": 200,
   "resolutionY": 200,
