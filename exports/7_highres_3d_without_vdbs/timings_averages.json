@@ -1,0 +1,170 @@
+{
+    "not conserving, linear interpolation": {
+        "1 - 5": {
+            "advection_average": 60.54,
+            "pressure_average": 11.5444,
+            "other_average": 0.8606
+        },
+        "6 - 10": {
+            "advection_average": 92.94340000000001,
+            "pressure_average": 11.9142,
+            "other_average": 0.339
+        },
+        "11 - 15": {
+            "advection_average": 124.4422,
+            "pressure_average": 12.211400000000001,
+            "other_average": 0.24500000000000002
+        },
+        "16 - 20": {
+            "advection_average": 116.01199999999999,
+            "pressure_average": 12.2574,
+            "other_average": 0.2072
+        },
+        "21 - 25": {
+            "advection_average": 141.5612,
+            "pressure_average": 12.1786,
+            "other_average": 0.2004
+        },
+        "26 - 30": {
+            "advection_average": 138.3138,
+            "pressure_average": 12.783199999999999,
+            "other_average": 0.21080000000000002
+        },
+        "31 - 35": {
+            "advection_average": 138.1192,
+            "pressure_average": 12.785999999999998,
+            "other_average": 0.2566
+        },
+        "36 - 40": {
+            "advection_average": 109.65799999999999,
+            "pressure_average": 12.330200000000001,
+            "other_average": 0.2032
+        }
+    },
+    "not conserving, cubic interpolation": {
+        "1 - 5": {
+            "advection_average": 74.4644,
+            "pressure_average": 11.0006,
+            "other_average": 0.6609999999999999
+        },
+        "6 - 10": {
+            "advection_average": 112.405,
+            "pressure_average": 11.221599999999999,
+            "other_average": 0.33380000000000004
+        },
+        "11 - 15": {
+            "advection_average": 144.39339999999999,
+            "pressure_average": 11.740200000000002,
+            "other_average": 0.29400000000000004
+        },
+        "16 - 20": {
+            "advection_average": 136.6078,
+            "pressure_average": 11.6884,
+            "other_average": 0.19619999999999999
+        },
+        "21 - 25": {
+            "advection_average": 161.059,
+            "pressure_average": 11.201000000000002,
+            "other_average": 0.246
+        },
+        "26 - 30": {
+            "advection_average": 157.883,
+            "pressure_average": 11.7566,
+            "other_average": 0.2028
+        },
+        "31 - 35": {
+            "advection_average": 152.32,
+            "pressure_average": 11.2542,
+            "other_average": 0.24500000000000002
+        },
+        "36 - 40": {
+            "advection_average": 129.76299999999998,
+            "pressure_average": 11.013200000000001,
+            "other_average": 0.1992
+        }
+    },
+    "conserving, linear interpolation": {
+        "1 - 5": {
+            "advection_average": 114.2612,
+            "pressure_average": 11.7924,
+            "other_average": 0.9134
+        },
+        "6 - 10": {
+            "advection_average": 181.6988,
+            "pressure_average": 12.0582,
+            "other_average": 0.33480000000000004
+        },
+        "11 - 15": {
+            "advection_average": 314.50660000000005,
+            "pressure_average": 16.2348,
+            "other_average": 0.4901999999999999
+        },
+        "16 - 20": {
+            "advection_average": 287.4838,
+            "pressure_average": 14.372800000000002,
+            "other_average": 0.2654
+        },
+        "21 - 25": {
+            "advection_average": 263.015,
+            "pressure_average": 12.3292,
+            "other_average": 0.2476
+        },
+        "26 - 30": {
+            "advection_average": 255.478,
+            "pressure_average": 12.598400000000002,
+            "other_average": 0.1956
+        },
+        "31 - 35": {
+            "advection_average": 255.76400000000004,
+            "pressure_average": 12.3706,
+            "other_average": 0.2428
+        },
+        "36 - 40": {
+            "advection_average": 215.55120000000002,
+            "pressure_average": 12.2196,
+            "other_average": 0.195
+        }
+    },
+    "conserving, cubic interpolation": {
+        "1 - 5": {
+            "advection_average": 278.8274,
+            "pressure_average": 10.6136,
+            "other_average": 0.7928
+        },
+        "6 - 10": {
+            "advection_average": 510.2762000000001,
+            "pressure_average": 10.9672,
+            "other_average": 0.32900000000000007
+        },
+        "11 - 15": {
+            "advection_average": 581.9696,
+            "pressure_average": 11.3908,
+            "other_average": 0.2866
+        },
+        "16 - 20": {
+            "advection_average": 534.8728,
+            "pressure_average": 11.273800000000001,
+            "other_average": 0.1488
+        },
+        "21 - 25": {
+            "advection_average": 570.3424,
+            "pressure_average": 11.1454,
+            "other_average": 0.19959999999999997
+        },
+        "26 - 30": {
+            "advection_average": 599.1512,
+            "pressure_average": 11.166999999999998,
+            "other_average": 0.19460000000000002
+        },
+        "31 - 35": {
+            "advection_average": 633.4858,
+            "pressure_average": 11.372,
+            "other_average": 0.19540000000000002
+        },
+        "36 - 40": {
+            "advection_average": 579.2434000000001,
+            "pressure_average": 10.843399999999999,
+            "other_average": 0.1484
+        }
+    }
+}
