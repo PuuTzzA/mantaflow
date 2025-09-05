@@ -1,0 +1,202 @@
+[
+    {
+        "timestep": 0,
+        "ram_usage_rss": 1230770176,
+        "ram_usage_pss": 1223371776
+    },
+    {
+        "timestep": 1,
+        "ram_usage_rss": 3986300928,
+        "ram_usage_pss": 3978562560
+    },
+    {
+        "timestep": 2,
+        "ram_usage_rss": 4008255488,
+        "ram_usage_pss": 4000623616
+    },
+    {
+        "timestep": 3,
+        "ram_usage_rss": 4008198144,
+        "ram_usage_pss": 4000308224
+    },
+    {
+        "timestep": 4,
+        "ram_usage_rss": 4008493056,
+        "ram_usage_pss": 4000308224
+    },
+    {
+        "timestep": 5,
+        "ram_usage_rss": 4008501248,
+        "ram_usage_pss": 4000316416
+    },
+    {
+        "timestep": 6,
+        "ram_usage_rss": 4008652800,
+        "ram_usage_pss": 4000324608
+    },
+    {
+        "timestep": 7,
+        "ram_usage_rss": 4008910848,
+        "ram_usage_pss": 4000328704
+    },
+    {
+        "timestep": 8,
+        "ram_usage_rss": 4097499136,
+        "ram_usage_pss": 4088757248
+    },
+    {
+        "timestep": 9,
+        "ram_usage_rss": 4104695808,
+        "ram_usage_pss": 4095798272
+    },
+    {
+        "timestep": 10,
+        "ram_usage_rss": 4153032704,
+        "ram_usage_pss": 4144045056
+    },
+    {
+        "timestep": 11,
+        "ram_usage_rss": 4176486400,
+        "ram_usage_pss": 4167774208
+    },
+    {
+        "timestep": 12,
+        "ram_usage_rss": 4176486400,
+        "ram_usage_pss": 4167856128
+    },
+    {
+        "timestep": 13,
+        "ram_usage_rss": 4176486400,
+        "ram_usage_pss": 4167872512
+    },
+    {
+        "timestep": 14,
+        "ram_usage_rss": 4009029632,
+        "ram_usage_pss": 4000399360
+    },
+    {
+        "timestep": 15,
+        "ram_usage_rss": 4085411840,
+        "ram_usage_pss": 4076507136
+    },
+    {
+        "timestep": 16,
+        "ram_usage_rss": 4157751296,
+        "ram_usage_pss": 4148977664
+    },
+    {
+        "timestep": 17,
+        "ram_usage_rss": 4157751296,
+        "ram_usage_pss": 4148989952
+    },
+    {
+        "timestep": 18,
+        "ram_usage_rss": 4156313600,
+        "ram_usage_pss": 4147552256
+    },
+    {
+        "timestep": 19,
+        "ram_usage_rss": 4160081920,
+        "ram_usage_pss": 4151349248
+    },
+    {
+        "timestep": 20,
+        "ram_usage_rss": 4174630912,
+        "ram_usage_pss": 4165750784
+    },
+    {
+        "timestep": 21,
+        "ram_usage_rss": 4156620800,
+        "ram_usage_pss": 4147593216
+    },
+    {
+        "timestep": 22,
+        "ram_usage_rss": 4156551168,
+        "ram_usage_pss": 4147609600
+    },
+    {
+        "timestep": 23,
+        "ram_usage_rss": 4156981248,
+        "ram_usage_pss": 4147609600
+    },
+    {
+        "timestep": 24,
+        "ram_usage_rss": 4179992576,
+        "ram_usage_pss": 4170510336
+    },
+    {
+        "timestep": 25,
+        "ram_usage_rss": 4180127744,
+        "ram_usage_pss": 4170514432
+    },
+    {
+        "timestep": 26,
+        "ram_usage_rss": 4180131840,
+        "ram_usage_pss": 4170514432
+    },
+    {
+        "timestep": 27,
+        "ram_usage_rss": 4192100352,
+        "ram_usage_pss": 4182700032
+    },
+    {
+        "timestep": 28,
+        "ram_usage_rss": 4247744512,
+        "ram_usage_pss": 4238262272
+    },
+    {
+        "timestep": 29,
+        "ram_usage_rss": 4247744512,
+        "ram_usage_pss": 4238270464
+    },
+    {
+        "timestep": 30,
+        "ram_usage_rss": 4180041728,
+        "ram_usage_pss": 4170555392
+    },
+    {
+        "timestep": 31,
+        "ram_usage_rss": 4182335488,
+        "ram_usage_pss": 4172865536
+    },
+    {
+        "timestep": 32,
+        "ram_usage_rss": 4180221952,
+        "ram_usage_pss": 4170579968
+    },
+    {
+        "timestep": 33,
+        "ram_usage_rss": 4180221952,
+        "ram_usage_pss": 4170588160
+    },
+    {
+        "timestep": 34,
+        "ram_usage_rss": 4180021248,
+        "ram_usage_pss": 4170596352
+    },
+    {
+        "timestep": 35,
+        "ram_usage_rss": 4180021248,
+        "ram_usage_pss": 4170600448
+    },
+    {
+        "timestep": 36,
+        "ram_usage_rss": 4180066304,
+        "ram_usage_pss": 4170620928
+    },
+    {
+        "timestep": 37,
+        "ram_usage_rss": 4180066304,
+        "ram_usage_pss": 4170629120
+    },
+    {
+        "timestep": 38,
+        "ram_usage_rss": 4187766784,
+        "ram_usage_pss": 4178477056
+    },
+    {
+        "timestep": 39,
+        "ram_usage_rss": 4187766784,
+        "ram_usage_pss": 4178481152
+    }
+]

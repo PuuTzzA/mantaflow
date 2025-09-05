@@ -82,7 +82,7 @@ HIGHRES_PATHS = [
     #['../scenes/test_cases/3d_highres/3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl.json', True],
 ]
 
-""" for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
+for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -90,9 +90,9 @@ HIGHRES_PATHS = [
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
- """
 
-for param, requiresVDB in HIGHRES_PATHS:
+
+""" for param, requiresVDB in HIGHRES_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -100,3 +100,4 @@ for param, requiresVDB in HIGHRES_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_HIGHRES_SCENE, param])
+ """

@@ -1,0 +1,207 @@
+{
+  "step": 0,
+  "timings": [
+    {
+      "name": "Box::Box",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Cylinder::Cylinder",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "FlagGrid::FlagGrid",
+      "solver": "main",
+      "ms": 10,
+      "percent": 0.010516
+    },
+    {
+      "name": "FlagGrid::fillGrid",
+      "solver": "main",
+      "ms": 5,
+      "percent": 0.005258
+    },
+    {
+      "name": "FlagGrid::initDomain",
+      "solver": "main",
+      "ms": 14,
+      "percent": 0.014723
+    },
+    {
+      "name": "FluidSolver::FluidSolver",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "FluidSolver::adaptTimestep",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Grid::Grid",
+      "solver": "main",
+      "ms": 46,
+      "percent": 0.048375
+    },
+    {
+      "name": "Grid::copyFrom",
+      "solver": "main",
+      "ms": 2,
+      "percent": 0.002103
+    },
+    {
+      "name": "LevelsetGrid::LevelsetGrid",
+      "solver": "main",
+      "ms": 18,
+      "percent": 0.018929
+    },
+    {
+      "name": "LevelsetGrid::subtract",
+      "solver": "main",
+      "ms": 2,
+      "percent": 0.002103
+    },
+    {
+      "name": "MACGrid::MACGrid",
+      "solver": "main",
+      "ms": 54,
+      "percent": 0.056788
+    },
+    {
+      "name": "Mesh::Mesh",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Mesh::computeLevelset",
+      "solver": "main",
+      "ms": 2113,
+      "percent": 2.222105
+    },
+    {
+      "name": "Mesh::load",
+      "solver": "main",
+      "ms": 212,
+      "percent": 0.222947
+    },
+    {
+      "name": "Mesh::offset",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Mesh::scale",
+      "solver": "main",
+      "ms": 1,
+      "percent": 0.001052
+    },
+    {
+      "name": "Shape::applyToGrid",
+      "solver": "main",
+      "ms": 3,
+      "percent": 0.003155
+    },
+    {
+      "name": "Shape::computeLevelset",
+      "solver": "main",
+      "ms": 6,
+      "percent": 0.006310
+    },
+    {
+      "name": "Timings::Timings",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "addBuoyancy",
+      "solver": "main",
+      "ms": 8,
+      "percent": 0.008413
+    },
+    {
+      "name": "calculateCurl",
+      "solver": "main",
+      "ms": 12,
+      "percent": 0.012620
+    },
+    {
+      "name": "computeVelocityMagnitude",
+      "solver": "main",
+      "ms": 13,
+      "percent": 0.013671
+    },
+    {
+      "name": "fillWithOnes",
+      "solver": "main",
+      "ms": 14,
+      "percent": 0.014723
+    },
+    {
+      "name": "getMaxVal",
+      "solver": "main",
+      "ms": 2,
+      "percent": 0.002103
+    },
+    {
+      "name": "mantaMsg",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "massMomentumConservingAdvect",
+      "solver": "main",
+      "ms": 80286,
+      "percent": 84.431591
+    },
+    {
+      "name": "realGridStats",
+      "solver": "main",
+      "ms": 48,
+      "percent": 0.050478
+    },
+    {
+      "name": "resetOutflow",
+      "solver": "main",
+      "ms": 12,
+      "percent": 0.012620
+    },
+    {
+      "name": "save",
+      "ms": 255,
+      "percent": 0.268167
+    },
+    {
+      "name": "setObstacleFlags",
+      "solver": "main",
+      "ms": 3,
+      "percent": 0.003155
+    },
+    {
+      "name": "setOpenBound",
+      "solver": "main",
+      "ms": 28,
+      "percent": 0.029446
+    },
+    {
+      "name": "setWallBcs",
+      "solver": "main",
+      "ms": 4,
+      "percent": 0.004207
+    },
+    {
+      "name": "solvePressure",
+      "solver": "main",
+      "ms": 11919,
+      "percent": 12.534441
+    }
+  ],
+  "total_ms": 95090
+}

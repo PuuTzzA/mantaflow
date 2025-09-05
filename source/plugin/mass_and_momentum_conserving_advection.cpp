@@ -16,7 +16,7 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-#define NO_KERNEL
+// #define NO_KERNEL
 #define CLAMP
 
     /// @brief is not an obstacle and tagged as fluid
@@ -947,7 +947,7 @@ namespace Manta
         Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
         Real fraction_to_move = gamma_to_equalize / gamma_avg;
-        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.75), static_cast<Real>(0.75));
+        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-.75), static_cast<Real>(.75));
 
         Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
@@ -988,7 +988,7 @@ namespace Manta
             Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
             Real fraction_to_move = gamma_to_equalize / gamma_avg;
-            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-0.75), static_cast<Real>(0.75));
+            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-.75), static_cast<Real>(.75));
 
             Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
@@ -1259,7 +1259,7 @@ namespace Manta
             Real factor = 1 / gammaCumulative(i, j, k);
 #ifdef CLAMP
             // factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.24) : Manta::clamp(factor, (Real)0.25, (Real)4);
-            factor = factor < 0 ? Manta::clamp(factor, (Real)-8, (Real)-0.125) : Manta::clamp(factor, (Real)0.125, (Real)8);
+            factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
 #endif
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
@@ -1295,7 +1295,7 @@ namespace Manta
 
 #ifdef CLAMP
             // factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.24) : Manta::clamp(factor, (Real)0.25, (Real)4);
-            factor = factor < 0 ? Manta::clamp(factor, (Real)-8, (Real)-0.125) : Manta::clamp(factor, (Real)0.125, (Real)8);
+            factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
 #endif
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
