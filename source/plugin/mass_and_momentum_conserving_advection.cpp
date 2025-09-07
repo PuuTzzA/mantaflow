@@ -947,7 +947,7 @@ namespace Manta
         Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
         Real fraction_to_move = gamma_to_equalize / gamma_avg;
-        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-.75), static_cast<Real>(.75));
+        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-1.0), static_cast<Real>(1.0));
 
         Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
@@ -988,7 +988,7 @@ namespace Manta
             Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
 
             Real fraction_to_move = gamma_to_equalize / gamma_avg;
-            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-.75), static_cast<Real>(.75));
+            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-1.0), static_cast<Real>(1.0));
 
             Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
@@ -1258,7 +1258,6 @@ namespace Manta
             }
             Real factor = 1 / gammaCumulative(i, j, k);
 #ifdef CLAMP
-            // factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.24) : Manta::clamp(factor, (Real)0.25, (Real)4);
             factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
 #endif
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
@@ -1294,7 +1293,6 @@ namespace Manta
             }
 
 #ifdef CLAMP
-            // factor = factor < 0 ? Manta::clamp(factor, (Real)-4, (Real)-0.24) : Manta::clamp(factor, (Real)0.25, (Real)4);
             factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
 #endif
 
@@ -1465,8 +1463,7 @@ namespace Manta
 
         // clampToMinMaxNoKernel(grid, min, max)
         knClampToMinMax(tempGrid, min, max);
-
-        knDampOutflowToZero(grid, flags_n_plus_one, component);
+        // knDampOutflowToZero(grid, flags_n_plus_one, component); /change this so that is only clamps when both neighbors are outflow or fluid for correct pressure gradient
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
