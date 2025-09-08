@@ -1,0 +1,183 @@
+{
+  "step": 0,
+  "timings": [
+    {
+      "name": "Cylinder::Cylinder",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "FlagGrid::FlagGrid",
+      "solver": "main",
+      "ms": 1,
+      "percent": 0.040404
+    },
+    {
+      "name": "FlagGrid::fillGrid",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "FlagGrid::initDomain",
+      "solver": "main",
+      "ms": 2,
+      "percent": 0.080808
+    },
+    {
+      "name": "FluidSolver::FluidSolver",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "FluidSolver::adaptTimestep",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Grid::Grid",
+      "solver": "main",
+      "ms": 4,
+      "percent": 0.161616
+    },
+    {
+      "name": "Gui::Gui",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Gui::nextRealGrid",
+      "ms": 1,
+      "percent": 0.040404
+    },
+    {
+      "name": "Gui::screenshot",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Gui::setCamPos",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Gui::show",
+      "ms": 31,
+      "percent": 1.252525
+    },
+    {
+      "name": "Gui::update",
+      "ms": 297,
+      "percent": 12.000000
+    },
+    {
+      "name": "Gui::windowSize",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "LevelsetGrid::LevelsetGrid",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "MACGrid::MACGrid",
+      "solver": "main",
+      "ms": 3,
+      "percent": 0.121212
+    },
+    {
+      "name": "Shape::applyToGrid",
+      "solver": "main",
+      "ms": 3,
+      "percent": 0.121212
+    },
+    {
+      "name": "Shape::computeLevelset",
+      "solver": "main",
+      "ms": 3,
+      "percent": 0.121212
+    },
+    {
+      "name": "Sphere::Sphere",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Timings::Timings",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "addBuoyancy",
+      "solver": "main",
+      "ms": 1,
+      "percent": 0.040404
+    },
+    {
+      "name": "calculateCurl",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "computeVelocityMagnitude",
+      "solver": "main",
+      "ms": 2,
+      "percent": 0.080808
+    },
+    {
+      "name": "fillWithOnes",
+      "solver": "main",
+      "ms": 11,
+      "percent": 0.444444
+    },
+    {
+      "name": "getMaxVal",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "mantaMsg",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "massMomentumConservingAdvect",
+      "solver": "main",
+      "ms": 1340,
+      "percent": 54.141414
+    },
+    {
+      "name": "realGridStats",
+      "solver": "main",
+      "ms": 4,
+      "percent": 0.161616
+    },
+    {
+      "name": "setObstacleFlags",
+      "solver": "main",
+      "ms": 2,
+      "percent": 0.080808
+    },
+    {
+      "name": "setWallBcs",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "solvePressure",
+      "solver": "main",
+      "ms": 770,
+      "percent": 31.111111
+    }
+  ],
+  "total_ms": 2475
+}

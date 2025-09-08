@@ -1,0 +1,197 @@
+[
+    {
+        "timestep": 0,
+        "ram_usage_rss": 214683648,
+        "ram_usage_pss": 156601344
+    },
+    {
+        "timestep": 1,
+        "ram_usage_rss": 239161344,
+        "ram_usage_pss": 181120000
+    },
+    {
+        "timestep": 2,
+        "ram_usage_rss": 245137408,
+        "ram_usage_pss": 187152384
+    },
+    {
+        "timestep": 3,
+        "ram_usage_rss": 245530624,
+        "ram_usage_pss": 187643904
+    },
+    {
+        "timestep": 4,
+        "ram_usage_rss": 246845440,
+        "ram_usage_pss": 188474368
+    },
+    {
+        "timestep": 5,
+        "ram_usage_rss": 246845440,
+        "ram_usage_pss": 188482560
+    },
+    {
+        "timestep": 6,
+        "ram_usage_rss": 251293696,
+        "ram_usage_pss": 192852992
+    },
+    {
+        "timestep": 7,
+        "ram_usage_rss": 251817984,
+        "ram_usage_pss": 193471488
+    },
+    {
+        "timestep": 8,
+        "ram_usage_rss": 251817984,
+        "ram_usage_pss": 193483776
+    },
+    {
+        "timestep": 9,
+        "ram_usage_rss": 253284352,
+        "ram_usage_pss": 194626560
+    },
+    {
+        "timestep": 10,
+        "ram_usage_rss": 253284352,
+        "ram_usage_pss": 194638848
+    },
+    {
+        "timestep": 11,
+        "ram_usage_rss": 251568128,
+        "ram_usage_pss": 192779264
+    },
+    {
+        "timestep": 12,
+        "ram_usage_rss": 251547648,
+        "ram_usage_pss": 192689152
+    },
+    {
+        "timestep": 13,
+        "ram_usage_rss": 253169664,
+        "ram_usage_pss": 194144256
+    },
+    {
+        "timestep": 14,
+        "ram_usage_rss": 253169664,
+        "ram_usage_pss": 194156544
+    },
+    {
+        "timestep": 15,
+        "ram_usage_rss": 253190144,
+        "ram_usage_pss": 194170880
+    },
+    {
+        "timestep": 16,
+        "ram_usage_rss": 253976576,
+        "ram_usage_pss": 195076096
+    },
+    {
+        "timestep": 17,
+        "ram_usage_rss": 253976576,
+        "ram_usage_pss": 179193856
+    },
+    {
+        "timestep": 18,
+        "ram_usage_rss": 253976576,
+        "ram_usage_pss": 179074048
+    },
+    {
+        "timestep": 19,
+        "ram_usage_rss": 254930944,
+        "ram_usage_pss": 179966976
+    },
+    {
+        "timestep": 20,
+        "ram_usage_rss": 255324160,
+        "ram_usage_pss": 180249600
+    },
+    {
+        "timestep": 21,
+        "ram_usage_rss": 255324160,
+        "ram_usage_pss": 180249600
+    },
+    {
+        "timestep": 22,
+        "ram_usage_rss": 255324160,
+        "ram_usage_pss": 180253696
+    },
+    {
+        "timestep": 23,
+        "ram_usage_rss": 255508480,
+        "ram_usage_pss": 180470784
+    },
+    {
+        "timestep": 24,
+        "ram_usage_rss": 255639552,
+        "ram_usage_pss": 180683776
+    },
+    {
+        "timestep": 25,
+        "ram_usage_rss": 256032768,
+        "ram_usage_pss": 181044224
+    },
+    {
+        "timestep": 26,
+        "ram_usage_rss": 256032768,
+        "ram_usage_pss": 181060608
+    },
+    {
+        "timestep": 27,
+        "ram_usage_rss": 257601536,
+        "ram_usage_pss": 182629376
+    },
+    {
+        "timestep": 28,
+        "ram_usage_rss": 257863680,
+        "ram_usage_pss": 182846464
+    },
+    {
+        "timestep": 29,
+        "ram_usage_rss": 257994752,
+        "ram_usage_pss": 182903808
+    },
+    {
+        "timestep": 30,
+        "ram_usage_rss": 257994752,
+        "ram_usage_pss": 182912000
+    },
+    {
+        "timestep": 31,
+        "ram_usage_rss": 259899392,
+        "ram_usage_pss": 184873984
+    },
+    {
+        "timestep": 32,
+        "ram_usage_rss": 251584512,
+        "ram_usage_pss": 176514048
+    },
+    {
+        "timestep": 33,
+        "ram_usage_rss": 251465728,
+        "ram_usage_pss": 176411648
+    },
+    {
+        "timestep": 34,
+        "ram_usage_rss": 252383232,
+        "ram_usage_pss": 177398784
+    },
+    {
+        "timestep": 35,
+        "ram_usage_rss": 251539456,
+        "ram_usage_pss": 176432128
+    },
+    {
+        "timestep": 36,
+        "ram_usage_rss": 251596800,
+        "ram_usage_pss": 176448512
+    },
+    {
+        "timestep": 37,
+        "ram_usage_rss": 251555840,
+        "ram_usage_pss": 176456704
+    },
+    {
+        "timestep": 38,
+        "ram_usage_rss": 254963712,
+        "ram_usage_pss": 179917824
+    }
+]

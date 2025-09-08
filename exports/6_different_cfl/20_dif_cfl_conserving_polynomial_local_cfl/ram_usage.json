@@ -1,0 +1,352 @@
+[
+    {
+        "timestep": 0,
+        "ram_usage_rss": 219877376,
+        "ram_usage_pss": 144732160
+    },
+    {
+        "timestep": 1,
+        "ram_usage_rss": 243482624,
+        "ram_usage_pss": 168456192
+    },
+    {
+        "timestep": 2,
+        "ram_usage_rss": 226131968,
+        "ram_usage_pss": 150999040
+    },
+    {
+        "timestep": 3,
+        "ram_usage_rss": 246054912,
+        "ram_usage_pss": 170930176
+    },
+    {
+        "timestep": 4,
+        "ram_usage_rss": 246054912,
+        "ram_usage_pss": 170946560
+    },
+    {
+        "timestep": 5,
+        "ram_usage_rss": 246317056,
+        "ram_usage_pss": 171122688
+    },
+    {
+        "timestep": 6,
+        "ram_usage_rss": 246579200,
+        "ram_usage_pss": 171421696
+    },
+    {
+        "timestep": 7,
+        "ram_usage_rss": 246841344,
+        "ram_usage_pss": 171720704
+    },
+    {
+        "timestep": 8,
+        "ram_usage_rss": 246923264,
+        "ram_usage_pss": 171732992
+    },
+    {
+        "timestep": 9,
+        "ram_usage_rss": 246923264,
+        "ram_usage_pss": 171749376
+    },
+    {
+        "timestep": 10,
+        "ram_usage_rss": 246923264,
+        "ram_usage_pss": 171757568
+    },
+    {
+        "timestep": 11,
+        "ram_usage_rss": 246923264,
+        "ram_usage_pss": 171769856
+    },
+    {
+        "timestep": 12,
+        "ram_usage_rss": 250945536,
+        "ram_usage_pss": 175980544
+    },
+    {
+        "timestep": 13,
+        "ram_usage_rss": 250945536,
+        "ram_usage_pss": 175996928
+    },
+    {
+        "timestep": 14,
+        "ram_usage_rss": 250945536,
+        "ram_usage_pss": 176001024
+    },
+    {
+        "timestep": 15,
+        "ram_usage_rss": 248537088,
+        "ram_usage_pss": 173404160
+    },
+    {
+        "timestep": 16,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173420544
+    },
+    {
+        "timestep": 17,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173510656
+    },
+    {
+        "timestep": 18,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173592576
+    },
+    {
+        "timestep": 19,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173613056
+    },
+    {
+        "timestep": 20,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173613056
+    },
+    {
+        "timestep": 21,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173617152
+    },
+    {
+        "timestep": 22,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173621248
+    },
+    {
+        "timestep": 23,
+        "ram_usage_rss": 248799232,
+        "ram_usage_pss": 173625344
+    },
+    {
+        "timestep": 24,
+        "ram_usage_rss": 248832000,
+        "ram_usage_pss": 173721600
+    },
+    {
+        "timestep": 25,
+        "ram_usage_rss": 248832000,
+        "ram_usage_pss": 173754368
+    },
+    {
+        "timestep": 26,
+        "ram_usage_rss": 248832000,
+        "ram_usage_pss": 173873152
+    },
+    {
+        "timestep": 27,
+        "ram_usage_rss": 248832000,
+        "ram_usage_pss": 173881344
+    },
+    {
+        "timestep": 28,
+        "ram_usage_rss": 248963072,
+        "ram_usage_pss": 174016512
+    },
+    {
+        "timestep": 29,
+        "ram_usage_rss": 249225216,
+        "ram_usage_pss": 174168064
+    },
+    {
+        "timestep": 30,
+        "ram_usage_rss": 249487360,
+        "ram_usage_pss": 174553088
+    },
+    {
+        "timestep": 31,
+        "ram_usage_rss": 249487360,
+        "ram_usage_pss": 174557184
+    },
+    {
+        "timestep": 32,
+        "ram_usage_rss": 249995264,
+        "ram_usage_pss": 174942208
+    },
+    {
+        "timestep": 33,
+        "ram_usage_rss": 250126336,
+        "ram_usage_pss": 174995456
+    },
+    {
+        "timestep": 34,
+        "ram_usage_rss": 250126336,
+        "ram_usage_pss": 175032320
+    },
+    {
+        "timestep": 35,
+        "ram_usage_rss": 250257408,
+        "ram_usage_pss": 175286272
+    },
+    {
+        "timestep": 36,
+        "ram_usage_rss": 250257408,
+        "ram_usage_pss": 175314944
+    },
+    {
+        "timestep": 37,
+        "ram_usage_rss": 250519552,
+        "ram_usage_pss": 175532032
+    },
+    {
+        "timestep": 38,
+        "ram_usage_rss": 250650624,
+        "ram_usage_pss": 175556608
+    },
+    {
+        "timestep": 39,
+        "ram_usage_rss": 250650624,
+        "ram_usage_pss": 175564800
+    },
+    {
+        "timestep": 40,
+        "ram_usage_rss": 250650624,
+        "ram_usage_pss": 175568896
+    },
+    {
+        "timestep": 41,
+        "ram_usage_rss": 250650624,
+        "ram_usage_pss": 175572992
+    },
+    {
+        "timestep": 42,
+        "ram_usage_rss": 250650624,
+        "ram_usage_pss": 175593472
+    },
+    {
+        "timestep": 43,
+        "ram_usage_rss": 250650624,
+        "ram_usage_pss": 175597568
+    },
+    {
+        "timestep": 44,
+        "ram_usage_rss": 250781696,
+        "ram_usage_pss": 175835136
+    },
+    {
+        "timestep": 45,
+        "ram_usage_rss": 251568128,
+        "ram_usage_pss": 176502784
+    },
+    {
+        "timestep": 46,
+        "ram_usage_rss": 251674624,
+        "ram_usage_pss": 176519168
+    },
+    {
+        "timestep": 47,
+        "ram_usage_rss": 252329984,
+        "ram_usage_pss": 177268736
+    },
+    {
+        "timestep": 48,
+        "ram_usage_rss": 251777024,
+        "ram_usage_pss": 176539648
+    },
+    {
+        "timestep": 49,
+        "ram_usage_rss": 251740160,
+        "ram_usage_pss": 176543744
+    },
+    {
+        "timestep": 50,
+        "ram_usage_rss": 251740160,
+        "ram_usage_pss": 176551936
+    },
+    {
+        "timestep": 51,
+        "ram_usage_rss": 253050880,
+        "ram_usage_pss": 177944576
+    },
+    {
+        "timestep": 52,
+        "ram_usage_rss": 253050880,
+        "ram_usage_pss": 177952768
+    },
+    {
+        "timestep": 53,
+        "ram_usage_rss": 253050880,
+        "ram_usage_pss": 177960960
+    },
+    {
+        "timestep": 54,
+        "ram_usage_rss": 253050880,
+        "ram_usage_pss": 177981440
+    },
+    {
+        "timestep": 55,
+        "ram_usage_rss": 253050880,
+        "ram_usage_pss": 177997824
+    },
+    {
+        "timestep": 56,
+        "ram_usage_rss": 254099456,
+        "ram_usage_pss": 179132416
+    },
+    {
+        "timestep": 57,
+        "ram_usage_rss": 251625472,
+        "ram_usage_pss": 176621568
+    },
+    {
+        "timestep": 58,
+        "ram_usage_rss": 251445248,
+        "ram_usage_pss": 176629760
+    },
+    {
+        "timestep": 59,
+        "ram_usage_rss": 253804544,
+        "ram_usage_pss": 178968576
+    },
+    {
+        "timestep": 60,
+        "ram_usage_rss": 251535360,
+        "ram_usage_pss": 176658432
+    },
+    {
+        "timestep": 61,
+        "ram_usage_rss": 251789312,
+        "ram_usage_pss": 176658432
+    },
+    {
+        "timestep": 62,
+        "ram_usage_rss": 251789312,
+        "ram_usage_pss": 176662528
+    },
+    {
+        "timestep": 63,
+        "ram_usage_rss": 253046784,
+        "ram_usage_pss": 178051072
+    },
+    {
+        "timestep": 64,
+        "ram_usage_rss": 253964288,
+        "ram_usage_pss": 179075072
+    },
+    {
+        "timestep": 65,
+        "ram_usage_rss": 254750720,
+        "ram_usage_pss": 179869696
+    },
+    {
+        "timestep": 66,
+        "ram_usage_rss": 254750720,
+        "ram_usage_pss": 179869696
+    },
+    {
+        "timestep": 67,
+        "ram_usage_rss": 254881792,
+        "ram_usage_pss": 179894272
+    },
+    {
+        "timestep": 68,
+        "ram_usage_rss": 254881792,
+        "ram_usage_pss": 179902464
+    },
+    {
+        "timestep": 69,
+        "ram_usage_rss": 254881792,
+        "ram_usage_pss": 179927040
+    }
+]
