@@ -937,21 +937,24 @@ namespace Manta
             return;
         }
 
-        Real gamma_avg = (gamma(current_idx) + gamma(neighbor_idx)) / 2.0;
+        Real gammaSmaller = gamma(current_idx) <= gamma(neighbor_idx) ? gamma(current_idx) : gamma(neighbor_idx);
+        Real gammaBigger = gamma(current_idx) > gamma(neighbor_idx) ? gamma(current_idx) : gamma(neighbor_idx);
 
+        Real gridBigger = gamma(current_idx) > gamma(neighbor_idx) ? grid(current_idx) : grid(neighbor_idx);
+
+        Real gamma_avg = (gammaSmaller + gammaBigger) / 2.0;
         if (std::abs(gamma_avg) < EPSILON)
         {
             return;
         }
 
-        Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
-
+        Real gamma_to_equalize = (gammaBigger - gammaSmaller) / 2.0;
         Real fraction_to_move = gamma_to_equalize / gamma_avg;
-        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-1.0), static_cast<Real>(1.0));
 
+        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(0.0), static_cast<Real>(0.75));
         Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
-        Real phi_to_move_helper = (grid(neighbor_idx) * (gamma(current_idx) + gamma(neighbor_idx))) / (2 * gamma(neighbor_idx));
+        Real phi_to_move_helper = (gridBigger * (gammaSmaller + gammaBigger)) / (2 * gammaBigger);
         Real final_phi_to_move = phi_to_move_helper * fraction_to_move;
 
         if (!std::isfinite(final_phi_to_move) || std::isnan(final_phi_to_move) || !std::isfinite(final_gamma_to_move) || std::isnan(final_gamma_to_move))
@@ -959,52 +962,77 @@ namespace Manta
             return;
         }
 
-        deltaGammaNeighbour(neighbor_idx) -= final_gamma_to_move;
-        deltaGamma(current_idx) += final_gamma_to_move;
+        if (gamma(neighbor_idx) >= gamma(current_idx))
+        {
+            deltaGammaNeighbour(neighbor_idx) -= final_gamma_to_move;
+            deltaGamma(current_idx) += final_gamma_to_move;
 
-        deltaGridNeighbour(neighbor_idx) -= final_phi_to_move;
-        deltaGrid(current_idx) += final_phi_to_move;
+            deltaGridNeighbour(neighbor_idx) -= final_phi_to_move;
+            deltaGrid(current_idx) += final_phi_to_move;
+        }
+        else
+        {
+            deltaGammaNeighbour(neighbor_idx) += final_gamma_to_move;
+            deltaGamma(current_idx) -= final_gamma_to_move;
+
+            deltaGridNeighbour(neighbor_idx) += final_phi_to_move;
+            deltaGrid(current_idx) -= final_phi_to_move;
+        }
     }
 
     void diffuseGammaNoKernel(Grid<Real> &gamma, Grid<Real> &grid, const FlagGrid &flags, Vec3i &d, Grid<Real> &deltaGrid, Grid<Real> &deltaGamma, Grid<Real> &deltaGridNeighbour, Grid<Real> &deltaGammaNeighbour, MACGridComponent component)
     {
         FOR_IJK(grid)
         {
-            Vec3i current_idx = Vec3i(i, j, k);
-            Vec3i neighbor_idx = Vec3i(i + d.x, j + d.y, k + d.z);
+        Vec3i current_idx = Vec3i(i, j, k);
+        Vec3i neighbor_idx = Vec3i(i + d.x, j + d.y, k + d.z);
 
-            if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(neighbor_idx.x, neighbor_idx.y, neighbor_idx.z, flags, component))
-            {
-                continue;
-            }
+        if (!isValidFluid(i, j, k, flags, component) || !isValidFluid(neighbor_idx.x, neighbor_idx.y, neighbor_idx.z, flags, component))
+        {
+            continue;
+        }
 
-            Real gamma_avg = (gamma(current_idx) + gamma(neighbor_idx)) / 2.0;
+        Real gammaSmaller = gamma(current_idx) <= gamma(neighbor_idx) ? gamma(current_idx) : gamma(neighbor_idx);
+        Real gammaBigger = gamma(current_idx) > gamma(neighbor_idx) ? gamma(current_idx) : gamma(neighbor_idx);
 
-            if (std::abs(gamma_avg) < EPSILON)
-            {
-                continue;
-            }
+        Real gridBigger = gamma(current_idx) > gamma(neighbor_idx) ? grid(current_idx) : grid(neighbor_idx);
 
-            Real gamma_to_equalize = (gamma(neighbor_idx) - gamma(current_idx)) / 2.0;
+        Real gamma_avg = (gammaSmaller + gammaBigger) / 2.0;
+        if (std::abs(gamma_avg) < EPSILON)
+        {
+            continue;
+        }
 
-            Real fraction_to_move = gamma_to_equalize / gamma_avg;
-            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(-1.0), static_cast<Real>(1.0));
+        Real gamma_to_equalize = (gammaBigger - gammaSmaller) / 2.0;
+        Real fraction_to_move = gamma_to_equalize / gamma_avg;
 
-            Real final_gamma_to_move = gamma_avg * fraction_to_move;
+        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(0.0), static_cast<Real>(0.75));
+        Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
-            Real phi_to_move_helper = (grid(neighbor_idx) * (gamma(current_idx) + gamma(neighbor_idx))) / (2 * gamma(neighbor_idx));
-            Real final_phi_to_move = phi_to_move_helper * fraction_to_move;
+        Real phi_to_move_helper = (gridBigger * (gammaSmaller + gammaBigger)) / (2 * gammaBigger);
+        Real final_phi_to_move = phi_to_move_helper * fraction_to_move;
 
-            if (!std::isfinite(final_phi_to_move) || std::isnan(final_phi_to_move) || !std::isfinite(final_gamma_to_move) || std::isnan(final_gamma_to_move))
-            {
-                continue;
-            }
+        if (!std::isfinite(final_phi_to_move) || std::isnan(final_phi_to_move) || !std::isfinite(final_gamma_to_move) || std::isnan(final_gamma_to_move))
+        {
+            continue;
+        }
 
+        if (gamma(neighbor_idx) >= gamma(current_idx))
+        {
             deltaGammaNeighbour(neighbor_idx) -= final_gamma_to_move;
             deltaGamma(current_idx) += final_gamma_to_move;
 
             deltaGridNeighbour(neighbor_idx) -= final_phi_to_move;
             deltaGrid(current_idx) += final_phi_to_move;
+        }
+        else
+        {
+            deltaGammaNeighbour(neighbor_idx) += final_gamma_to_move;
+            deltaGamma(current_idx) -= final_gamma_to_move;
+
+            deltaGridNeighbour(neighbor_idx) += final_phi_to_move;
+            deltaGrid(current_idx) -= final_phi_to_move;
+        }
         }
     }
 
@@ -1259,10 +1287,11 @@ namespace Manta
             Real factor = 1 / gammaCumulative(i, j, k);
 #ifdef CLAMP
             factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-6, (Real)-0.1667) : Manta::clamp(factor, (Real)0.1667, (Real)6);
 #endif
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
-                factor = 1;
+                continue;
             }
 
             weights.scaleAllReverseWeightsAt(Vec3i(i, j, k), factor);
@@ -1294,11 +1323,12 @@ namespace Manta
 
 #ifdef CLAMP
             factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
+            // factor = factor < 0 ? Manta::clamp(factor, (Real)-6, (Real)-0.1667) : Manta::clamp(factor, (Real)0.1667, (Real)6);
 #endif
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
-                factor = 1;
+                continue;
             }
 
             weights.scaleAllWeightsAt(Vec3i(i, j, k), factor);
@@ -1462,8 +1492,8 @@ namespace Manta
         }
 
         // clampToMinMaxNoKernel(grid, min, max)
+        knDampOutflowToZero(grid, flags_n_plus_one, component); // change this so that is only clamps when both neighbors are outflow or fluid for correct pressure gradient
         knClampToMinMax(tempGrid, min, max);
-        // knDampOutflowToZero(grid, flags_n_plus_one, component); /change this so that is only clamps when both neighbors are outflow or fluid for correct pressure gradient
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON

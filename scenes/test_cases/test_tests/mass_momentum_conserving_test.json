@@ -1,12 +1,12 @@
 {
-  "title": "testtest4",
+  "title": "abcabcdiocane_panic_mode",
 
   "dimension": 2,
-  "resolutionX": 164,
-  "resolutionY": 164,
+  "resolutionX": 256,
+  "resolutionY": 256,
   "resolutionZ": 30,
 
-  "doOpen": true,
+  "doOpen": false,
   "doObstacle": true,
   "doConserving": true,
   "tracingMethod": "RK4",
@@ -15,11 +15,11 @@
   "redistributeClamped":true,
 
   "exportData": true,
-  "exportImages": false,
-  "exportVideos": false,
+  "exportImages": true,
+  "exportVideos": true,
   "exportVDBs": false,
 
-  "max_time": 1800,
-  "maxCFL": 50, 
+  "max_time": 120,
+  "maxCFL": 40, 
   "dt": 10
 }

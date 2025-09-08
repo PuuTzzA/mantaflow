@@ -1,9 +1,9 @@
 {
   "title": "plume_3d_high_conserving_2_polynomial",
   "dimension": 3,
-  "resolutionX": 128,
-  "resolutionY": 256,
-  "resolutionZ": 128,
+  "resolutionX": 100,
+  "resolutionY": 200,
+  "resolutionZ": 100,
   "doOpen": true,
   "doObstacle": true,
   "doConserving": true,
@@ -15,7 +15,7 @@
   "exportImages": false,
   "exportVideos": false,
   "exportVDBs": true,
-  "max_time": 85,
+  "max_time": 84,
   "maxCFL": 50,
   "dt": 3
 }

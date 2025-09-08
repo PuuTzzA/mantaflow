@@ -388,7 +388,7 @@ template<> void GridPainter<int>::paint() {
 	 if (!mObject || mHide || mPlane <0 || mPlane >= mLocalGrid->getSize()[mDim])
 		return;
 
-	if (false){ // THOMAS true is show obstacles as blue sqares
+	if (true){ // THOMAS true is show obstacles as blue sqares
 		const int dm     = getDispMode();
 		const Real scale = getScale();
 		const float dx   = mLocalGrid->getDx();
@@ -624,8 +624,8 @@ template<> void GridPainter<Vec3>::paint() {
 		return;
 	
 	const int dm     = getDispMode();
-	const Real scale = getScale();
-	// const Real scale = 0.0; // THOMAS THOMAS
+	//const Real scale = getScale();
+	const Real scale = 0.0; // THOMAS THOMAS
 	const float dx   = mLocalGrid->getDx();
 	const bool mac   = mLocalGrid->getType() & GridBase::TypeMAC;
 

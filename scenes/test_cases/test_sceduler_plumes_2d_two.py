@@ -200,16 +200,16 @@ DIFFERENT_CFL_2D_PATHS = [
 #    ['../scenes/test_cases/different_cfl_2d/02_dif_cfl_conserving_polynomial_local_cfl.json', False],
 #    ['../scenes/test_cases/different_cfl_2d/02_dif_cfl_traditional_polynomial_local_cfl.json', False],
 
-    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_conserving_polynomial_local_cfl.json', False],
 #    ['../scenes/test_cases/different_cfl_2d/05_dif_cfl_traditional_polynomial_local_cfl.json', False],
 
-#    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_conserving_polynomial_local_cfl.json', False],
 #    ['../scenes/test_cases/different_cfl_2d/40_dif_cfl_traditional_polynomial_local_cfl.json', False],
                           
-    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
+#    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_conserving_polynomial_local_cfl.json', False],
 #    ['../scenes/test_cases/different_cfl_2d/30_dif_cfl_traditional_polynomial_local_cfl.json', False],
                            
-#    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
+    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_conserving_polynomial_local_cfl.json', False],
 #    ['../scenes/test_cases/different_cfl_2d/20_dif_cfl_traditional_polynomial_local_cfl.json', False],
                           
     ['../scenes/test_cases/different_cfl_2d/60_dif_cfl_conserving_polynomial_local_cfl.json', False],
@@ -271,7 +271,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
  """
 
 
-for param, requiresVDB in OBSTACLE_2D_LOW_PATHS + DIFFERENT_CFL_2D_PATHS:
+for param, requiresVDB in DIFFERENT_CFL_2D_PATHS + OBSTACLE_2D_LOW_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)

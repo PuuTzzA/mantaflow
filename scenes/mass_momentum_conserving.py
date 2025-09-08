@@ -164,7 +164,7 @@ while s.timeTotal < params["max_time"] :#and data_collector.current_frame < 80:
         #extrapolateRealSimple(phi = density, flags=flags, distance=bWidth * 1.5)
         #simpleSLAdvect(flags=flags, vel=vel, grid=density,      interpolationType=1) # 0 = Trilinear, 1 = Catmull Rom
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=density, gammaCumulative=density_gamma,          interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
-        #massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
+        massMomentumConservingAdvect( flags=flags, vel=vel, grid=innen0außen1, gammaCumulative=innen0außen1_gamma,interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
         massMomentumConservingAdvect( flags=flags, vel=vel, grid=vel, gammaCumulative=vel_gamma,                  interpolationType=interpolationMethod, tracingMethod=tracingFunction, redistributeClamped=redistributeClamped)
 
     if doOpen:
