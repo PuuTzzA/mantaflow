@@ -239,15 +239,25 @@ WATER_PATHS = [
     ['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
 ]
 
-""" for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
+for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
     else:
         os.chdir(PATH_TO_MANTA)
 
-    subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param])
- """
+    subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param, "shear"])
+
+for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
+
+    if requiresVDB:
+        os.chdir(PATH_TO_MANTA_VDB)
+    else:
+        os.chdir(PATH_TO_MANTA)
+
+    subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param, "zalesak"])
+
+
 """ for param, requiresVDB in PLUME_2D_LOW_PATHS:
 
     if requiresVDB:
@@ -271,7 +281,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
  """
 
 
-for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
+""" for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -279,7 +289,7 @@ for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_SIMPLE_PLUME_SCENE, param])
-
+ """
 
 """ for param, requiresVDB in SIMPLE_PLUME_3D_HIGH:
 
