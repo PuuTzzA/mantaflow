@@ -239,7 +239,7 @@ WATER_PATHS = [
     ['../scenes/test_cases/simple_water/simple_water_drop_NO_FLIP_traditional.json', False],
 ]
 
-for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
+""" for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
@@ -247,7 +247,7 @@ for param, requiresVDB in FIXED_VEL_SHEAR_FLOW_PATHS:
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param, "shear"])
-
+ """
 for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
 
     if requiresVDB:
