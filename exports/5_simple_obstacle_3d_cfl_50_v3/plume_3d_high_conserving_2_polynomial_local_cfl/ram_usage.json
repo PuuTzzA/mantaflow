@@ -1,0 +1,217 @@
+[
+    {
+        "timestep": 0,
+        "ram_usage_rss": 1842388992,
+        "ram_usage_pss": 1831788544
+    },
+    {
+        "timestep": 1,
+        "ram_usage_rss": 2163499008,
+        "ram_usage_pss": 2152796160
+    },
+    {
+        "timestep": 2,
+        "ram_usage_rss": 4731228160,
+        "ram_usage_pss": 4720496640
+    },
+    {
+        "timestep": 3,
+        "ram_usage_rss": 5538430976,
+        "ram_usage_pss": 5527635968
+    },
+    {
+        "timestep": 4,
+        "ram_usage_rss": 6123712512,
+        "ram_usage_pss": 6112987136
+    },
+    {
+        "timestep": 5,
+        "ram_usage_rss": 6703788032,
+        "ram_usage_pss": 6692631552
+    },
+    {
+        "timestep": 6,
+        "ram_usage_rss": 7259762688,
+        "ram_usage_pss": 7249049600
+    },
+    {
+        "timestep": 7,
+        "ram_usage_rss": 6403047424,
+        "ram_usage_pss": 6392289280
+    },
+    {
+        "timestep": 8,
+        "ram_usage_rss": 8135847936,
+        "ram_usage_pss": 8125175808
+    },
+    {
+        "timestep": 9,
+        "ram_usage_rss": 8538095616,
+        "ram_usage_pss": 8527411200
+    },
+    {
+        "timestep": 10,
+        "ram_usage_rss": 7325933568,
+        "ram_usage_pss": 7315109888
+    },
+    {
+        "timestep": 11,
+        "ram_usage_rss": 6319280128,
+        "ram_usage_pss": 6308624384
+    },
+    {
+        "timestep": 12,
+        "ram_usage_rss": 6232248320,
+        "ram_usage_pss": 6221445120
+    },
+    {
+        "timestep": 13,
+        "ram_usage_rss": 9627869184,
+        "ram_usage_pss": 9617070080
+    },
+    {
+        "timestep": 14,
+        "ram_usage_rss": 9680265216,
+        "ram_usage_pss": 9669494784
+    },
+    {
+        "timestep": 15,
+        "ram_usage_rss": 9768542208,
+        "ram_usage_pss": 9757874176
+    },
+    {
+        "timestep": 16,
+        "ram_usage_rss": 9768542208,
+        "ram_usage_pss": 9757890560
+    },
+    {
+        "timestep": 17,
+        "ram_usage_rss": 9791295488,
+        "ram_usage_pss": 9780537344
+    },
+    {
+        "timestep": 18,
+        "ram_usage_rss": 9791315968,
+        "ram_usage_pss": 9780545536
+    },
+    {
+        "timestep": 19,
+        "ram_usage_rss": 8764207104,
+        "ram_usage_pss": 8753498112
+    },
+    {
+        "timestep": 20,
+        "ram_usage_rss": 9596637184,
+        "ram_usage_pss": 9585801216
+    },
+    {
+        "timestep": 21,
+        "ram_usage_rss": 9625554944,
+        "ram_usage_pss": 9614624768
+    },
+    {
+        "timestep": 22,
+        "ram_usage_rss": 9625575424,
+        "ram_usage_pss": 9614628864
+    },
+    {
+        "timestep": 23,
+        "ram_usage_rss": 9625530368,
+        "ram_usage_pss": 9614637056
+    },
+    {
+        "timestep": 24,
+        "ram_usage_rss": 9490972672,
+        "ram_usage_pss": 9480255488
+    },
+    {
+        "timestep": 25,
+        "ram_usage_rss": 9491091456,
+        "ram_usage_pss": 9480259584
+    },
+    {
+        "timestep": 26,
+        "ram_usage_rss": 9000988672,
+        "ram_usage_pss": 8990038016
+    },
+    {
+        "timestep": 27,
+        "ram_usage_rss": 9485242368,
+        "ram_usage_pss": 9474316288
+    },
+    {
+        "timestep": 28,
+        "ram_usage_rss": 8691793920,
+        "ram_usage_pss": 8680888320
+    },
+    {
+        "timestep": 29,
+        "ram_usage_rss": 9533919232,
+        "ram_usage_pss": 9522757632
+    },
+    {
+        "timestep": 30,
+        "ram_usage_rss": 9534009344,
+        "ram_usage_pss": 9523193856
+    },
+    {
+        "timestep": 31,
+        "ram_usage_rss": 9831247872,
+        "ram_usage_pss": 9820669952
+    },
+    {
+        "timestep": 32,
+        "ram_usage_rss": 9433026560,
+        "ram_usage_pss": 9422231552
+    },
+    {
+        "timestep": 33,
+        "ram_usage_rss": 9299464192,
+        "ram_usage_pss": 9288771584
+    },
+    {
+        "timestep": 34,
+        "ram_usage_rss": 9534246912,
+        "ram_usage_pss": 9523673088
+    },
+    {
+        "timestep": 35,
+        "ram_usage_rss": 9790271488,
+        "ram_usage_pss": 9779664896
+    },
+    {
+        "timestep": 36,
+        "ram_usage_rss": 9450991616,
+        "ram_usage_pss": 9440229376
+    },
+    {
+        "timestep": 37,
+        "ram_usage_rss": 9595715584,
+        "ram_usage_pss": 9585076224
+    },
+    {
+        "timestep": 38,
+        "ram_usage_rss": 9444343808,
+        "ram_usage_pss": 9433757696
+    },
+    {
+        "timestep": 39,
+        "ram_usage_rss": 9714024448,
+        "ram_usage_pss": 9702948864
+    },
+    {
+        "timestep": 40,
+        "ram_usage_rss": 9387089920,
+        "ram_usage_pss": 9376450560
+    },
+    {
+        "timestep": 41,
+        "ram_usage_rss": 9649729536,
+        "ram_usage_pss": 9639229440
+    },
+    {
+        "timestep": 42,
+        "ram_usage_rss": 9666101248,
+        "ram_usage_pss": 9655425024
+    }
+]

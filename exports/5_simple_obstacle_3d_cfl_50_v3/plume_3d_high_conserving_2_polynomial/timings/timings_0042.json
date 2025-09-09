@@ -1,0 +1,82 @@
+{
+  "step": 42,
+  "timings": [
+    {
+      "name": "FluidSolver::adaptTimestep",
+      "solver": "main",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "Shape::applyToGrid",
+      "solver": "main",
+      "ms": 2,
+      "percent": 0.000676
+    },
+    {
+      "name": "Timings::display",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "addBuoyancy",
+      "solver": "main",
+      "ms": 4,
+      "percent": 0.001353
+    },
+    {
+      "name": "calculateCurl",
+      "solver": "main",
+      "ms": 6,
+      "percent": 0.002029
+    },
+    {
+      "name": "computeVelocityMagnitude",
+      "solver": "main",
+      "ms": 6,
+      "percent": 0.002029
+    },
+    {
+      "name": "getMaxVal",
+      "solver": "main",
+      "ms": 1,
+      "percent": 0.000338
+    },
+    {
+      "name": "mantaMsg",
+      "ms": 0,
+      "percent": 0.000000
+    },
+    {
+      "name": "massMomentumConservingAdvect",
+      "solver": "main",
+      "ms": 291148,
+      "percent": 98.464265
+    },
+    {
+      "name": "realGridStats",
+      "solver": "main",
+      "ms": 43,
+      "percent": 0.014542
+    },
+    {
+      "name": "resetOutflow",
+      "solver": "main",
+      "ms": 7,
+      "percent": 0.002367
+    },
+    {
+      "name": "setWallBcs",
+      "solver": "main",
+      "ms": 3,
+      "percent": 0.001015
+    },
+    {
+      "name": "solvePressure",
+      "solver": "main",
+      "ms": 4469,
+      "percent": 1.511385
+    }
+  ],
+  "total_ms": 295689
+}
