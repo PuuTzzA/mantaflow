@@ -16,8 +16,8 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-// #define NO_KERNEL
-// #define CLAMP
+#define NO_KERNEL
+#define CLAMP
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
@@ -952,7 +952,7 @@ namespace Manta
         Real fraction_to_move = gamma_to_equalize / gamma_avg;
 
 #ifdef CLAMP
-        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(0.0), static_cast<Real>(0.75));
+        fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(0.0), static_cast<Real>(1.0));
 #endif
         Real final_gamma_to_move = gamma_avg * fraction_to_move;
 
@@ -1009,7 +1009,7 @@ namespace Manta
             Real fraction_to_move = gamma_to_equalize / gamma_avg;
 
 #ifdef CLAMP
-            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(0.0), static_cast<Real>(0.75));
+            fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(0.0), static_cast<Real>(1.0));
 #endif
             Real final_gamma_to_move = gamma_avg * fraction_to_move;
 

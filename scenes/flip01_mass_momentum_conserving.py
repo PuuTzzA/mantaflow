@@ -9,7 +9,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
-    EXPORTS_BASE_DIR = "../exports/8_simple_liquid"
+    EXPORTS_BASE_DIR = "../exports/8_simple_liquid_alles_neu"
     #EXPORTS_BASE_DIR = "../exports/9_simple_liquid"
 
 with open(param_path) as f:

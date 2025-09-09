@@ -100,7 +100,7 @@ PLUME_2D_HIGH_PATHS = [
 ]
 
 OBSTACLE_2D_LOW_PATHS = [
-    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_0_linear.json', False],
+#    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_0_linear.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_0_linear_local_cfl.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_local_cfl.json', False],
@@ -108,7 +108,7 @@ OBSTACLE_2D_LOW_PATHS = [
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_1_cubic_local_cfl_no_clamped_redistro.json', False],
 #    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_local_cfl.json', False],
-#    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_no_clamped_redistro.json', False],
+    ['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_conserving_2_polynomial_local_cfl_no_clamped_redistro.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_EE1.json', False],
     #['../scenes/test_cases/simple_obstacle_2d_low/obstacle_2d_low_traditional_EE2.json', False],
@@ -247,7 +247,7 @@ WATER_PATHS = [
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param, "shear"])
- """
+
 for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
 
     if requiresVDB:
@@ -258,7 +258,7 @@ for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
     subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param, "zalesak"])
  """
 
-for param, requiresVDB in DIFFERENT_CFL_2D_PATHS + OBSTACLE_2D_LOW_PATHS:
+for param, requiresVDB in OBSTACLE_2D_LOW_PATHS:
 
     if requiresVDB:
         os.chdir(PATH_TO_MANTA_VDB)
