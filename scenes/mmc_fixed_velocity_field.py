@@ -10,7 +10,7 @@ EXPORTS_BASE_DIR = "../exportsIgnore/test/"
 if len(sys.argv) > 1:
     param_path = sys.argv[1]
     #EXPORTS_BASE_DIR = "../exports/2_fixed_vel_zalesak_rotation/"
-    EXPORTS_BASE_DIR = "../exports/1_fixed_vel_shear_flow_alles_neu/"
+    EXPORTS_BASE_DIR = "../exports/1_fixed_vel_alles_neu_neu/"
 
     isZalesakThereforeIncludeError = sys.argv[2] == "zalesak"
 
@@ -142,6 +142,8 @@ while (s.timeTotal < params["max_time"]):
         maxvel = vel.getMax()
         s.adaptTimestep(maxvel)
 
+        data_collector.step(solver=s, flags=flags, maxVel=maxvel, gui=gui, objects=[], relError=relError)
+
     print(f"cfl number?: {maxvel * s.timestep}, timestep: {s.timestep}, maxVel: {maxvel}")
     mantaMsg('\nFrame %i, simulation time %f' % (s.frame, s.timeTotal))
 
@@ -166,9 +168,7 @@ while (s.timeTotal < params["max_time"]):
     computeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
     maxVel = getMaxVal(grid=velocity_magnitude, flags=flags) # flags param does nothign for now
    
-    if isZalesakThereforeIncludeError:
-        data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[], relError=relError)
-    else:
+    if not isZalesakThereforeIncludeError:
         data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[])
 
     #print("rel error:", relError)

@@ -247,7 +247,7 @@ WATER_PATHS = [
         os.chdir(PATH_TO_MANTA)
 
     subprocess.run(["./manta", PATH_TO_FIXEL_VELOCITY_SCENE, param, "shear"])
-
+ """
 for param, requiresVDB in FIXED_VEL_ZALESAK_ROTATION_PATHS:
 
     if requiresVDB:
