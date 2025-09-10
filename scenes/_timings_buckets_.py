@@ -146,8 +146,8 @@ CATEGORY_ADVECTION_CONSERVING = "massMomentumConservingAdvect"
 dirs = [
     ["3d_highres_obstacle_cfl_30_traditional_RK4_0_linear_local_cfl", "not conserving, linear interpolation", CATEGORY_ADVECTION],
     ["3d_highres_obstacle_cfl_30_traditional_RK4_2_polynomial_local_cfl_v2", "not conserving, cubic interpolation", CATEGORY_ADVECTION],
-    ["3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl", "conserving, linear interpolation", CATEGORY_ADVECTION_CONSERVING],
-    ["3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl_v3", "conserving, cubic interpolation", CATEGORY_ADVECTION_CONSERVING],
+    ["3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl_neu", "conserving, linear interpolation", CATEGORY_ADVECTION_CONSERVING],
+    ["3d_highres_obstacle_cfl_30_conserving_2_polynomial_local_cfl_v3_neu", "conserving, cubic interpolation", CATEGORY_ADVECTION_CONSERVING],
 ]
 
 BASE_SUBFOLDER = "7_highres_3d_without_vdbs"

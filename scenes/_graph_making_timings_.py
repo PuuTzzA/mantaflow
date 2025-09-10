@@ -142,7 +142,7 @@ def main():
 BASEDIR = (Path(__file__).parent.parent / "exports/").resolve()
 BASE_SUBFOLDER = "7_highres_3d_without_vdbs"
 INPUT_PATH = BASEDIR / BASE_SUBFOLDER / "timings_averages.json"
-OUTPUT_PATH = BASEDIR / BASE_SUBFOLDER / "timings.pdf"
+OUTPUT_PATH = BASEDIR / BASE_SUBFOLDER / "timings.png"
 
 FIGSIZE = (15, 6.5)
 LINEWIDTH = 1

@@ -10,7 +10,8 @@ EXPORTS_BASE_DIR = "../exportsIgnore/highres_3d_yay/"
 
 
 #OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated.obj" # for 200x200
-OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated_high.obj" # for 256x256
+#OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated_high.obj" # for 256x256
+OBSTACLE_MESH_PATH = "../resources/highres_obstacle_atom.obj" # for 256x256
 #OBSTACLE_MESH_PATH = "../resources/highres_scene_obstacle_triangulated_low.obj"
 
 if len(sys.argv) > 1:
@@ -186,7 +187,7 @@ while s.timeTotal < params["max_time"] and num_steps < 150:
         maxvel = vel.getMax()
         storeVelocityMagnitude(dest=velocity_magnitude, vel=vel)
 
-    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density, velocity_magnitude])
+    data_collector.step(solver=s, flags=flags, maxVel=maxVel, gui=gui, objects=[density])
     
     save_current_ram_usage(data_collector.current_frame - 1, str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "ram_usage.json"))
     timings.saveJson(str(Path(EXPORTS_BASE_DIR).expanduser().resolve() / title / "timings" / f"timings_{str(data_collector.current_frame - 1).zfill(4)}.json"))
