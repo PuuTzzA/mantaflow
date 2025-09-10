@@ -271,7 +271,7 @@ create_combined_graph(data_array=input_datas, data_names=input_titles, intereste
 #3_simple_obstacle_cfl_5
 input_titles = ["aanot conserving, cubic interpolation", "conserving, cubic interpolation, no redistribution", "not conserving, linear interpolation", "conserving, linear interpolation", "conserving, cubic interpolation"]
 title = "simple_obstacle_cfl_05"
-output_path = input_paths[0].parent.parent / f"{title}.pdf"
+output_path = input_paths[0].parent.parent / f"{title}.png"
 labelOrder = [2, 0, 3, 1, 4]
 #labelOrder = None
 
