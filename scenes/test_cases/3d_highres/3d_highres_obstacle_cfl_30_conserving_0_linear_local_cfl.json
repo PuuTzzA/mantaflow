@@ -1,5 +1,5 @@
 {
-  "title": "3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl",
+  "title": "3d_highres_obstacle_cfl_30_conserving_0_linear_local_cfl_neu",
   "dimension": 3,
   "resolutionX": 200,
   "resolutionY": 200,
