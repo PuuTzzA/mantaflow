@@ -16,8 +16,14 @@
 namespace Manta
 {
 #define EPSILON 1e-6
-// #define NO_KERNEL
-#define CLAMP
+    // #define NO_KERNEL // disable Kernels in the advection algorithm to fairly comapre the performance between semi-Lagrangian advection and consering advection
+    // #define CLAMP // if defined, clamps beta and gamma values in the clamping step of the algorithm
+
+    // USEFUL FUNCTIONS USEFUL FUNCTIONS USEFUL FUNCITON USEFUL FUNCTION
+    // USEFUL FUNCTIONS USEFUL FUNCTIONS USEFUL FUNCITON USEFUL FUNCTION
+    // USEFUL FUNCTIONS USEFUL FUNCTIONS USEFUL FUNCITON USEFUL FUNCTION
+    // USEFUL FUNCTIONS USEFUL FUNCTIONS USEFUL FUNCITON USEFUL FUNCTION
+    // USEFUL FUNCTIONS USEFUL FUNCTIONS USEFUL FUNCITON USEFUL FUNCTION
 
     /// @brief is not an obstacle and tagged as fluid
     bool isValidFluid(IndexInt i, IndexInt j, IndexInt k, const FlagGrid &flags, MACGridComponent component)
@@ -91,61 +97,6 @@ namespace Manta
         return (T(0) < val) - (val < T(0));
     }
 
-    //! Semi-Lagrange interpolation kernel
-    KERNEL()
-    void knFillHelper(Grid<Real> &dst)
-    {
-        dst(i, j, k) = 1;
-    }
-
-    KERNEL()
-    void knFillHelperMAC(MACGrid &dst)
-    {
-        dst(i, j, k) = Vec3(1., 1., 1.);
-    }
-
-    PYTHON()
-    void fillWithOnes(GridBase *grid)
-    {
-        if (grid->getType() & GridBase::TypeReal)
-        {
-            knFillHelper(*((Grid<Real> *)grid)).run();
-            std::cout << "filled Grid<Real> with ones" << std::endl;
-        }
-        else if (grid->getType() & GridBase::TypeMAC)
-        {
-            knFillHelperMAC(*((MACGrid *)grid)).run();
-            std::cout << "filled MACGrid with ones" << std::endl;
-        }
-    }
-
-    KERNEL()
-    void knFluidFillHelper(Grid<Real> &grid, const FlagGrid &flags)
-    {
-        if (flags.isFluid(i, j, k))
-        {
-            grid(i, j, k) = 1.;
-        }
-        else
-        {
-            grid(i, j, k) = 0.;
-        }
-    }
-
-    PYTHON()
-    void fillFluidWithOnes(GridBase *grid, const FlagGrid *flags)
-    {
-        if (grid->getType() & GridBase::TypeReal)
-        {
-            knFluidFillHelper(*((Grid<Real> *)grid), *flags);
-            std::cout << "filled fluid cells in Grid<Real> with ones" << std::endl;
-        }
-        else
-        {
-            throw std::runtime_error("fill fluid with ones not implemented for this grid type!");
-        }
-    }
-
     inline Vec3 rungeKutta4(Vec3 pos, Real dt, const MACGrid &vel)
     {
         Vec3 k1 = vel.getInterpolatedHi(pos, 2);
@@ -174,7 +125,6 @@ namespace Manta
 
         pos += offset;
         Vec3 newPos = rungeKutta4(pos, dt, vel);
-        // Vec3 newPos = pos + dt * vel.getInterpolatedHi(pos, 2);
 
         if (isTargetCell(std::floor(newPos.x), std::floor(newPos.y), std::floor(newPos.z), flags, component))
         {
@@ -298,12 +248,6 @@ namespace Manta
         return lastKnowFluidPos;
     }
 
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
-
     /// @brief normal trilinear (bilinear) interpolation
     bool getInterpolationStencilWithWeights(std::vector<std::tuple<Vec3i, Real>> &result, Vec3 pos, const FlagGrid &flags, Vec3 offset, MACGridComponent component, TargetCellType targetCellType)
     {
@@ -383,7 +327,6 @@ namespace Manta
         if (tot < EPSILON)
         {
             // Fallback: Find the single closest valid cell and give it a weight of 1.
-            // This is essentially a nearest-neighbor lookup, which is very stable.
             int best_i = -1, best_j = -1, best_k = -1;
             Real min_dist_sq = std::numeric_limits<Real>::max();
 
@@ -420,7 +363,6 @@ namespace Manta
             else
             {
                 return false; // No valid neighbors found at all.
-                throw std::runtime_error("Linear interpolation on point with no valid neighbors.");
             }
         }
 
@@ -711,6 +653,12 @@ namespace Manta
         return is3D ? interpolateMonotoneCubicHermite(yInterp[0], yInterp[1], yInterp[2], yInterp[3], fz) : yInterp[0];
     }
 
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+    // UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION UNIFIED MASS_MOMENTUM_CONSERVING_ADVECTION
+
     void traceBack(std::vector<std::tuple<Vec3i, Real>> &resultVec, Vec3 pos, Real dt, const MACGrid &vel, const FlagGrid &flags, Vec3 offset, MACGridComponent component, bool doLiquid, InterpolationType interpolationType, TracingMethod tracingMethod, const FlagGrid &flags_n_plus_one)
     {
         std::function<bool(std::vector<std::tuple<Vec3i, Real>> &, Vec3, const FlagGrid &, Vec3, MACGridComponent, TargetCellType)> getCorrectInterpolationStencilWithWeights;
@@ -744,6 +692,7 @@ namespace Manta
             return;
         }
 
+        // Start of the Water version of traceBack
         Vec3 newPos = customTrace(pos, -dt, vel, flags, offset, component, FLUID_ISH);
 
         // if (getCorrectInterpolationStencilWithWeights(resultVec, newPos, flags, offset, component, FLUID_ISH))
@@ -786,7 +735,6 @@ namespace Manta
 
             bool pos1Valid = isValidFluid(std::floor(newPos1.x), std::floor(newPos1.y), std::floor(newPos1.z), flags, NONE);
             bool pos2Valid = isValidFluid(std::floor(newPos2.x), std::floor(newPos2.y), std::floor(newPos2.z), flags, NONE);
-            // bool averageValid = pos1Valid && pos2Valid;
 
             const int stepAmount = 1000;
             if (start1Valid && start2Valid && averageValid)
@@ -837,24 +785,6 @@ namespace Manta
 
                 getCorrectInterpolationStencilWithWeights(resultVec, lastFluidPos, flags, offset, component, FLUID_ISH);
             }
-
-            /* else if (pos1Valid && pos2Valid)
-            {
-                getCorrectInterpolationStencilWithWeights(resultVec, (newPos1 + newPos2) * 0.5, flags, offset, component, FLUID_ISH);
-            }
-            else if (pos1Valid)
-            {
-                getCorrectInterpolationStencilWithWeights(resultVec, newPos1 + neighbourOffset, flags, offset, component, FLUID_ISH);
-            }
-            else if (pos2Valid)
-            {
-                getCorrectInterpolationStencilWithWeights(resultVec, newPos2 - neighbourOffset, flags, offset, component, FLUID_ISH);
-            } */
-
-            if (!resultVec.empty())
-            {
-                return;
-            }
         }
 
         return;
@@ -891,19 +821,17 @@ namespace Manta
 
     std::vector<std::tuple<Vec3i, Real>> getClosestSurfacePoint(Vec3 pos, const Grid<Real> &phi, const FlagGrid &flags, MACGridComponent component, Vec3 offset)
     {
+        // only used in the liquid version of the algorithm
         Vec3 startingPoint = pos;
         Vec3 closestSurfacePoint = startingPoint;
 
-        // Iteratively project the point towards the phi = 0 surface.
-        // This moves the point along the gradient by the distance encoded in phi.
         const int projectionSteps = 5;
         for (int step = 0; step < projectionSteps; ++step)
         {
             Real phiVal = phi.getInterpolatedHi(closestSurfacePoint, 2);
             Vec3 grad = getGradient(phi, closestSurfacePoint.x, closestSurfacePoint.y, closestSurfacePoint.z);
 
-            // Stop if the gradient is too small to avoid division by zero or instability.
-            if (normSquare(grad) < 1e-12)
+            if (normSquare(grad) < EPSILON)
             {
                 break;
             }
@@ -912,16 +840,8 @@ namespace Manta
             closestSurfacePoint -= grad * phiVal;
         }
 
-        // Now that we have a point on the surface, get the standard interpolation weights
-        // from the valid fluid cells around it.
         std::vector<std::tuple<Vec3i, Real>> surfaceNeighboursAndWeights;
-        getInterpolationStencilWithWeights(
-            surfaceNeighboursAndWeights,
-            closestSurfacePoint,
-            flags,
-            offset,
-            component,
-            FLUID_ISH);
+        getInterpolationStencilWithWeights(surfaceNeighboursAndWeights, closestSurfacePoint, flags, offset, component, FLUID_ISH);
 
         return surfaceNeighboursAndWeights;
     }
@@ -949,7 +869,7 @@ namespace Manta
         }
 
         Real gamma_to_equalize = (gammaBigger - gammaSmaller) / 2.0;
-        Real fraction_to_move = gamma_to_equalize / gamma_avg;
+        Real fraction_to_move = gamma_to_equalize / gamma_avg; // only usefull if CLAMP is defined, otherwise this has no effect
 
 #ifdef CLAMP
         fraction_to_move = Manta::clamp(fraction_to_move, static_cast<Real>(0.0), static_cast<Real>(1.0));
@@ -1139,13 +1059,13 @@ namespace Manta
             throw std::runtime_error("InterpolationType MONOTONE_CUBIC_HERMITE is incompatible with massMomentumConserving Advection");
         }
 
+        // Debug statements
         if (!phi && !phi_n_plus_one)
         {
-            std::cout << "Not Water: Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
+            std::cout << "Mass Momentum Conserving Advection on " << toString(component) << ", with " << toString(interpolationType) << " interpolation" << std::endl;
 #ifdef NO_KERNEL
             std::cout << "No Kernel" << std::endl;
 #else
-            std::cout << "With Kernels" << std::endl;
 #endif
 #ifdef CLAMP
             std::cout << "Clamping" << std::endl;
@@ -1182,17 +1102,12 @@ namespace Manta
             neighboursAndWeights.clear();
             traceBack(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n, offset, component, phi, interpolationType, tracingMethod, flags_n_plus_one);
 
-            if (phi && neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
+            if (phi && neighboursAndWeights.empty()) // Only for water version. Find the nearest surface point and dump the excess momentum there
             {
                 Vec3 pos = Vec3(i, j, k);
                 Vec3 newPos = customTrace(pos, -dt, vel, flags_n, offset, component, FLUID_ISH);
 
-                neighboursAndWeights = getClosestSurfacePoint(
-                    newPos,  // The destination grid point we are trying to fill.
-                    *phi,    // The level set for the SOURCE fluid (t^n).
-                    flags_n, // The flags for the SOURCE fluid (t^n).
-                    component,
-                    offset);
+                neighboursAndWeights = getClosestSurfacePoint(newPos, *phi, flags_n, component, offset);
 
                 for (const auto &[n, w] : neighboursAndWeights)
                 {
@@ -1230,17 +1145,12 @@ namespace Manta
                 neighboursAndWeights.clear();
                 traceForward(neighboursAndWeights, Vec3(i, j, k), dt, vel, flags_n_plus_one, offset, component, interpolationType, tracingMethod);
 
-                if (phi_n_plus_one && neighboursAndWeights.empty()) // Find the nearest surface point and dump the excess momentum there
+                if (phi_n_plus_one && neighboursAndWeights.empty()) // Only for water version. Find the nearest surface point and dump the excess momentum there
                 {
                     Vec3 pos = Vec3(i, j, k);
                     Vec3 newPos = customTrace(pos, dt, vel, flags_n_plus_one, offset, component, FLUID_ISH);
 
-                    neighboursAndWeights = getClosestSurfacePoint(
-                        newPos,           // The source grid point we are tracing from.
-                        *phi_n_plus_one,  // The level set for the DESTINATION fluid (t^(n+1)).
-                        flags_n_plus_one, // The flags for the DESTINATION fluid (t^(n+1)).
-                        component,
-                        offset);
+                    neighboursAndWeights = getClosestSurfacePoint(newPos, *phi_n_plus_one, flags_n_plus_one, component, offset);
 
                     for (const auto &[n, w] : neighboursAndWeights)
                     {
@@ -1291,7 +1201,6 @@ namespace Manta
             Real factor = 1 / gammaCumulative(i, j, k);
 #ifdef CLAMP
             factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
-            // factor = factor < 0 ? Manta::clamp(factor, (Real)-6, (Real)-0.1667) : Manta::clamp(factor, (Real)0.1667, (Real)6);
 #endif
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
             {
@@ -1321,13 +1230,10 @@ namespace Manta
                 {
                     continue;
                 }
-
-                // factor = Manta::clamp(factor, (Real)0.1, (Real)4);
             }
 
 #ifdef CLAMP
             factor = factor < 0 ? Manta::clamp(factor, (Real)-10, (Real)-0.1) : Manta::clamp(factor, (Real)0.1, (Real)10);
-            // factor = factor < 0 ? Manta::clamp(factor, (Real)-6, (Real)-0.1667) : Manta::clamp(factor, (Real)0.1667, (Real)6);
 #endif
 
             if (factor == 0 || std::isnan(factor) || std::isinf(factor))
@@ -1411,7 +1317,7 @@ namespace Manta
                     }
                 }
 
-                for (int _ = 0; _ < 1; _++) // one iteration enough, afterward 0 improvement
+                for (int _ = 0; _ < 1; _++) // one iteration enough, afterwards no improvement
                 {
                     FOR_IJK(grid)
                     {
@@ -1491,13 +1397,10 @@ namespace Manta
                     }
                 }
             }
-
-            // weights.distributeLostMass(grid, tempGrid, min, max);
         }
 
-        // clampToMinMaxNoKernel(grid, min, max)
-        knDampOutflowToZero(grid, flags_n_plus_one, component); // change this so that is only clamps when both neighbors are outflow or fluid for correct pressure gradient
-        knClampToMinMax(tempGrid, min, max);
+        knDampOutflowToZero(grid, flags_n_plus_one, component); // sometimes necessary for so that velocity in outflowing cells does not get too big
+        // knClampToMinMax(tempGrid, min, max); // should have no effect
     }
 
     // PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON PYTHON
@@ -1519,16 +1422,13 @@ namespace Manta
         knMAC2Grids(grid, velX, velY, velZ);
         knMAC2Grids(gammaCumulative, gammaX, gammaY, gammaZ);
 
-        /* Vec3 offsetX = Vec3(0.5, 0.0, 0.0);
-        Vec3 offsetY = Vec3(0.0, 0.5, 0.0);
-        Vec3 offsetZ = Vec3(0.0, 0.0, 0.5); */
-
         Vec3 offsetX = Vec3(0.0, 0.5, 0.5);
         Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
         Vec3 offsetZ = Vec3(0.5, 0.5, 0.0);
 
         if (!water)
         {
+            // Multiple threads do not work for some reason. Maybe something with Kernels that are called inside a thread
             /* std::thread tx([&]
                            { fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod, redistributeClamped); });
 
@@ -1541,7 +1441,7 @@ namespace Manta
             tx.join();
             ty.join();
             tz.join();
-            std::cout << "moinasdfasdfasdfasdfasdfasdfasdfasdfa" << std::endl; */
+            */
 
             fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velX, gammaX, offsetX, nullptr, MAC_X, interpolationType, tracingMethod, redistributeClamped);
             fnMassMomentumConservingAdvectUnified<Grid<Real>>(parent, flags, flags_n_plus_one, vel, velY, gammaY, offsetY, nullptr, MAC_Y, interpolationType, tracingMethod, redistributeClamped);
@@ -1585,7 +1485,7 @@ namespace Manta
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
-            // fnMassMomentumConservingAdvect<Grid<Vec3>>(flags->getParent(), *flags, *vel, *((Grid<Vec3> *)grid), *((Grid<Real> *)gammaCumulative));
+            // not implemented
         }
         else
             errMsg("AdvectSemiLagrange: Grid Type is not supported (only Real, MAC)");
@@ -1604,17 +1504,71 @@ namespace Manta
         }
         else if (grid->getType() & GridBase::TypeVec3)
         {
-            // fnMassMomentumConservingAdvect<Grid<Vec3>>(flags->getParent(), *flags, *vel, *((Grid<Vec3> *)grid), *((Grid<Real> *)gammaCumulative));
+            // not implemented
         }
         else
             errMsg("AdvectSemiLagrange: Grid Type is not supported (only Real, MAC)");
     }
 
-    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
-    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
-    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
-    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
-    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS
+    // OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS
+    // OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS
+    // OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS
+    // OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS OTHER PYTHON FUNCTIONS
+
+    KERNEL()
+    void knFillHelper(Grid<Real> &dst)
+    {
+        dst(i, j, k) = 1;
+    }
+
+    KERNEL()
+    void knFillHelperMAC(MACGrid &dst)
+    {
+        dst(i, j, k) = Vec3(1., 1., 1.);
+    }
+
+    PYTHON()
+    void fillWithOnes(GridBase *grid)
+    {
+        if (grid->getType() & GridBase::TypeReal)
+        {
+            knFillHelper(*((Grid<Real> *)grid)).run();
+            std::cout << "filled Grid<Real> with ones" << std::endl;
+        }
+        else if (grid->getType() & GridBase::TypeMAC)
+        {
+            knFillHelperMAC(*((MACGrid *)grid)).run();
+            std::cout << "filled MACGrid with ones" << std::endl;
+        }
+    }
+
+    KERNEL()
+    void knFluidFillHelper(Grid<Real> &grid, const FlagGrid &flags)
+    {
+        if (flags.isFluid(i, j, k))
+        {
+            grid(i, j, k) = 1.;
+        }
+        else
+        {
+            grid(i, j, k) = 0.;
+        }
+    }
+
+    PYTHON()
+    void fillFluidWithOnes(GridBase *grid, const FlagGrid *flags)
+    {
+        if (grid->getType() & GridBase::TypeReal)
+        {
+            knFluidFillHelper(*((Grid<Real> *)grid), *flags);
+            std::cout << "filled fluid cells in Grid<Real> with ones" << std::endl;
+        }
+        else
+        {
+            throw std::runtime_error("fill fluid with ones not implemented for this grid type!");
+        }
+    }
 
     PYTHON()
     void printAtMACPos(const MACGrid &vel, Vec3i pos)
@@ -1645,7 +1599,7 @@ namespace Manta
     }
 
     PYTHON()
-    void setOutflowToZero(const FlagGrid *flags, GridBase *grid)
+    void dampOutflowToZero(const FlagGrid *flags, GridBase *grid)
     {
         Manta::FluidSolver *parent = flags->getParent();
         Real dt = parent->getDt();
@@ -1671,6 +1625,12 @@ namespace Manta
         else
             errMsg("simpleSLAdvect: Grid Type is not supported (only Real, MAC)");
     }
+
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
+    // OTHER_ADVECTION_FUNCTIONS OTHER_ADVECTION_FUNCITONS OTHER_ADVECTION_FUNCTIONS
 
     KERNEL(points)
     void knAdvectParticlesForward(BasicParticleSystem &particles, const MACGrid &vel, Real dt, const FlagGrid &flags, Vec3i gs)
@@ -1876,10 +1836,6 @@ namespace Manta
         Grid<Real> newGridZ(parent);
 
         knMAC2Grids(grid, gridX, gridY, gridZ);
-
-        /* Vec3 offsetX = Vec3(0.5, 0.0, 0.0);
-        Vec3 offsetY = Vec3(0.0, 0.5, 0.0);
-        Vec3 offsetZ = Vec3(0.0, 0.0, 0.5); */
 
         Vec3 offsetX = Vec3(0.0, 0.5, 0.5);
         Vec3 offsetY = Vec3(0.5, 0.0, 0.5);
