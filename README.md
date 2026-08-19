@@ -1,4 +1,4 @@
-# Putzer Thomas Bachelor's Thesis
+# Putzer Thomas's Bachelor's Thesis
 
 [![Thesis](https://img.shields.io/badge/Thesis-PDF-green)](docs/thesis.pdf)
 [![Presentation](https://img.shields.io/badge/Presentation-PDF-blue)](docs/presentation.pdf)
